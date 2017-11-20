@@ -1,1 +1,7 @@
-hello world test file for new GIT project sdfsdfsdfsdfsd sdgsdfsdf
+hello world test file for new GIT project 11/20/2017
+
+
+
+this is a test
+
+I want to see if I can get this file up to the GitHub cloud.
