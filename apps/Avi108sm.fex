@@ -1,0 +1,765 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Carried through non_tkts ref_tkts JK 9/29/04 
+-* ADDED CODE FOR GLOBAL CURRENCY - DEB 11/9/04
+-* CARRIED THROUGH AA_TKT DL_TKT NW_TKT OTH_TKT UA_TKT - DEB 11/17/04
+-* CREATED FOR TOP TICKET EXCHANGE SUMMARY REPORT - DEB 6/8/05
+-* ADDED REF_EXCH_CNT2 FOR ABTPEXCA - STEVE 08/04/2006
+-* ADDED NORECORDS LOGIC - DEB 5/18/10
+-* ADDED PTPUR (SUMMED TKT_PURCH) SO EXCHANGE CNT SHOWS PCT OF EXCHANGES
+-* AGAINST TKTS PURCHASED INSTEAD OF NET_TKT_CNT - DEB 3/24/11
+-* CHANGED TO NOT INCLUDE FP3 FOR REFUND PENALTY AMTS - DEB - 2/4/13
+-*7/2/15 - DV- S-09999 increased &&rank_limit to 99999
+-* 11/03/15     JEM S-12504  Updated footer information as it was not showing the program
+-*07/13/16   RSB   S-20630 - New Employee ID database field
+-*                           Added EMP_ID
+-*     
+-* 03/13/17 JEM S-22486 - updated position of header and footer NEW_HDR NEW_FTR
+-* 06/30/2017   RSB  S-35419 Report view to be updated with standard footer (part 2)
+-* 08/01/2017 RSB S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                         Added: -SET &FTR_AddlLines = 5;
+-* 09/13/2017   RSB  S-39792 Footer changes to be backed out of story S-35419
+-*
+-* 09/27/2017   JEM D-01652 Corrected report failure in excel
+-* File SMRYRPT.FEX
+-**********************************************************************
+-* 
+SET ASNAMES = ON
+-RUN
+
+-INCLUDE SETECHO
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &FPAID_CUR = 'FARE PAID, (' | &&CURRENCY || ')';
+-SET &GCPK_CUR= 'COST,/KLMTR, (' | &&CURRENCY || ')';
+-SET &&S_SUBJ2='PAID_FAREX/D16.2CS AS ' | '''&FPAID_CUR.EVAL'''  ;
+-SET &&S_SUBJ4='KILO/P9CS AS ''TOTAL KLMTRS''';
+-SET &&S_SUBJ5='COMPUTE GCPK/P14.2CS= IF ((KILO LT 1) AND'; 
+-SET &&S_SUBJ6='(KILO GT (-1))) THEN 0 ELSE';
+-SET &&S_SUBJ7='(PAID_FAREX/KILO); AS ' | '''&GCPK_CUR.EVAL''';
+
+-NEXT;
+
+-* -IF &&SETF NE 'ABTPEXCA' THEN GOTO SKIP;
+
+TABLE FILE TOPTVL1
+SUM NET_TKT_CNT AS 'TTKT'
+BY LEVEL_DESC
+ON TABLE HOLD AS HOLDONE
+END
+-RUN
+
+
+DEFINE FILE TOPTVL1
+ REC_CNT/D8CS = IF NET_TKT_CNT EQ 1 THEN 1 ELSE 0;
+  TTLDAYS/D8 = NEW_ADV_PURCH*REC_CNT;
+  
+END                    
+TABLE FILE TOPTVL1
+SUM NET_TKT_CNT AS 'PTTKT'
+    TKT_PURCH AS 'PTPUR'
+REC_CNT
+TTLDAYS
+COMPUTE PADV/P8 = IF ((REC_CNT LT 1) AND (REC_CNT GT (-1))) THEN 0 ELSE 
+            (TTLDAYS/REC_CNT); 
+BY LEVEL_DESC 
+BY PASSNGR_NAME
+ON TABLE HOLD AS PHOLDONE
+ END
+-RUN
+
+
+TABLE FILE TOPTVL1
+PRINT AA_TKT
+        AIR_KEY
+        AIRLINE
+        AIRLINE_FEE
+        AIRFEE_CNT	
+        INTL_DOM	
+        AR_BRANCH
+        BR_CL_IDX        
+        CLASS
+        CLIENT_NUM	
+        COMM_SEG
+        DISSAVINGS
+        DL_TKT               	
+        EMB_CNTRY_CODE
+        CPMILE	
+        DISSAVINGS
+        DPT_TIME
+        EMB_APT_CD
+        EMB_APT_NM	
+        EMB_CTY_NM
+        EX_RF_FLAG
+        EXG_AMT
+        F_EXCH_CNT
+        FARE_BAS		
+        FARE_PAID
+        KILO
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        EMP_ID
+        MRK_TKT_CNT
+        NAMEC
+        NET_COMM	
+        NET_FARE	
+        NET_TKT_CNT
+        NEW_SEG_LOWEST
+        NEW_SEG_MILES
+        NEW_STAY
+        NEW_TRIP_LENGTH
+        NON_TKTS
+        NW_TKT
+        OTH_TKT
+        PASSNGR_NAME
+        REF_EXCH_CNT
+        REF_EXCH_CNT2
+        REFUSE_CODE
+        REF_TKTS
+        RTE_APT_CD
+        RTE_APT_NM
+        RTE_CTY_NM	
+        SAVINGS	
+        SEG_AMT	
+        SEG_COUNT	
+        SEG_DISCOUNT	
+        SEG_LOWEST
+        SEG_NBR	
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY
+        TICKET_BRANCH	
+        TKT_AMOUNT	
+        TKT_NUM	
+        TKT_PURCH
+        TKT_SORT
+        TKT_TYPE	
+        TOTAL_FARE	
+        TRN_DATE
+        UA_TKT	
+        VAL_AIRLINE	
+        VASAVINGS
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT
+        PAID_FAREX
+        PAID_FARE1
+BY LEVEL_DESC
+WHERE (EX_RF_FLAG EQ 'E') OR (EMBARK EQ 'FP2')
+-*WHERE (EX_RF_FLAG EQ 'E') OR (EMBARK EQ 'FP2' OR 'FP3')
+
+ON TABLE HOLD AS TOPTVL2
+END
+-RUN
+
+
+
+TABLE FILE TOPTVL2
+PRINT AA_TKT
+        AIR_KEY
+        AIRLINE
+        AIRLINE_FEE
+        AIRFEE_CNT	
+        INTL_DOM	
+        AR_BRANCH
+        BR_CL_IDX        
+        CLASS
+        CLIENT_NUM	
+        COMM_SEG
+        DISSAVINGS
+        DL_TKT               	
+        EMB_CNTRY_CODE
+        CPMILE	
+        DISSAVINGS
+        DPT_TIME
+        EMB_APT_CD
+        EMB_APT_NM	
+        EMB_CTY_NM
+        EXG_AMT
+        F_EXCH_CNT
+        FARE_BAS		
+        FARE_PAID
+        KILO
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        EMP_ID
+        MRK_TKT_CNT
+        NAMEC
+        NET_COMM	
+        NET_FARE	
+        NET_TKT_CNT
+        NEW_SEG_LOWEST
+        NEW_SEG_MILES
+        NEW_STAY
+        NEW_TRIP_LENGTH
+        NON_TKTS
+        NW_TKT
+        OTH_TKT
+        PASSNGR_NAME
+        REF_EXCH_CNT
+        REF_EXCH_CNT2
+        REFUSE_CODE
+        REF_TKTS
+        RTE_APT_CD
+        RTE_APT_NM
+        RTE_CTY_NM	
+        SAVINGS	
+        SEG_AMT	
+        SEG_COUNT	
+        SEG_DISCOUNT	
+        SEG_LOWEST
+        SEG_NBR	
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY
+        TICKET_BRANCH	
+        TKT_AMOUNT	
+        TKT_NUM	
+        TKT_PURCH
+        TKT_SORT
+        TKT_TYPE	
+        TOTAL_FARE	
+        TRN_DATE
+        UA_TKT	
+        VAL_AIRLINE	
+        VASAVINGS
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT
+        PAID_FAREX
+        PAID_FARE1
+BY TKT_NUM
+BY HIGHEST TKT_TYPE  NOPRINT
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+
+DEFINE FILE HOLD2
+TCOUNT/D8 = IF TKT_NUM NE LAST TKT_NUM AND TKT_TYPE EQ 'P-EX' THEN 1 ELSE 0;
+END
+-RUN
+
+TABLE FILE HOLD2
+PRINT AA_TKT
+        AIR_KEY
+        AIRLINE
+        AIRLINE_FEE
+        AIRFEE_CNT	
+        INTL_DOM	
+        AR_BRANCH
+        BR_CL_IDX        
+        CLASS
+        CLIENT_NUM	
+        COMM_SEG
+        DISSAVINGS
+        DL_TKT               	
+        EMB_CNTRY_CODE
+        CPMILE	
+        DISSAVINGS
+        DPT_TIME
+        EMB_APT_CD
+        EMB_APT_NM	
+        EMB_CTY_NM
+        EXG_AMT
+        F_EXCH_CNT
+        FARE_BAS		
+        FARE_PAID
+        KILO
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        EMP_ID
+        MRK_TKT_CNT
+        NAMEC
+        NET_COMM	
+        NET_FARE	
+        NET_TKT_CNT
+        NEW_SEG_LOWEST
+        NEW_SEG_MILES
+        NEW_STAY
+        NEW_TRIP_LENGTH
+        NON_TKTS
+        NW_TKT
+        OTH_TKT
+        PASSNGR_NAME
+        REF_EXCH_CNT
+        REFUSE_CODE
+        REF_TKTS
+        RTE_APT_CD
+        RTE_APT_NM
+        RTE_CTY_NM	
+        SAVINGS	
+        SEG_AMT	
+        SEG_COUNT	
+        SEG_DISCOUNT	
+        SEG_LOWEST
+        SEG_NBR	
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY
+        TICKET_BRANCH	
+        TKT_AMOUNT	
+        TKT_NUM	
+        TKT_PURCH
+        TKT_SORT
+        TKT_TYPE	
+        TOTAL_FARE	
+        TRN_DATE
+        UA_TKT	
+        VAL_AIRLINE	
+        VASAVINGS
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT
+        PAID_FAREX
+        PAID_FARE1
+        TCOUNT AS 'P_EXCH_CNT'
+        TCOUNT AS 'REF_EXCH_CNT2'
+BY LEVEL_DESC
+BY PASSNGR_NAME
+ON TABLE HOLD AS TOPTVL3
+END
+-RUN
+
+
+-* -SKIP
+
+TABLE FILE TOPTVL3
+SUM F_EXCH_CNT
+         P_EXCH_CNT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+ON TABLE HOLD AS TKTFP
+END
+-RUN
+
+
+MATCH FILE TOPTVL3
+PRINT FARE_PAID
+      PAID_FAREX
+      EXG_AMT
+      KILO 
+      NAMEC
+      NEW_SEG_MILES
+      AIRLINE_FEE
+      AIRFEE_CNT
+      DISSAVINGS
+      LEVEL1 
+      LEVEL2
+      EMP_ID
+      NON_TKTS
+      REF_TKTS
+      AA_TKT
+      DL_TKT
+      UA_TKT
+      NW_TKT
+      OTH_TKT  
+      PASSNGR_NAME
+      REF_EXCH_CNT
+      REF_EXCH_CNT2
+      NET_TKT_CNT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN
+FILE TKTFP
+PRINT F_EXCH_CNT
+    P_EXCH_CNT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS TOPTVL OLD 
+END
+-RUN
+
+TABLE FILE TOPTVL
+SUM NET_TKT_CNT
+    FARE_PAID
+    DISSAVINGS
+    EXG_AMT
+    F_EXCH_CNT
+    P_EXCH_CNT
+    PAID_FAREX/D16.2CS
+    KILO
+    NAMEC 
+    LEVEL1
+    LEVEL2
+    EMP_ID
+    NEW_SEG_MILES
+    AIRLINE_FEE
+    AIRFEE_CNT
+    NON_TKTS
+    REF_TKTS
+    AA_TKT
+    DL_TKT
+    UA_TKT
+    NW_TKT
+    OTH_TKT
+    REF_EXCH_CNT
+    REF_EXCH_CNT2
+BY LEVEL_DESC
+BY PASSNGR_NAME   
+ON TABLE HOLD AS XONE
+END
+-RUN
+
+
+
+
+MATCH FILE XONE
+PRINT NET_TKT_CNT
+    FARE_PAID
+    DISSAVINGS
+    EXG_AMT
+    F_EXCH_CNT
+    P_EXCH_CNT
+    PAID_FAREX 
+    KILO
+    LEVEL1
+    LEVEL2
+    EMP_ID
+    NAMEC 
+    NEW_SEG_MILES
+    AIRLINE_FEE
+    AIRFEE_CNT
+    NON_TKTS
+    REF_TKTS
+    AA_TKT
+    DL_TKT
+    UA_TKT
+    NW_TKT
+    OTH_TKT
+    REF_EXCH_CNT
+    REF_EXCH_CNT2
+    PASSNGR_NAME
+BY LEVEL_DESC
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM TTKT
+BY LEVEL_DESC
+AFTER MATCH HOLD AS MATCHONE OLD 
+END
+-RUN
+
+
+
+MATCH FILE MATCHONE
+PRINT NET_TKT_CNT
+    FARE_PAID
+    DISSAVINGS
+    EXG_AMT
+    F_EXCH_CNT
+    P_EXCH_CNT
+    PAID_FAREX 
+    KILO
+    LEVEL1
+    LEVEL2
+    EMP_ID
+    NAMEC 
+    NEW_SEG_MILES
+    AIRLINE_FEE
+    AIRFEE_CNT
+    NON_TKTS
+    REF_TKTS
+    AA_TKT
+    DL_TKT
+    UA_TKT
+    NW_TKT
+    OTH_TKT
+    REF_EXCH_CNT
+    REF_EXCH_CNT2
+    TTKT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN
+FILE PHOLDONE
+SUM PTTKT
+    PADV
+    PTPUR
+BY LEVEL_DESC
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS RNKHLD1 OLD 
+END
+-RUN
+
+
+ 
+DEFINE FILE RNKHLD1
+TOT_EXCH_CNT/D9=REF_EXCH_CNT+REF_EXCH_CNT2;
+FLAG/A1 = 'A';
+END
+-RUN
+
+-SET &&RANK_METH = REF_EXCH_CNT;
+
+-IF &&SETF NE 'ABTPEXCA' THEN GOTO SKIP;
+
+-SET &&RANK_METH = TOT_EXCH_CNT;
+
+-SKIP
+
+TABLE FILE RNKHLD1
+PRINT NET_TKT_CNT
+    EXG_AMT
+    F_EXCH_CNT
+    P_EXCH_CNT
+    FARE_PAID
+    DISSAVINGS
+    KILO
+    LEVEL1
+    LEVEL2
+    EMP_ID
+    LEVEL_DESC
+    NAMEC
+    NEW_SEG_MILES
+    PAID_FAREX 
+    AIRLINE_FEE
+    AIRFEE_CNT
+    NON_TKTS
+    REF_TKTS
+    AA_TKT
+    DL_TKT
+    UA_TKT
+    NW_TKT
+    OTH_TKT
+    REF_EXCH_CNT
+    REF_EXCH_CNT2
+    TOT_EXCH_CNT
+    TTKT
+    PTTKT
+    PTPUR
+    FLAG
+    PADV
+-* RANKED BY &&RANK_ORDER &&RANK_METH NOPRINT
+RANKED BY HIGHEST &&RANK_METH
+BY PASSNGR_NAME
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+
+
+
+-IF '&&ROLLUP.EVAL' NE 'KIEWIT-R' THEN GOTO Set2; 
+
+-SET &&RANK_LIMIT = 9999;
+
+-GOTO Finish;
+
+-Set2; 
+-IF '&&ROLLUP.EVAL' EQ 'PRINC-R' THEN GOTO PRINC;
+
+-SET &&RANK_LIMIT = 9999;
+-GOTO Finish;
+
+
+-PRINC
+-SET &&RANK_LIMIT = 100;
+
+-Finish
+ 
+
+
+
+DEFINE FILE RNKHLD2
+  DRANK/D9 = RANK;
+  ARANKX/A11 = FTOA(DRANK, '(D9)', 'A11');
+  ARANK/A9 = EDIT(ARANKX,'$$999999999');
+  LIST/D9 = (LAST LIST + 1);
+  CRANKX/A11 = FTOA(LIST, '(D9)', 'A11');
+  CRANK/A9 = EDIT(CRANKX,'$$999999999');
+  RANK_VALUE/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE 
+                  IF LIST GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE 
+                  CRANK;
+  RANK_VAL/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE
+                IF RANK GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE
+                ARANK;
+  RANK_LAB1/A60 = IF RANK_VAL NE 'ALL OTHER' THEN &&RANK_LABEL1
+                  ELSE 'ALL OTHER';
+  RANK_LABEL1/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL1
+                      ELSE ' ';
+  RANK_LABEL2/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL2
+                      ELSE ' ';
+  RANK_LABEL3/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL3
+                      ELSE ' ';
+NOWTOD/A8 WITH RANK = HHMMSS (NOWTOD);
+TOTTKT/D9 = IF RANK_VALUE EQ '        1' THEN TTKT ELSE 0;
+END
+-RUN
+
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+
+TABLE FILE RNKHLD2
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+   
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-*
+-IF &&SETF EQ 'ABTPEXCH' OR 'ABTPEXCA' OR 'HDTPEXCH' THEN GOTO ABTPEXCH;
+-*
+-GOTO OTHER1
+-*
+-*********
+-ABTPEXCH
+-*********
+-SET &FTR_AddlLines = 5;
+FOOTING BOTTOM
+" "
+"THE FEES COLUMN ARE FORFEIT/PENALTY AMOUNTS"
+"AIRLINE FEES ARE INCLUDED IN FEES ALONG WITH FORFEITED AMOUNTS"
+"FARE PAID IS THE NET AMOUNT OF NEW EXCHANGE SALE MINUS ORIGINAL SALE AMOUNT"
+"FARE PAID INCLUDES FEES"
+-*
+-*******
+-OTHER1
+-*******
+-INCLUDE FOOTERSM   
+-*   
+-* ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+-IF '&&OUTFMT' NE 'PDF' OR 'PPT' GOTO XLSTY;
+ON TABLE SET STYLE *
+-INCLUDE FTR_DateTimePosit
+-INCLUDE GLOBAL_LOGO_SM
+ 
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.500000, RIGHTMARGIN=0.250000, 
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=8, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=HEADING, SIZE=8, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(70 136 177),$
+-* TYPE=HEADING, LINE=4,  SIZE=8, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(70 136 177),  $
+-* TYPE=HEADING, LINE=5, SIZE=8, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(70 136 177),  $
+TYPE=HEADING, LINE=8, SIZE=10, JUSTIFY=LEFT, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(70 136 177),  $
+TYPE=HEADING, LINE=9, SIZE=10, JUSTIFY=LEFT, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(70 136 177),  $
+TYPE=SUBHEAD, SIZE=8, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(70 136 177),$
+
+TYPE=FOOTING, SIZE=7, FONT='ARIAL', COLOR=RGB(70 136 177), $
+TYPE=TABFOOTING, SIZE=7, FONT='ARIAL', COLOR=RGB(70 136 177),$
+
+TYPE=TITLE, STYLE=BOLD, $
+TYPE=SUBFOOT, SIZE=9, STYLE=BOLD, $
+TYPE=SUBTOTAL, SIZE=9, STYLE=BOLD, $
+TYPE=GRANDTOTAL, SIZE=9, STYLE=BOLD, $
+TYPE=REPORT, IMAGE=NEW_HDR.jpg, POSITION=(0 0), SIZE=(2.8 .37),PRESERVERATIO=ON, $ 
+TYPE=REPORT, IMAGE=NEW_FTR.jpg, POSITION=(0 8.0), SIZE=(10.5 .58), PRESERVERATIO=ON, $       
+TYPE=REPORT, IMAGE=&&ROLLPIC, POSITION=(&&TNTDTPOS), SIZE=(&&ROLDTSIZ), $
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+-*
+TYPE=FOOTING, LINE=&FTR_DateTimeLine, STYLE=BOLD,POSITION=(&FTR_DatePosit),$ 
+-*
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3
+-GOTO XXIT
+
+
+-XLSTY;
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYS
+-INCLUDE FTR_DateTimePosit
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+-*
+TYPE=FOOTING, LINE=&FTR_DateTimeLine, STYLE=BOLD,POSITION=(&FTR_DatePosit),$ 
+-*
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R31;
+
+EX REPORT_3
+
+-SKIP_R31
+-GOTO XXIT
+
+
+-XXIT
+
+
+
+

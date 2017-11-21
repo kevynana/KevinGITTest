@@ -1,0 +1,104 @@
+-****************************************************************
+-* File Name:  QRChecker.fex
+-* Check if the client has transaction in the current quarter.
+-****************************************************************
+-INCLUDE SETECHO
+ 
+-SET &&AUSEPASS = &&WEB_PATH || 'AUSEINCL.FTM';
+-SET &&CUSEPASS = &&WEB_PATH || 'CUSEINCL.FTM';
+-SET &&HUSEPASS = &&WEB_PATH || 'HUSEINCL.FTM';
+-SET &&LUSEPASS = &&WEB_PATH || 'LUSEINCL.FTM';
+ 
+FILEDEF AUSEINCL DISK &&AUSEPASS
+FILEDEF CUSEINCL DISK &&CUSEPASS
+FILEDEF HUSEINCL DISK &&HUSEPASS
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+-***************************************************
+-* get date values from BRPTINST database and
+-* assign to the global variables.
+-***************************************************
+EX QRSetDate
+-RUN
+-***************************************************
+-* reset dates and report type in control file
+-***************************************************
+-*specify the values for program catqtr
+-SET &&RPTTYP = 'SPC';
+-SET &&SMD = 'S';
+-*reset the date ranges for Air Spend
+-***************************************************
+-* generate include file for database allocation
+-***************************************************
+-SET &&ROLLUP = '&&BASEROLL.EVAL';
+-SET &&COMPNY = '&&BASECOMP.EVAL';
+EX QRSETBDB
+-RUN
+ 
+EX AIRUSE
+-RUN
+-***************************************************
+-* generate include file for database allocation
+-***************************************************
+ 
+TABLE FILE SR_50
+BY TRN_DATE
+WHERE (TRN_DATE GE '&&FROMDT.EVAL') AND (TRN_DATE LE '&&TODT.EVAL')
+WHERE RECORDLIMIT EQ 1
+ON TABLE SAVE
+END
+-RUN
+-SET &&AIRTRANS = IF &LINES GT 0 THEN 'Y' ELSE 'N';
+-IF &LINES GT 0 THEN GOTO ENDDEFFILE;
+ 
+-SET &DT2 = EDIT('&&INTIME.EVAL','99999999$$_99$99');
+-SET &&FNAME='QReview' || '&&ROLLUP.EVAL' || '&DT2.EVAL' || '';
+ 
+-SET &AKEY=LJUST(7,&&IKEY,'A7');
+-SET &LEN = ARGLEN(7,&AKEY,'I1');
+-SET &ISKEY=SUBSTR(7,&AKEY, 1, &LEN, &LEN, 'A&LEN.EVAL');
+ 
+-SET &&SEPATH  = 'D:\TE\' || '&&UNAME.EVAL' || '\ '||
+- '&ISKEY.EVAL' || '\EMAIL\';
+ 
+-SET &&TEMPPATH = &&SEPATH;
+-DOS MKDIR &&TEMPPATH
+ 
+-SET &&QTRFILE = &&TEMPPATH || &&FNAME || '.pdf';
+-*-DOS STATE &&QTRFILE
+-*-IF &RETCODE NE 0 GOTO ENDDEFFILE;
+-*-DOS DEL &&QTRFILE
+ 
+FILEDEF SAVREP DISK &&QTRFILE
+-RUN
+ 
+JOIN CLEAR *
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+-RUN
+ 
+TABLE FILE BRPTINST
+HEADING
+"</2>"
+"<20 There is no air ticket transactions in the quarter you scheduled"
+" "
+" <40 for <ROLLUP_CODE"
+"</2"
+"<30 The Quarterly Review job is terminated."
+BY INST_KEY NOPRINT
+ON TABLE SET PAGE OFF
+ON TABLE SAVE AS SAVREP FORMAT PDF
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.150000,
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON,
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=9, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=HEADING,LINE=4,FONT=TIMES NEW ROMAN,SIZE=18, STYLE=BOLD, $
+TYPE=HEADING,LINE=6,FONT=TIMES NEW ROMAN,SIZE=18, STYLE=BOLD, $
+TYPE=HEADING,LINE=10,FONT=TIMES NEW ROMAN,SIZE=18, STYLE=BOLD, $
+ENDSTYLE
+END
+-RUN
+ 
+JOIN CLEAR *
+-RUN
+-ENDDEFFILE

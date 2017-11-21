@@ -1,0 +1,49 @@
+-**************************************************************************************************
+-* file name: ConvertRPTFLDQtrReview.fex
+-*   convert fields from QREVIEW segment in RPT_FLDS into SQL rpt_flds_qreview table.
+-*   convert fields from QREVIEW2 segment in RPT_FLDS into SQL rpt_flds_qreview2 table.
+
+-* SQL tables: rpt_flds_qreview and rpt_flds_qreview2
+-*         
+-**************************************************************************************************
+-SET &ECHO = ALL;
+SET ASNAME = ON
+
+-**************************************************************
+-* Convert the following fields from AIR,CAR & HTL segments
+-**************************************************************
+-* retrieve from QREVIEW segment
+TABLE FILE RPT_FLDS
+PRINT SEG QREVIEW.RPT_ID 
+BY INST_KEY
+WHERE RPT_ID GT 0 
+ON TABLE HOLD
+END
+-RUN
+
+MODIFY FILE RPT_FLDS_QREVIEW
+FIXFORM FROM HOLD
+MATCH INST_KEY
+  ON MATCH REJECT
+  ON NOMATCH INCLUDE
+DATA ON HOLD
+END
+-RUN
+
+-* retrieve from QREVIEW2 segment
+TABLE FILE RPT_FLDS
+PRINT SEG QREVIEW2.SEQ_NO
+BY INST_KEY
+WHERE QREVIEW2.SEQ_NO GT 0
+ON TABLE HOLD
+END
+-RUN
+
+MODIFY FILE RPT_FLDS_QREVIEW2
+FIXFORM FROM HOLD
+MATCH INST_KEY
+  ON MATCH REJECT
+  ON NOMATCH INCLUDE
+DATA ON HOLD
+END
+-RUN

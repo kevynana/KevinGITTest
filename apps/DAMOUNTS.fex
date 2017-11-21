@@ -1,0 +1,32 @@
+  BASE_FARE/D12.2CS = SEG_AMT - SEG_COM;
+  COM_AMTA/D12.2CS = COMM_AMT;
+  COM_AMT/D12.2CS = SEG_COM;
+  CPMILE/D12.2CS = IF ((SEG_MILES LT 1) AND (SEG_MILES GT (-1))) THEN 0 ELSE
+                      (FARE_PAID/SEG_MILES);
+  FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+  GROSS_FARE/D12.2CS  = IF (RF_FLAG EQ ' ') AND
+                           (EX_FLAG EQ ' ') THEN
+                        SEG_AMT + SEG_TAX ELSE 0;
+  NEW_SEG_AMT/D12.2CS = SEG_AMT;
+  NEW_SEG_DISC/D12.2CS = SEG_DISC;
+  REFEXCH/D12.2CS     = IF (RF_FLAG NE ' ') THEN
+                        SEG_AMT + SEG_TAX ELSE 
+                        IF (EX_FLAG NE ' ') THEN
+                        SEG_AMT + SEG_TAX ELSE 0;                      
+  SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID;  
+  TKT_AMOUNT/D12.2CS  = TICKET_AMT + TAX_AMT;
+   
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+  AIRLINE_FEE/D8.2CS = IF EMBARK EQ 'FP2' OR 'FP3' 
+     THEN FARE_PAID ELSE 0;
+  DECLINE_AMT/D12.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         TKT_AMOUNT - LOWEST_AMT;
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  GROSS_DSAVE/D12.2CS = IF (RF_FLAG EQ ' ') AND
+                           (EX_FLAG EQ ' ') THEN
+                           DISSAVINGS ELSE 0; 
+
+ 
+

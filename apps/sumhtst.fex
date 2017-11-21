@@ -1,0 +1,381 @@
+SET ASNAMES=ON
+
+-INCLUDE SETECHO
+-SET &&COMP = 'STAND';
+-SET &&ROLLUP = 'STAND-R';
+-SET &&ROLLFY='01';
+-SET &&FROMDT = '02/01/2009';
+-SET &&TODT = '12/31/2009';
+-SET &&UNAME='joy';
+
+SET TEMPERASE = ON
+SET ASNAME = ON
+
+-*-SET &DATAPATH = '\\omawebfocus05\D$\TNT\TTRACKER\DATA\';
+-SET &DATAPATH='&&DATASRV.EVAL' || '\TNT\TTRACKER\DATA\';
+
+
+-TYPE &DATAPATH
+
+ 
+
+-*-SET &DATAPATH = '\D:\TNT\TTRACKER\DATA\';
+-SET &&FMDT2 =  EDIT('&&FROMDT.EVAL','99')| '/01/' | EDIT('&&FROMDT.EVAL','$$$9999');
+-SET &&TODT2 = EDIT('&&TODT.EVAL','99')| '/01/' | EDIT('&&TODT.EVAL','$$$9999');
+-RUN
+-GOTO JOY1
+DEFINE FILE CONTROL
+FROMDT/MDYY= '&&FMDT2.EVAL';
+TODT1/MDYY = '&&TODT2.EVAL';
+TODT2/MDYY=DATEADD(TODT1,'M',1);
+TODT/MDYY =DATEADD(TODT2,'D',-1);
+END
+-RUN
+
+TABLE FILE CONTROL
+PRINT ROLLUP_CODE COMP ROLL_FY USER_ID FROMDT TODT
+ON TABLE SAVE AS HLDCTRL
+END
+-RUN
+
+-READ HLDCTRL &&ROLLUP.8 &&COMP.6 &&ROLLFY.2. &&UNAME.20. &&FROMDT.8. &&TODT.8.
+-TYPE &&ROLLUP &&COMP &&ROLLFY &&UNAME &&FROMDT &&TODT
+-RUN
+-JOY1
+TABLE FILE ROLLUP
+PRINT QTR_ENABLE
+BY ROLLUP_CODE
+WHERE ROLLUP_CODE EQ 'STAND-R'
+ON TABLE SAVE AS ROLLSV
+END
+-RUN
+
+-READ ROLLSV &&ROLL.8. &&QTR.1.
+-TYPE &&ROLL &&QTR
+
+
+
+-SET &HIERA='&DATAPATH.EVAL'||'AL'||&&COMP.EVAL||'.FOC';
+-SET &HIERC='&DATAPATH.EVAL'||'AL'||&&COMP.EVAL||'.FOC';
+-SET &HIERH='&DATAPATH.EVAL'||'AL'||&&COMP.EVAL||'.FOC';
+-SET &FILES='&DATAPATH.EVAL'||'S_'||&&COMP.EVAL||'.FOC'; 
+-SET &FILEA='&DATAPATH.EVAL'||'A_'||&&COMP.EVAL||'.FOC'; 
+-SET &FILEC='&DATAPATH.EVAL'||'C_'||&&COMP.EVAL||'.FOC';
+-SET &FILEH='&DATAPATH.EVAL'||'H_'||&&COMP.EVAL||'.FOC'; 
+-* USE AIR DATABASES
+USE 
+&FILES AS SR_50
+&FILEA AS AIR_MAIN
+&HIERA AS AH_50
+END
+-RUN
+-* USE ADD CAR
+USE ADD
+&FILEC AS CR_50
+&HIERC AS CH_50
+END
+-RUN
+
+-* USE ADD HTL
+USE ADD
+&FILEH AS HR_50
+&HIERH AS HH_50
+END
+-RUN
+
+-* HD USE
+-SET HIERD='&DATAPATH.EVAL'||'HD'||&&COMP.EVAL||'.FOC';
+
+-SET &LEVEL = '02';
+-SET &DEPT = '03';
+-SET &BREAKBY='04' ;
+-* -DEFAULTS &FROMDT = ' ', &TODT = ' ';
+-* -DEFAULTS &DODTYPE = ' ', &DOMINTL = ' ', &FMT=' ', &PCNTSHIFT=' ';
+
+-INCLUDE DBRSParms
+-RUN
+
+DEFINE FILE &FILEA
+FLAG/A1 = 'A';
+END
+TABLE FILE &FILEA
+SUM FARE_PAID NET_TKT_CNT
+BY FLAG
+&XBREAKBY
+-* -INCLUDE DBRPARMS1A
+-* WHERE SERV_FLAG NE 'V'
+-* &WHERE2
+-* &WHERE3
+-* &WHERE4
+ON TABLE HOLD AS HA
+END
+-RUN
+
+DEFINE FILE &FILEC
+FLAG/A1 = 'A';
+END
+TABLE FILE &FILEC
+SUM RENTAL_AMT CAR_DAYS
+BY FLAG
+&XBREAKBY
+-* -INCLUDE DBRPARMS1A
+-* &WHERE2
+-* &WHERE3
+-* &WHERE4CH
+ON TABLE HOLD AS HC
+END
+-RUN
+
+DEFINE FILE &FILEH
+FLAG/A1 = 'A';
+END
+TABLE FILE &FILEH
+SUM TOTAL_AMT HTL_NIGHTS
+BY FLAG
+&XBREAKBY
+-* -INCLUDE DBRPARMS1A
+-* &WHERE2
+-* &WHERE3
+-* &WHERE4CH
+ON TABLE HOLD AS HH
+END
+-RUN
+
+
+MATCH FILE HA
+PRINT FARE_PAID NET_TKT_CNT
+BY FLAG
+&XBREAKBY
+ON TABLE HOLD
+RUN
+FILE HC
+SUM RENTAL_AMT CAR_DAYS
+BY FLAG
+&XBREAKBY
+AFTER MATCH HOLD AS HCA OLD-AND-NEW
+END
+-RUN
+
+MATCH FILE HCA
+PRINT FARE_PAID NET_TKT_CNT RENTAL_AMT CAR_DAYS
+BY FLAG
+&XBREAKBY
+ON TABLE HOLD
+RUN
+FILE HH
+SUM TOTAL_AMT HTL_NIGHTS
+BY FLAG
+&XBREAKBY
+AFTER MATCH HOLD AS HACH OLD-AND-NEW
+END
+-RUN
+
+TABLE FILE HACH
+SUM FARE_PAID NET_TKT_CNT RENTAL_AMT CAR_DAYS TOTAL_AMT HTL_NIGHTS
+COMPUTE TOT/D14CS = FARE_PAID + RENTAL_AMT + TOTAL_AMT;
+&XBREAKBY
+ON TABLE HOLD AS H2
+END
+-RUN
+
+DEFINE FILE H2
+LEV/A15 = &AROLL_LEVX;
+LEV1/A15 = IF LEV EQ ' ' THEN 'TOTAL COMPANY' ELSE LEV;
+END
+-RUN
+
+TABLE FILE H2
+SUM FARE_PAID NET_TKT_CNT RENTAL_AMT CAR_DAYS TOTAL_AMT HTL_NIGHTS TOT
+BY LEV1 AS 'ROLL_LEV'
+ON TABLE HOLD AS LEVH
+END
+-RUN
+
+TABLE FILE &HIERF
+PRINT DEPTNAM
+BY ROLL_LEV
+ON TABLE HOLD AS LEVD
+END
+-RUN
+
+MATCH FILE LEVH
+PRINT FARE_PAID NET_TKT_CNT RENTAL_AMT CAR_DAYS TOTAL_AMT HTL_NIGHTS TOT
+BY ROLL_LEV
+ON TABLE HOLD
+RUN
+FILE LEVD
+SUM DEPTNAM
+BY ROLL_LEV
+AFTER MATCH HOLD AS LEVT OLD
+END
+-RUN
+
+TABLE FILE LEVT
+SUM FARE_PAID NET_TKT_CNT RENTAL_AMT CAR_DAYS TOTAL_AMT HTL_NIGHTS TOT AS 'TOT1'
+RANKED BY HIGHEST 10 TOTAL TOT
+PLUS OTHERS AS 'ALL OTHERS'
+BY DEPTNAM
+ON TABLE HOLD AS H3
+END
+-RUN
+
+
+DEFINE FILE H3
+CNT/I2 = CNT + 1;
+CNT2/I2 = IF CNT LE 10 THEN CNT ELSE 11;
+END
+-RUN
+
+TABLE FILE H3
+PRINT *
+BY CNT2
+ON TABLE HOLD AS H4
+END
+-RUN
+
+DEFINE FILE H4
+AROLL/A60 = IF CNT2 GT 10 THEN 'ALL OTHERS' ELSE DEPTNAM; 
+ROLL_DSC/A30 = GETTOK(AROLL, 60, -1, ')', 30, ROLL_DSC);
+AROLL1/A33 = IF CNT2 EQ 1 THEN ' 1-'||ROLL_DSC ELSE
+             IF CNT2 EQ 2 THEN ' 2-'||ROLL_DSC ELSE
+             IF CNT2 EQ 3 THEN ' 3-'||ROLL_DSC ELSE
+             IF CNT2 EQ 4 THEN ' 4-'||ROLL_DSC ELSE
+             IF CNT2 EQ 5 THEN ' 5-'||ROLL_DSC ELSE 
+             IF CNT2 EQ 6 THEN ' 6-'||ROLL_DSC ELSE
+             IF CNT2 EQ 7 THEN ' 7-'||ROLL_DSC ELSE
+             IF CNT2 EQ 8 THEN ' 8-'||ROLL_DSC ELSE
+             IF CNT2 EQ 9 THEN ' 9-'||ROLL_DSC ELSE
+             IF CNT2 EQ 10 THEN '10-'||ROLL_DSC ELSE '11-ALL OTHERS';
+END
+-RUN
+
+
+GRAPH FILE H4
+SUM PCT.TOT1 AS ' '
+BY AROLL1 AS ' '
+ON GRAPH SET LOOKGRAPH PIESINGL
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET GRXAXIS 0 
+-* -IF EDIT(&FMT,'9') EQ 'P' GOTO SIZE_PDF;
+ON GRAPH SET VAXIS 170
+ON GRAPH SET HAXIS 290
+ON GRAPH SET UNITS PIXELS
+-* -GOTO SIZE_DONE;
+-* -SIZE_PDF
+-* ON GRAPH SET VAXIS 2.599
+-* ON GRAPH SET HAXIS 2.599
+-* ON GRAPH SET UNITS INCHES
+-* -SIZE_DONE
+-* ON GRAPH SET GRMERGE ON
+-* -IF EDIT(&FMT,'9') EQ 'P' GOTO PDF_FMT;
+-* -GOTO FMT_DONE;
+-* -PDF_FMT
+-* ON GRAPH HOLD AS HLDRPT FORMAT SVG
+-* -FMT_DONE
+
+ON GRAPH SET GRAPHSTYLE *
+-* Series Colors
+setFillColor(getSeries(0),new Color(63 121 169));
+setFillColor(getSeries(1),new Color(0 33 107));
+setFillColor(getSeries(2),new Color(255 150 100));
+setFillColor(getSeries(3),new Color(245 169 171));
+setFillColor(getSeries(4),new Color(183 211 169));
+setFillColor(getSeries(5),new Color(220 100 180));
+setFillColor(getSeries(6),new Color(152 137 224));
+setFillColor(getSeries(7),new Color(0 135 202));
+setFillColor(getSeries(8),new Color(80 157 157));
+setFillColor(getSeries(9),new Color(153 210 230));
+setFillColor(getSeries(10),new Color(87 62 155));
+
+-*display pie feelers
+setPieFeelerTextDisplay(1); 
+setPieRotate(180);
+ 
+-* display absolute value in pie chart
+setPieLabelDisplay(1);
+-* sets preset Pie Label format type %
+setTextFormatPreset(getPieSliceLabel(),2);
+-* absolute sizing on pie label
+setFontSizeAbsolute(getPieSliceLabel(),true);
+-* specific font size for pie label
+setFontSize(getPieLabelDisplay(),10);
+-* specific font style for pie label (bold, underline)
+setFontStyle(getPieLabelDisplay(),2);
+-* does not allow the label to be resized or moved.
+setPlaceResize(getPieSliceLabel(),0);
+setPlaceAlign(getPieSliceLabel(),1);
+setFontSizeAbsolute(getPieSliceLabel(), true);
+setFontSize(getPieSliceLabel(),9);
+setFontStyle(getPieSliceLabel(),3);
+setFontName(getPieSliceLabel(),"Verdana");
+ 
+-* pie border
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+ 
+-* sets title string
+setTitleString("% Total Spend");
+setSubtitleString(" ");
+-* positions title on graph
+setTextJustHoriz(getTitle(),2);
+-* absolute title sizing
+setFontSizeAbsolute(getTitle(),true);
+-* specific title font size
+setFontSize(getTitle(),12);
+-* specific title font style
+setFontStyle(getTitle(),2);
+-* allows resizing of title with Fontsize command when set place is on
+setPlaceResize(getTitle(),0);
+
+-* Legend Text
+setLegendDisplay(false);
+setTextJustHoriz(getLegendText(),1);
+setFontSizeAbsolute(getLegendText(),true);
+setLegendPosition(1);
+-* setLegendMarkersPerRow(5);
+setFontSize(getLegendText(),8);
+setFontStyle(getLegendText(),3);
+setFontName(getLegendText(),"Verdana");
+setTextRotation(getLegendText(),0);
+setTextWrap(getLegendText(),true);
+-* setLegendMarkersPerRow(2);
+setPlaceResize(getLegendText(),1);
+setPlaceRotate(getLegendText(),1);
+setPlaceAlign(getLegendText(),1);
+setPlaceWordWrap(getLegendText(),1);
+setPlaceResize(getLegendText(),0);
+setPlaceRotate(getLegendText(),1);
+setPlaceAlign(getLegendText(),1);
+-* setSeriesFillColor(0, new Color, 0 64 128));
+-* setSeriesFillColor(1, new Color, 145 237 145));
+ 
+
+-* setTextRotation(getPieSliceLabel(),0);
+-* setTextWrap(getPieSliceLabel(),false);
+-* setPlaceResize(getPieSliceLabel(),0);
+-* setPlaceRotate(getPieSliceLabel(),1);
+-* setPlaceAlign(getPieSliceLabel(),0);
+-* setPlaceWordWrap(getPieSliceLabel(),1);
+
+ 
+-* -IF EDIT(&FMT,'9') EQ 'P' GOTO NO_3D;
+-* setPieDepth(90);
+-* setPieTilt(35);
+-* -NO_3D;
+ 
+-* setPlace(true);
+ENDSTYLE
+END
+-RUN
+-QUIT
+
+-IF EDIT(&FMT,'9') EQ 'P' GOTO XXIT;
+-IF &LINES NE 0 THEN GOTO XXIT;
+-NODATA
+-INCLUDE DBRNoData
+-RUN
+ 
+-XXIT

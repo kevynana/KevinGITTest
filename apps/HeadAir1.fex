@@ -1,0 +1,14 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File HEADAIR1.FEX
+-********************************************************************
+-* MODIFICATIONS:
+-* Change this portion to run priot to TABLE FILE request - Steve (02/09/2004)
+-********************************************************************
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+

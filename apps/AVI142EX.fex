@@ -1,0 +1,233 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*
+-****************************************************************************
+-* DATE       INITIAL        DESCRIPTION
+-*
+-* 08/12/2016 RSB            S-19016 - Citypair with connections report
+-*                                     (Copy of avi101dt.fex)
+-****************************************************************************
+-*
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-*
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+-*
+-* Get Tickets that have the 1st segment or SEG_NBR EQ '01'.
+-* The report doesn't make sense if the 1st segment is not available.
+TABLE FILE &&EXTRACT
+PRINT TKT_NUM
+WHERE SEG_NBR EQ '01';
+-*
+-INCLUDE &AIRDATES
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+-*
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE HOLD AS INCLUDE_TKTS
+END
+-RUN
+-*
+-* Sort data for EXCLUDE_FLG Define
+TABLE FILE &&EXTRACT
+PRINT TKT_MAIN.ORG_APC
+      TKT_MAIN.DST_APC
+      FLIGHT_DURATION
+      LAYOVER
+      EMBARK
+      ROUTE
+      FNL_DEST_AIRPORT
+      SEG_AMT
+      TAX_AMT
+      TICKET_CODE
+      SEG_COUNT
+      CONJ_REL
+      STOP_CON
+      EX_FLAG
+      RF_FLAG
+      TKT_MAIN.C_ITIN
+      DPT_DATE
+      AIRLINE_NAME
+      REFUSE_CODE
+-*
+-* Trying to cleanup GLOBAL data with duplicate segment numbers.
+COMPUTE SEG_EXCLUDE/A1= IF (TKT_NUM EQ LAST TKT_NUM) AND (SEG_NBR EQ LAST SEG_NBR) THEN 'X' ELSE ' ';
+-*
+-* Get TKT_DATE for currency conversion
+      TKT_DATE
+      AROLL_LEV1
+      AROLL_LEV2
+      AROLL_LEV3
+      AROLL_LEV4
+      AROLL_LEV5
+      AROLL_LEV6
+      AROLL_LEV7
+      AROLL_LEV8
+      AROLL_LEV9
+      AROLL_LEV10
+      AROLL_LEV11 
+      AROLL_LEV12
+      AROLL_LEV13
+      AROLL_LEV14
+      CATEGORY
+BY TKT_NUM
+BY SEG_NBR
+WHERE VOID_DATE EQ 0
+WHERE SEG_COUNT GT 0;
+WHERE TKT_NUM IN FILE INCLUDE_TKTS
+WHERE TOTAL SEG_EXCLUDE NE 'X';
+-*
+-INCLUDE &AIRDATES
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+-*
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE HOLD AS SORT_CONN
+END
+-RUN
+-*
+-* Get data
+DEFINE FILE SORT_CONN
+ DIR_CP_CD    /A50  = ORG_APC || '-' || DST_APC;
+ FLIGHT_HOURS /D12.2= FLIGHT_DURATION / 60;
+ LAYOVER_HOURS/D12.2= LAYOVER / 60;
+ CONNECTION   /A3   = IF ((TKT_NUM NE LAST TKT_NUM) AND (STOP_CON EQ 'O') AND (ROUTE EQ DST_APC)) THEN ' ' ELSE
+                      IF ((ROUTE  NE ORG_APC) AND (ROUTE  NE DST_APC)) THEN ROUTE  ELSE
+                      IF ((EMBARK NE ORG_APC) AND (EMBARK NE DST_APC)) THEN EMBARK ELSE
+                      IF ((EMBARK NE ORG_APC) AND (EMBARK NE DST_APC)) THEN EMBARK ELSE
+                      IF ((TKT_NUM EQ LAST TKT_NUM) AND (ROUTE NE FNL_DEST_AIRPORT) AND (ROUTE NE ORG_APC)) THEN ROUTE ELSE ' ';
+ SEG_FLG    /I2 = EDIT(SEG_NBR);
+ EXCLUDE_FLG/A1 = IF TKT_NUM EQ LAST TKT_NUM THEN
+                   (IF (SEG_FLG NE (LAST SEG_FLG + 1)) OR
+                       (ROUTE EQ LAST ROUTE) OR
+                       (EMBARK EQ DST_APC) OR
+		       (ORG_APC EQ ROUTE) OR
+		      ((ROUTE  EQ ' ') AND (ORG_APC NE EMBARK)) OR
+		      ((EMBARK EQ ' ') AND (DST_APC NE ROUTE)) OR
+                       (LAST EXCLUDE_FLG EQ 'X') THEN 'X' ELSE ' ') ELSE ' ';
+ FARE_PAID/D12.2SN= SEG_AMT + TAX_AMT;
+END
+-*
+TABLE FILE SORT_CONN
+PRINT DIR_CP_CD
+      FLIGHT_HOURS
+      LAYOVER_HOURS
+      CONNECTION
+      EMBARK
+      ROUTE
+      FNL_DEST_AIRPORT
+      EXCLUDE_FLG
+      C_ITIN
+      ORG_APC
+      DST_APC
+      FARE_PAID
+      SEG_AMT
+      TAX_AMT
+      TICKET_CODE
+      SEG_COUNT
+      CONJ_REL
+      STOP_CON
+      EX_FLAG
+      RF_FLAG
+      DPT_DATE
+      AIRLINE_NAME
+      REFUSE_CODE
+      TKT_DATE
+      AROLL_LEV1
+      AROLL_LEV2
+      AROLL_LEV3
+      AROLL_LEV4
+      AROLL_LEV5
+      AROLL_LEV6
+      AROLL_LEV7
+      AROLL_LEV8
+      AROLL_LEV9
+      AROLL_LEV10
+      AROLL_LEV11 
+      AROLL_LEV12
+      AROLL_LEV13
+      AROLL_LEV14
+      CATEGORY
+BY TKT_NUM
+BY SEG_NBR
+WHERE EXCLUDE_FLG EQ ' ';
+WHERE ORG_APC NE DST_APC;
+ON TABLE HOLD AS CONN_HLD
+END
+-RUN
+-*
+-* Global Reporting JOIN
+JOIN TKT_DATE IN CONN_HLD TO GLOBAL.DATE IN GLOBAL AS J1
+-*
+DEFINE FILE CONN_HLD
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+CURR1X/D20.6 = 1 / USDPU ;
+-*
+ PAID_FAREX/D20.6 = PAID_FARE * CURR1X;
+ PAID_FARE1/D20.6 = PAID_FAREX;
+END
+-RUN
+-*
+TABLE FILE CONN_HLD
+PRINT DIR_CP_CD
+      FLIGHT_HOURS
+      LAYOVER_HOURS
+      CONNECTION
+      FARE_PAID
+      EMBARK
+      ROUTE
+      FNL_DEST_AIRPORT
+      SEG_AMT
+      TAX_AMT
+      TICKET_CODE
+      SEG_COUNT
+      CONJ_REL
+      STOP_CON
+      EX_FLAG
+      RF_FLAG
+      C_ITIN
+      DPT_DATE
+      AIRLINE_NAME
+      REFUSE_CODE
+      AROLL_LEV1
+      AROLL_LEV2
+      AROLL_LEV3
+      AROLL_LEV4
+      AROLL_LEV5
+      AROLL_LEV6
+      AROLL_LEV7
+      AROLL_LEV8
+      AROLL_LEV9
+      AROLL_LEV10
+      AROLL_LEV11 
+      AROLL_LEV12
+      AROLL_LEV13
+      AROLL_LEV14
+BY TKT_NUM
+BY SEG_NBR
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS CONN_HOLD
+END
+-RUN

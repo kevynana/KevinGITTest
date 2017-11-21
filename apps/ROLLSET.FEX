@@ -1,0 +1,90 @@
+-* File ROLLSET.FEX
+-* ==========================================================
+-* This program will add setfiles to the ROLLSET file.
+-* You will need to fill in all of the set commands in order
+-* for this to populate ROLLSET correctly.
+-*
+-*   Date       Initials            Description
+-* 06/06/01     TANDT-SS            New program
+-* ==========================================================
+
+SET ASNAMES=ON
+
+-* ==============================================
+-* All variables needed for new setfile
+-* ==============================================
+-SET &&ROLLUP='BLV-R';
+-SET &&SETFILE='BVFFILEA';
+-SET &&GROUP='AIR';
+-SET &&STREAM='AIR_PLCY';
+-SET &&VIEW='AVIW32';
+-SET &&DESCRIP1='FINANCIAL FILE';
+-SET &&DESCRIP2='DETAIL REPORT';
+-SET &&DESCRIP3='NON DRILLABLE REPORT';
+-SET &&DESCRIP4='';
+-SET &&DESCRIP5='';
+
+
+
+-* =============================================
+-* Set up hold file
+-* =============================================
+DEFINE FILE ROLLSET
+ NEW_ROLLUP/A8 = '&&ROLLUP';
+ NEW_SETFILE/A8 = '&&SETFILE';
+ NEW_GROUP/A3 = '&&GROUP';
+ NEW_STREAM/A8 = '&&STREAM';
+ NEW_VIEW/A8 = '&&VIEW';
+ NEW_DESCRIP1/A60 = '&&DESCRIP1';
+ NEW_DESCRIP2/A60 = '&&DESCRIP2';
+ NEW_DESCRIP3/A60 = '&&DESCRIP3';
+ NEW_DESCRIP4/A60 = '&&DESCRIP4';
+ NEW_DESCRIP5/A60 = '&&DESCRIP5';
+END
+
+TABLE FILE ROLLSET
+PRINT ROLLUP_CODE AS 'OLD'
+  NEW_ROLLUP AS 'ROLLUP_CODE'
+  NEW_SETFILE AS 'GLOBAL_PARM'
+  NEW_GROUP AS 'RPT_GROUP'
+  NEW_STREAM AS 'RPT_STREAM'
+  NEW_VIEW AS 'USE_PARM'
+  NEW_DESCRIP1 AS 'DESCRIP1'
+  NEW_DESCRIP2 AS 'DESCRIP2'
+  NEW_DESCRIP3 AS 'DESCRIP3'
+  NEW_DESCRIP4 AS 'DESCRIP4'
+  NEW_DESCRIP5 AS 'DESCRIP5'
+WHERE RECORDLIMIT EQ 1
+ON TABLE HOLD AS ADDROLL1
+END
+-RUN
+
+TABLE FILE ADDROLL1
+PRINT ROLLUP_CODE
+   GLOBAL_PARM
+   RPT_GROUP
+   RPT_STREAM
+   USE_PARM
+   DESCRIP1
+   DESCRIP2
+   DESCRIP3
+   DESCRIP4
+   DESCRIP5
+BY ROLLUP_CODE NOPRINT
+ON TABLE HOLD AS ADDROLL
+END
+-RUN
+
+-* ============================================================
+-* Update ROLLSET with new setfile only if duplicate not found
+-* ============================================================
+MODIFY FILE ROLLSET
+FIXFORM FROM ADDROLL
+MATCH ROLLUP_CODE GLOBAL_PARM
+ON MATCH UPDATE RPT_GROUP RPT_STREAM USE_PARM
+ON MATCH UPDATE DESCRIP1 DESCRIP2 DESCRIP3 DESCRIP4 DESCRIP5
+ON NOMATCH INCLUDE
+DATA ON ADDROLL
+END
+-RUN
+-EXIT

@@ -1,0 +1,187 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File SMRYRPT.FEX
+-* Added the -set for Rank_meth program was getting confused JK 9/10/04
+-* ADDED CODE FOR GLOBAL CURRENCY - DEB - 11/23/04
+-**********************************************************************
+
+
+
+SET ASNAMES = ON
+-RUN
+
+
+-SET &&RANK_METH =  'RENTAL_AMT';
+-SET &&RANK_LIMIT =    10;
+
+
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &RAMT_CUR = 'RENTAL,AMOUNT, (' | &&CURRENCY || ')';
+-SET &CADR_CUR = 'AVG,DAILY,RATE, (' | &&CURRENCY || ')';
+-SET &&S_SUBJ2='GCAR_AMT/D16.2CS AS ' | '''&RAMT_CUR.EVAL''' ;
+-SET &&S_SUBJ3='COMPUTE AVGDY/D12.2CS = IF ((NMBR_DAYS LT 1) AND';
+-SET &&S_SUBJ4='(NMBR_DAYS GT (-1))) THEN 0 ELSE';
+-SET &&S_SUBJ5='(GCAR_AMT/NMBR_DAYS); AS ' | '''&CADR_CUR.EVAL''';
+
+
+-NEXT;
+
+
+TABLE FILE CARHLD7
+SUM NBR_DAYS
+    RENTAL_DAYS/I8 AS 'NMBR_DAYS' 
+    RENTAL_AMT/D12.2 AS 'CAR_AMT'
+    AMT_RENTALX/D16.2 AS 'GCAR_AMT'
+    NAMEC
+BY PASSNGR_NAME   
+ON TABLE HOLD AS RNKHLD1
+END
+-RUN
+
+TABLE FILE RNKHLD1
+SUM NBR_DAYS
+    NMBR_DAYS
+    CAR_AMT 
+    GCAR_AMT
+    NAMEC
+-*RANKED BY &&RANK_ORDER NMBR_DAYS NOPRINT
+RANKED BY &&RANK_ORDER &&RANK_METH
+BY PASSNGR_NAME
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+
+
+
+DEFINE FILE RNKHLD2
+  DRANK/D9 = RANK;
+  ARANKX/A11 = FTOA(DRANK, '(D9)', 'A11');
+  ARANK/A9 = EDIT(ARANKX,'$$999999999');
+  LIST/D9 = (LAST LIST + 1);
+  CRANKX/A11 = FTOA(LIST, '(D9)', 'A11');
+  CRANK/A9 = EDIT(CRANKX,'$$999999999');
+  RANK_VALUE/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE 
+                  IF LIST GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE 
+                  CRANK;
+  RANK_VAL/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE
+                IF RANK GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE
+                ARANK;
+  RANK_LAB1/A60 = IF RANK_VAL NE 'ALL OTHER' THEN &&RANK_LABEL1
+                  ELSE 'ALL OTHER';
+  RANK_LABEL1/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL1
+                      ELSE ' ';
+  RANK_LABEL2/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL2
+                      ELSE ' ';
+  RANK_LABEL3/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL3
+                      ELSE ' ';
+END
+-RUN
+
+TABLE FILE RNKHLD2
+PRINT NMBR_DAYS
+      CAR_AMT
+      NBR_DAYS
+      GCAR_AMT
+      NAMEC
+BY RANK_VALUE
+BY RANK_LABEL1
+BY RANK_LABEL2
+BY RANK_LABEL3
+ON TABLE HOLD AS RNKCAR
+END
+-RUN
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+DEFINE FILE RNKCAR
+NOWTOD/A9 WITH RANK_VALUE = HHMMSS (NOWTOD);
+END
+
+
+TABLE FILE RNKCAR
+-INCLUDE HEADER
+"&&SUBHEAD"
+"</2"
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&SMSTY
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3
+
+
+
+
+

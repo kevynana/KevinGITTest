@@ -1,0 +1,69 @@
+-* 07/27/15 - DEB - S-10299 COMMENTED OUT SET &ECHO=ALL
+-*getAllCategories.fex
+-*-SET &ECHO=ALL;
+-SET &SPC='&' | 'nbsp;';
+
+TABLE FILE CLIENT 
+BY CATEGORY 
+WHERE CATEGORY NE 'GLOBAL' OR ' '
+ON TABLE HOLD AS HOLDCAT
+END
+ 
+DEFINE FILE HOLDCAT
+CNT/I5 = CNT + 1;
+IMD/I5 = IMOD(CNT, 2, IMD);
+OPTS/A200=IF IMD NE 0 THEN '<option value="' || CATEGORY  || '">' || CATEGORY 
+  ELSE '<option style="background-color:#dcdcdc;" value="' || CATEGORY || '">' || CATEGORY ;
+END
+
+TABLE FILE HOLDCAT
+PRINT OPTS
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE HOLD AS HLDCATG
+END
+-RUN
+
+-HTMLFORM BEGIN
+<html>
+<head>
+<script>
+function moveItems() {
+ from=document.clients.clients;
+ var nbr = &nbrSelected;
+  
+ var startPos = from.options.selectedIndex;
+ for (i=startPos; i<from.options.length;i++) {
+     if (from.options[i].selected) { nbr++; 
+         if (nbr > 25) { alert("A maximum of 25 Categories can be selected.\nOnly the first 25 will be selected."); break;}
+         else {txt = from.options[i].text;  window.opener.pasteCategory(txt);  }
+     }
+ }
+ window.close();
+}
+ 
+</script>
+</head>Select Categories
+<body >
+<form name="clients">
+<table border=0>
+<tr>
+<td>
+<select name="clients" size="8" multiple>
+!IBI.FIL.HLDCATG;
+</select>
+</td>
+</tr>
+<tr>
+<td>&SPC</td>
+</tr>
+<tr>
+<td>
+<input type="button" value="  OK  " onclick="moveItems();">&SPC &SPC
+<input type="button" value="Close" onclick="window.close();">
+</td>
+</tr>
+</table>
+</form>
+</body>
+</html>
+-HTMLFORM END

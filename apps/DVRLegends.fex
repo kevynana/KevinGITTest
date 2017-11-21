@@ -1,0 +1,150 @@
+-****************************************************************************************
+-*DVRLegends.fex - GET airline codes from AirHold3 for Air Detail (DVRAIRDT.FEX)
+-*                 GET car vendor codes from Carhold3 (DVRCARHOLD3.FEX)
+-*                 GET hotel chain code from HTLHLD   (HVIW22EX.FEX)
+-*                 ADDED service fee to Product Type -DEB - 10/12/12
+-*DATE:  11/26/2008
+-*5/28/14 - DEB - UPDATED LEGENDS TO SHOW NEW FEE CODES
+-*9/18/14 - joy - Added Limo to the types
+-*03/09/17 - DLV - S-22486 - Updated IMAGE define to use server report is being ran from
+-****************************************************************************************
+-INCLUDE SETECHO
+SET ASNAME = ON
+
+-SET &HOLDFILE = '&&WEB_PATH.EVAL' || 'LEGENDS.FOC';
+-SET &MST = '&&WEB_PATH.EVAL' || 'LEGENDS.MAS';
+-DOS COPY D:\TNT\TTRACKER\SYSTEM\DATA\LEGENDS.MAS  &MST
+-RUN
+CREATE FILE LEGENDS
+-RUN
+
+MODIFY FILE LEGENDS
+FIXFORM FLAG1/1 FLAG2/1 CODE/4 X/1 DESC/45
+MATCH FLAG1 FLAG2 CODE
+  ON MATCH REJECT
+  ON NOMATCH INCLUDE
+DATA
+A1     
+A2Code Cost Saving Method
+B1     
+B2Code Product Type
+B3A    Air
+B3B    Air Service Fee
+B3C    Car
+B3D    Car Service Fee
+B3H    Hotel
+B3I    Hotel Service Fee
+B3R    Rail
+B3L    Limo
+B3M    Miscellaneou Service Fee
+
+C1     
+C2Code Transaction Type
+C3SAL  Sale, new transaction
+C3EXC  Exchange, difference from previous sale
+C3REF  Refund, reverses previous sale
+
+D1     
+D2Code Status
+D3O    Open, i.e. not exchanged, refunded or voided
+D3E    Exchanged, applied to another tranaction
+D3R    Refunded transaction
+D3V    Voided transaction
+
+END
+-RUN
+
+JOIN REFUSE_CODE IN DVRAIRCS TO REFUSAL_CODE IN REFUSAL
+DEFINE FILE DVRAIRCS
+  FLAG1/A1 = 'A';
+  FLAG2/A1 = '3';
+  CODE/A4 = REFUSE_CODE;
+  DESC/A45 = REFUSAL_DESC;
+END
+TABLE FILE DVRAIRCS
+SUM DESC
+BY FLAG1
+BY FLAG2
+BY CODE AS 'Code' 
+ON TABLE HOLD 
+END
+-RUN
+MODIFY FILE LEGENDS
+FIXFORM FROM HOLD
+MATCH FLAG1 FLAG2 CODE
+  ON MATCH REJECT
+  ON NOMATCH INCLUDE
+DATA ON HOLD
+END
+-RUN
+
+TABLE FILE LEGENDS
+PRINT *
+ON TABLE HOLD
+END
+-RUN
+
+-SET &RPTTITLE = 'Codes and Descriptions';
+DEFINE FILE HOLD
+  NOWTOD/A8 = HHMMSS (NOWTOD);
+-*IMAGE/A80 = '<img src=HTTPS://www.ettekreview.com/asp/NEW_HDR.jpg>';
+IMAGE/A80 = '<img src=' || '&&SRVR.EVAL' || '/asp/NEW_HDR.PNG>';
+  DESC_FLAG1/A45 = DECODE FLAG1 ('A' 'Cost Savings Method Code' 'B' 'Product Types' 'C' 'Transaction Types' 'D' 'Transaction Status Codes');
+END
+
+TABLE FILE HOLD
+PRINT DESC AS ''
+BY FLAG1 NOPRINT
+BY FLAG2 NOPRINT
+BY CODE AS '' 
+
+ON FLAG1 SUBHEAD
+" "
+"<ST.DESC_FLAG1 "
+
+HEADING
+"<IMAGE>"
+"</5"
+"&RPTTITLE.EVAL"
+" "
+"&&DTDESC.EVAL &&FROMDT - &&TODT " 
+
+&&OUTLINE1
+&&OUTLINE2
+
+ON TABLE SUBFOOT
+
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.200000, RIGHTMARGIN=0.200000, 
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT,FONT=TIMES NEW ROMAN, SIZE=9, COLOR=BLACK, GRID=ON, STYLE=NORMAL,WRAP= OFF, $
+TYPE=TITLE, SIZE=10, STYLE=BOLD+UNDERLINE,  $
+TYPE=HEADING, SIZE=10, STYLE=BOLD, FONT=TIMES NEW ROMAN,$
+TYPE=HEADING, SIZE=14, LINE=8, STYLE=BOLD, FONT=TIMES NEW ROMAN,$
+TYPE=HEADING, SIZE=10, LINE=9, STYLE=BOLD, FONT=TIMES NEW ROMAN,$
+TYPE=SUBHEAD, BY=1, LINE=2, OBJECT=FIELD, ITEM=1, FONT=ARIAL, SIZE=10,STYLE=BOLD+ITALIC+UNDERLINE, $
+TYPE=DATA,FONT=ARIAL,SIZE=9,STYLE=BOLD, WHEN=FLAG2 EQ '2',$
+
+TYPE=FOOTING, SIZE=8, STYLE=BOLD, COLOR=GREY, $
+TYPE=TITLE, STYLE=BOLD, $
+TYPE=SUBFOOT, SIZE=14, STYLE=BOLD, $
+TYPE=SUBTOTAL, SIZE=9, STYLE=BOLD, $
+TYPE=GRANDTOTAL, SIZE=9, STYLE=BOLD, $
+
+TYPE=REPORT, TITLETEXT=&DSC,$
+
+ENDSTYLE
+
+END
+-RUN
+
+-IF &FOCERRNUM EQ 205  OR &LINES EQ 0 THEN GOTO Nolegends1;
+-GOTO XXLEGENDS;
+-Nolegends1
+-SET &TITLETEXT = 'Legends  ';
+-INCLUDE DVRNoRecord
+-XXLEGENDS
+

@@ -1,0 +1,176 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File PASSNGRS.FEX
+-*************************************************************************
+-*DATE         NAME             DESCRIPTION
+-*7/31/00    IBISTL-KR          ADDED DEFINE OF NOWTOD AND
+-*                              REPLACED &FOCSYSTOD WITH HHMMSS SUBROUTINE
+-* ADDED TRANTYPE INCLUDE - JK 12/30/14 STORY ID S-06492
+
+-*************************************************************************
+
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+-TYPE &&OUTPUTDEST
+-IF &&OUTLINE2 EQ 'OFFLINE' THEN GOTO XOFFLINE ELSE GOTO XONLINE;
+
+-XONLINE
+-TYPE Before ONLINE
+ONLINE
+-TYPE After ONLINE
+-RUN
+-GOTO CONT
+
+-XOFFLINE
+-SET &&OUTLINE2 = '';
+-TYPE Before OFFLINE
+OFFLINE
+-TYPE After OFFLINE
+-RUN
+-GOTO CONT
+
+-CONT
+-SET &&RPT_HOLD = 'RPTHOLD';
+
+-TYPE AIRUSE
+EX AIRUSE
+-RUN
+
+EX SELDESC2
+-RUN
+
+DEFINE FILE &&EXTRACT
+  FARE_PAID/P12.2CS = SEG_AMT + SEG_TAX;
+  NET_TKT_CNT/P8CS  = IF (TICKET_CODE EQ '1') AND
+                         (SEG_NBR EQ '01') AND
+                         (FARE_PAID GE 0) AND
+                         (SEG_COUNT EQ 1) AND 
+                         (CONJ_REL EQ 1) THEN 1 ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                         (SEG_NBR EQ '01') AND 
+                         (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                         (SEG_NBR EQ '01') AND
+                         (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  PHN/A14=EDIT(ROLL_PHONE,'9-999-999-9999');
+  PHONE_NUM/A14 = IF ROLL_PHONE EQ '00000000000' THEN ' ' ELSE PHN;
+  CTYST/A18 = ROLL_CITY || (', ' | ROLL_STATE);
+-INCLUDE TRANTYPE  
+END
+-RUN
+
+TABLE FILE &&EXTRACT
+PRINT FARE_PAID
+      NET_TKT_CNT
+      PASSNGR_NAME
+      ROLL_NAME
+      CTYST
+      ROLL_CONTACT
+      PHONE_NUM
+    
+WHERE TRN_DATE GE &&FROMDT.EVAL AND TRN_DATE LE &&TODT.EVAL
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM NET_TKT_CNT FARE_PAID
+BY PASSNGR_NAME
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+DEFINE FILE HOLD1
+PSNGR_CNT/P9=IF NET_TKT_CNT GE 1 THEN 1 ELSE 0;
+
+-*************************************************************************
+-*DATE         NAME             DESCRIPTION
+-*7/31/00    IBISTL-KR          ADDED DEFINE OF NOWTOD 
+-*************************************************************************
+NOWTOD/A8 = HHMMSS (NOWTOD);
+END
+-RUN
+
+-INCLUDE HEADRSET
+
+TABLE FILE HOLD1
+-INCLUDE HEADER
+"&&SUBHEAD </2"
+
+SUM 
+    &&SUMM_SUBJ1
+    &&SUMM_SUBJ2
+    &&SUMM_SUBJ3
+    &&SUMM_SUBJ4
+    &&SUMM_SUBJ5
+    &&SUMM_SUBJ6
+    &&SUMM_SUBJ7
+    &&SUMM_SUBJ8
+    &&SUMM_SUBJ9
+    &&SUMM_SUBJ10
+-*BY
+   &&SUMM_TARG1 
+   &&SUMM_TARG2
+   &&SUMM_TARG3
+   &&SUMM_TARG4
+   &&SUMM_TARG5
+   &&SUMM_TARG6
+   &&SUMM_TARG7
+   &&SUMM_TARG8
+   &&SUMM_TARG9
+   &&SUMM_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+-*************************************************************************
+-*DATE         NAME             DESCRIPTION
+-*7/31/00    IBISTL-KR          REPLACED &FOCSYSTOD WITH NOWTOD
+-*************************************************************************
+FOOTING BOTTOM
+"&&FOOTER1"
+"&&FOOTER2"
+"A REPORT FROM eTTek Review RUN ON &DATE AT <NOWTOD" 
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT
+
+-* REJ EX RESTART 
+-*-EXIT

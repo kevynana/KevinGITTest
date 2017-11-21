@@ -1,0 +1,513 @@
+-* Udid Detail Report
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*4/26/2017-JEM-S-33318-updated logic for no records report
+
+
+-IF '&&SETF.EVAL' EQ 'ABEXRRSN' OR 'ALEXRRSN' THEN GOTO SKIPthis;
+
+-INCLUDE RETUDID
+-RUN
+
+
+-SKIPthis;
+ 
+
+SET ASNAMES=ON
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT   AIR_KEY
+        AIRLINE
+        AIRLINE_FEE
+        AIRFEE_CNT	
+        INTL_DOM	
+        AR_BRANCH
+        BASE_FARE
+        BR_CL_IDX 
+        C_ITIN
+        CLASS
+        CLIENT_NUM	
+        COMM_SEG
+        EMB_CNTRY_CODE
+        CPMILE	
+        DISSAVINGS
+        DOC_NUMBER
+        DOC_TYPE
+        DPT_TIME
+        EMB_APT_CD
+        EMB_APT_NM	
+        EMB_CTY_NM
+        EX_RF_FLAG
+        EXCHGS
+        EXCHG_SALE
+        F_EXCH_CNT
+        FARE_BAS		
+        FARE_PAID
+        IFLAG
+        KILO
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        MRK_TKT_CNT
+        NET_COMM	
+        NET_FARE	
+        NET_TKT_CNT
+        NEW_ADV_PURCH
+        NEW_SEG_LOWEST
+        NEW_SEG_MILES
+        NEW_STAY
+        NEW_TRIP_LENGTH
+        PASSNGR_NAME
+        PNR_LOCATOR
+        REF_EXCH_CNT
+        REF_EXCH_CNT2
+        REFUSAL_DESC
+        REFUSE_CODE
+        RTE_APT_CD
+        RTE_APT_NM
+        RTE_CTY_NM	
+        SAVINGS	
+        SEG_AMT	
+        SEG_COUNT	
+        SEG_DISCOUNT	
+        SEG_LOWEST
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY
+        TICKET_BRANCH	
+        TKT_AMOUNT
+        TKT_DATE
+        TKT_NUM	
+        TKT_PURCH
+        TKT_TYPE	
+        TOTAL_FARE	
+        VAL_AIRLINE	
+        VASAVINGS
+        XDPT_DT	
+        XTRAN_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS HOLDONE
+END
+-RUN
+
+
+TABLE FILE &&RPT_HOLD
+SUM DISSAVINGS AS 'DTSAVE'
+    FARE_PAID AS 'TFARE'
+    NEW_SEG_MILES AS 'TMILE'
+    NET_TKT_CNT AS 'TTKT'
+    SEG_LOWEST AS 'TLOW'
+    SEG_AMT AS 'TBASE'
+    REF_EXCH_CNT AS 'TREX'
+    NEW_ADV_PURCH AS 'TADV'
+    BASE_FARE/D12.CS AS 'TBASE'
+    SAVINGS/D12.2CS AS 'TSVGS'
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+MATCH FILE HOLDONE
+PRINT   AIR_KEY
+        AIRLINE
+        AIRLINE_FEE
+        AIRFEE_CNT	
+        INTL_DOM	
+        AR_BRANCH
+        BASE_FARE
+        BR_CL_IDX  
+        C_ITIN
+        CLASS
+        CLIENT_NUM	
+        COMM_SEG
+        EMB_CNTRY_CODE
+        CPMILE	
+        DISSAVINGS
+        DOC_NUMBER
+        DOC_TYPE
+        DPT_TIME
+        EMB_APT_CD
+        EMB_APT_NM	
+        EMB_CTY_NM
+        EX_RF_FLAG
+        EXCHGS
+        EXCHG_SALE
+        F_EXCH_CNT
+        FARE_BAS		
+        FARE_PAID
+        IFLAG
+        KILO
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        MRK_TKT_CNT
+        NET_COMM	
+        NET_FARE	
+        NET_TKT_CNT
+        NEW_ADV_PURCH
+        NEW_SEG_LOWEST
+        NEW_SEG_MILES
+        NEW_STAY
+        NEW_TRIP_LENGTH
+        PASSNGR_NAME
+        PNR_LOCATOR
+        REF_EXCH_CNT
+        REF_EXCH_CNT2
+        REFUSAL_DESC
+        REFUSE_CODE
+        RTE_APT_CD
+        RTE_APT_NM
+        RTE_CTY_NM	
+        SAVINGS	
+        SEG_AMT	
+        SEG_COUNT	
+        SEG_DISCOUNT	
+        SEG_LOWEST
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY
+        TICKET_BRANCH	
+        TKT_AMOUNT
+        TKT_DATE
+        TKT_NUM	
+        TKT_PURCH
+        TKT_TYPE	
+        TOTAL_FARE	
+        VAL_AIRLINE	
+        VASAVINGS
+        XDPT_DT	
+        XTRAN_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT DTSAVE
+      TFARE
+      TLOW
+      TMILE
+      TTKT
+      TBASE
+      TREX
+      TADV
+      TSVGS
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT   AIR_KEY
+        AIRLINE
+        AIRLINE_FEE
+        AIRFEE_CNT	
+        INTL_DOM	
+        AR_BRANCH
+        BASE_FARE
+        BR_CL_IDX    
+        C_ITIN
+        CLASS
+        CLIENT_NUM	
+        COMM_SEG
+        EMB_CNTRY_CODE
+        CPMILE	
+        DISSAVINGS
+        DOC_NUMBER
+        DOC_TYPE
+        DPT_TIME
+        EMB_APT_CD
+        EMB_APT_NM	
+        EMB_CTY_NM
+        EX_RF_FLAG
+        EXCHGS
+        EXCHG_SALE
+        F_EXCH_CNT
+        FARE_BAS		
+        FARE_PAID
+        IFLAG
+        KILO
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        MRK_TKT_CNT
+        NET_COMM	
+        NET_FARE	
+        NET_TKT_CNT
+        NEW_ADV_PURCH
+        NEW_SEG_LOWEST
+        NEW_SEG_MILES
+        NEW_STAY
+        NEW_TRIP_LENGTH
+        PASSNGR_NAME
+        PNR_LOCATOR
+        REF_EXCH_CNT
+        REF_EXCH_CNT2
+        REFUSAL_DESC
+        REFUSE_CODE
+        RTE_APT_CD
+        RTE_APT_NM
+        RTE_CTY_NM	
+        SAVINGS	
+        SEG_AMT	
+        SEG_COUNT	
+        SEG_DISCOUNT	
+        SEG_LOWEST
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY
+        TICKET_BRANCH	
+        TKT_AMOUNT
+        TKT_DATE
+        TKT_NUM	
+        TKT_PURCH
+        TKT_TYPE	
+        TOTAL_FARE	
+        VAL_AIRLINE	
+        VASAVINGS
+        XDPT_DT	
+        XTRAN_DT
+        LEVEL_DESC
+        XPSNGR_NM
+        TKT_SORT
+        TRN_DATE
+        SEG_NBR
+        DTSAVE
+        TFARE
+        TBASE
+        TLOW
+        TMILE
+        TTKT
+        TREX
+        TADV
+        TSVGS
+BY AIR_KEY
+ON TABLE HOLD AS AIRHOLD3  
+END
+-RUN
+
+
+-IF '&&SETF.EVAL' EQ 'ABEXRRSN' OR 'ALEXRRSN' THEN GOTO EXALL ELSE 
+-IF '&&SETF.EVAL' EQ 'JCEXRSN' THEN GOTO JOINT ELSE GOTO Next;
+
+
+-EXALL
+
+EX UDALLDT
+-RUN
+
+-IF &&NORECALL EQ 'Y' THEN GOTO NORECORDS;
+
+
+-GOTO Next;
+
+-JOINT
+EX UDJCDT
+-RUN
+
+
+-Next;
+ 
+ 
+
+
+DEFINE FILE FINALHLD
+-INCLUDE GNDEFINE
+EXRRSN/A53 = IF TKT_SORT NE LAST TKT_SORT THEN EXRSN_DSC ELSE ' ';
+
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+
+END
+-IF '&&SETF.EVAL' NE 'ALEXRRSN' THEN GOTO NotThis;
+
+-SET &&BREAKOPTION =  'ON LEVEL_DESC RECOMPUTE AS ''TOTAL FOR'' ';
+
+-NotThis
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'FINALHLD';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE FINALHLD
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&BREAKOPTION
+&&ONTABLE1 
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+
+-GOTO XXIT
+
+-NORECORDS
+-SET &INST_KEY = &&IKEY;
+
+TABLE FILE BRPTINST
+PRINT PAIR_DB RPT_GROUP RPT_STREAM GLOBAL_PARM USE_PARM INST_KEY
+WHERE INST_KEY EQ &INST_KEY
+ON TABLE SAVE AS PAIRDB
+END
+-RUN
+
+-READ PAIRDB &PAIRDB.A1. &RPTGRP.A3. &RPTSTREAM.A8. &SETFILE.A8. &VIEW.A8.
+-CLOSE PAIRDB
+ 
+-SET &RPTGRP = '&RPTGRP.EVAL';
+-SET &VIEW = '&VIEW.EVAL';
+-SET &STREAM = '&RPTSTREAM.EVAL';
+
+-SET &HEADER = IF &RPTGRP EQ 'ADD' OR 'CDD' OR 'HDD' THEN 'NORECHDRDD' ELSE 'NORECHDR';
+-RUN
+
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN &HEADER ELSE  
+-              IF &RPTGRP EQ 'ADD' OR 'CDD' OR 'HDD' THEN 'HDREXLSDD' ELSE 
+-              IF &STREAM EQ 'AIR_BNM' THEN 'HDREXLSDD' ELSE 'HDREXLS';
+
+-RUN
+
+
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE 'NORECSTY';
+
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+-RUN
+
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE &&PAHDR
+PRINT EMPTY AS 'REPORT,MESSAGE'
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+ 
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-XXIT

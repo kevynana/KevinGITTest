@@ -1,0 +1,126 @@
+-***************************************************
+-* File Name: QRCARSM.FEX
+-* Set up to run Car Summary
+-* Top 10 vendors and top 10 cities.
+-***************************************************
+-INCLUDE SETECHO
+
+-GOTO DEB;
+-SET &&AUSEPASS = &&WEB_PATH || 'AUSEINCL.FTM';
+-SET &&CUSEPASS = &&WEB_PATH || 'CUSEINCL.FTM';
+-SET &&HUSEPASS = &&WEB_PATH || 'HUSEINCL.FTM';
+-SET &&LUSEPASS = &&WEB_PATH || 'LUSEINCL.FTM';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+FILEDEF CUSEINCL DISK &&CUSEPASS
+FILEDEF HUSEINCL DISK &&HUSEPASS
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-DEB
+EX SETDBLS SETFILE=&&SETF
+-RUN
+
+ 
+
+ 
+ 
+-***************************************************
+-* get date values from BRPTINST database and
+-* assign to the global variables.
+-***************************************************
+EX QRSetDate
+-RUN
+-***************************************************
+-* reset dates and report type in control file
+-***************************************************
+-*retain current quarter
+-SET &&CQFMDT ='&&FROMDT.EVAL'; 
+-SET &&CQTODT ='&&TODT.EVAL'; 
+
+-*specify the values for program catqtr
+-SET &&RPTTYP = 'SPD';
+-SET &&SMD = 'S';
+-*reset the date ranges for Trending Data
+-SET &&FROMDT = '&&CYFMDT.EVAL';
+-SET &&TODT = '&&CYTODT.EVAL';
+-SET &&FXDATE = '&&PYFMDT.EVAL';
+-SET &&TXDATE = '&&PYTODT.EVAL';
+ 
+
+-SET &&BASEROLL = 'BOOZ-R';
+-SET &&BASECOMP = 'BOOZ';
+-SET &&ROLLFY = '01';
+-SET &&FYFLAG = ' ';
+
+-**************************************************************
+-* START FROM BASE ROLLUP frist
+-* generate include file for database allocation
+-**************************************************************
+-SET &&ROLLUP = '&&BASEROLL.EVAL';
+-SET &&COMPNY = '&&BASECOMP.EVAL';
+EX QRSETBDB
+-RUN
+-***************************************************
+-* generate include file for database allocation
+-***************************************************
+
+EX LIMUSE
+-RUN
+-SET &&INTDOM = 'T'; 
+
+-********************************************************
+-* Execute program to generate data from base rollup
+-********************************************************
+EX QR_EXTRACT_LIMO
+-RUN
+-* initialize the temp file to hold peer group data
+
+EX QR_LIMOT_REPORT
+-RUN
+-QUIT
+
+
+
+ 
+-SET &&LOUT1=IF &&OUTLINE1 CONTAINS 'ONLINE-FMT' OR 'PCHOLD' THEN
+- 'COMPOUND LAYOUT PCHOLD FORMAT ' | '&&OUTFMT.EVAL' ELSE
+- 'COMPOUND LAYOUT HOLD FORMAT ' | '&&OUTFMT.EVAL';
+ 
+-SET &&LOUT2=IF &&OUTLINE1 CONTAINS 'ONLINE-FMT' OR 'PCHOLD' THEN
+- 'ON TABLE PCHOLD FORMAT ' | '&&OUTFMT.EVAL' ELSE
+- 'ON TABLE HOLD AS SAVREP FORMAT ' | '&&OUTFMT.EVAL';
+
+-SET &CAP='QR_LIMOT_LAYOUT' ;
+ 
+
+EX &CAP.EVAL
+-RUN
+
+ 
+
+-GOTO LAST;
+
+-NOREC;
+
+EX CA_NOREC_LAYOUT
+-RUN
+ 
+-LAST;
+
+-IF &&OUTTO EQ 'XB' GOTO SKIP_TRIG;
+-SET &HFILE=&&WEB_PATH || 'SAVREP.' || &&OUTFMT;
+-IF &&OUTTO EQ 'TC' GOTO SRV_SAVE;
+ 
+-GOTO SKIP_TRIG;
+ 
+-SRV_SAVE
+COPY &HFILE &&SAVSUM
+ 
+ 
+-SKIP_TRIG
+SET EMPTYREPORT=OFF
+-RUN
+ 
+-TYPE RESTART
+-* REJ EX RESTART
+-*-EXIT
+ 

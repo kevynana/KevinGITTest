@@ -1,0 +1,321 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+-INCLUDE SETECHO
+-*                     FOCEXEC: CVIEW1DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*9/24/04    DEB                ADDED CODE FOR GLOBAL CURRENCY
+-* 3/2/05    DV         CREATED NEW VIEW FOR TRANSACTION SUM BY BOOKING AGENT
+-* 5/31/16 - DLV - S-19623      Carried through BKGS2 for gross transactions
+
+-**************************************************************************
+
+
+
+
+SET ASNAMES=ON
+-RUN
+
+TABLE FILE CARHOLD2
+PRINT ACCT_FLAG
+  AGENT_NUM	
+  AIRPORT_CODE	
+  AIRPORT_NAME
+  ALPHA_RATE
+  AR_BRANCH
+  AROLL_LEV4
+  AROLL_LEV5
+  AROLL_LEV6
+  AROLL_LEV7
+  AROLL_LEV8
+  AROLL_LEV9	
+  AVG_DLY_RATE 
+  BOOKINGS
+  BKGS2
+  BR_CL_IDX	
+  CAR
+  CAR_CAT	
+  CAR_DESC
+  CAR_DSC 
+  CAR_KEY	
+  CAR_RATE 	
+  CAR_TOT
+  CAR_TYPE 	
+  CARD_NUM	
+  CARD1_NUM	
+  CCR_CONFIRM
+  CREDIT_CARD
+  CURR_DATE
+  DAILY_RATE 	
+  DAY_OF_WK
+  DOD_TYPE	
+  DROP_CITY	
+  DROP_CTY_NAME	
+  DROP_DATE 	
+  DROP_DAY
+  DROP_OFF_DT
+  FOP2
+  GROSS_BOOK
+  IBOOK
+  INV_DATE
+  INV_MONTH
+  INV_MY	
+  INVOICE_DATE	
+  INVOICE_NUM 	
+  LEV_2 	
+  LEVEL1 	
+  LEVEL2	
+  LEVEL3 
+  LVL3	
+  MIDBOOK
+  MID_AMT
+  MID_DAYS
+  NBR_DAYS
+  NMBR_DAYS
+  NODAYS 
+  NONMIDBOOK
+  NONMID_AMT
+  NONZEBOOK
+  NONMID_DAYS
+  NONZE_AMT
+  NONZE_DAYS	
+  NUM_CARS 	
+  NUM_DAYS	
+  PASSNGR_NAME
+  PICK_CTY_NAME	
+  PICK_DAY
+  PICK_UP_DT	
+  PICKUP_CITY	
+  PICKUP_DATE	
+  PNR_LOCATOR 	
+  PROD_COD
+  REFUSAL_DESC	
+  REFUSE_CD	
+  REFUSE_KEY 	
+  RENTAL_AMT/D12.2
+  RENTAL_DAYS	
+  RESV_BRANCH
+  RNTL_TYP	
+  RSNCDE
+  STATE_CODE
+  STD_RATE 	
+  TICKET_BRANCH	
+  TKT_NUM	
+  VENDOR_CODE	
+  VENDOR_NAME
+  XSPACE
+  ZE_AMT	
+  ZEBOOK
+  ZE_DAYS
+  XLEVEL3
+  XLEV_3
+  NAMEC
+  AMT_RENTL1
+  RATE_DLY1
+BY LEVEL_DESC
+ON TABLE HOLD AS CARHOLD3
+END
+-RUN
+
+
+
+
+
+
+
+-IF &&SETF EQ 'GCCARDTL' OR 'ABCARDTL' OR 'ABCARTRN' AND 
+-&&CURRENCY NE 'USD' THEN GOTO CARDTL ELSE GOTO CHECK2;
+
+-CARDTL;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = ' TOTAL,AMOUNT, (' | &&CURRENCY || ')';
+-SET &CAVG_CUR = 'AVG,DAILY,RATE, (' | &&CURRENCY || ')';
+-SET &&PRINT4 ='AMT_RENTL1/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+-SET &&PRINT5='COMPUTE GCAVDR/D16.2CS=IF (AMT_RENTL1 LT 0) AND';
+-SET &&PRINT6='(NBR_DAYS LT 0) THEN ((AMT_RENTL1/NBR_DAYS)*(-1)) ELSE';
+-SET &&PRINT7='IF ((NBR_DAYS LT 1) AND (NBR_DAYS GT (-1))) THEN 0 ELSE';
+-SET &&PRINT8='AMT_RENTL1/NBR_DAYS; AS ' | '''&CAVG_CUR.EVAL''';
+
+-GOTO NEXT;
+
+-CHECK2;
+
+-IF &&SETF EQ 'ABCRC' AND &&CURRENCY NE 'USD' THEN GOTO CRC ELSE GOTO CHECK3;
+
+-CRC;
+-SET &&SUBHEAD = <NAMEC;
+-SET &DRTE_CUR = 'DAILY,RATE, (' | &&CURRENCY || ')';
+-SET &TAMT_CUR = 'TOTAL,AMOUNT, (' | &&CURRENCY || ')';
+-SET &&PRINT2 ='RATE_DLY1/D16.2CS AS ' | '''&DRTE_CUR.EVAL''';
+-SET &&PRINT3 ='AMT_RENTL1/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+-GOTONEXT;
+
+-CHECK3;
+
+-IF &&SETF EQ 'ABCVENDR' AND &&CURRENCY NE 'USD' THEN GOTO CVNDR ELSE 
+-GOTO NEXT;
+
+-CVNDR;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = 'TOTAL,AMOUNT, (' | &&CURRENCY || ')';
+-SET &&PRINT2 ='AMT_RENTL1/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+-SET &&PRINT3 ='PCT.AMT_RENTL1/D8.1 AS ''% OF,TOTAL,RENTAL,AMOUNT''';
+
+-NEXT;
+
+
+-JOIN
+JOIN AGENT_NUM IN CARHOLD3 TO AGENT IN AGENT AS J1
+-RUN
+ 
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-* 
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-* -SET &&DRILLRPT = &&RPT_HOLD;
+-SET &&DRILLRPT = CARHOLD3;
+
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+-* DEFINE FILE &&RPT_HOLD ADD
+DEFINE FILE CARHOLD3 ADD
+NOWTOD/A8 WITH AIRPORT_CODE = HHMMSS (NOWTOD);
+MDYY_PICK_DT/MDYY = PICK_UP_DT;
+A8PICK_UP_DT/A8MDYY  = MDYY_PICK_DT;
+XPICK_DTA/A10 = EDIT(A8PICK_UP_DT,'99/99/9999');
+
+MDYY_DROP_DT/MDYY =DROP_OFF_DT;
+A8DROP_DT/A8MDYY  = MDYY_DROP_DT;
+XDROP_DTA/A10 = EDIT(A8DROP_DT,'99/99/9999');
+
+END
+
+ 
+
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+ 
+-* TABLE FILE &&RPT_HOLD
+TABLE FILE CARHOLD3
+
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-* ADDED ON 02/06/2003
+  COMPUTE AVGDR/D12.2CS=IF (RENTAL_AMT LT 0) AND (NBR_DAYS LT 0)
+    THEN ((RENTAL_AMT/NBR_DAYS) * (-1)) ELSE  IF ((RENTAL_AMT LT 1) AND
+    (RENTAL_AMT GT (-1))) THEN 0 ELSE 
+    (RENTAL_AMT/NBR_DAYS); NOPRINT
+  
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+
+-INCLUDE CARRATE
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+ 
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+
+-*
+&&OUTLINE1 
+&&OUTPUTDEST
+&&OUTLINE2
+END 
+-RUN
+

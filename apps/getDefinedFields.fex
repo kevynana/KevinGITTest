@@ -1,0 +1,15 @@
+-**************************************************************************************************
+-* Program Name: getDefinedFields.fex
+-* Used in Adhoc Reports in eTTekReview
+-*
+-**************************************************************************************************
+-INCLUDE SETECHO 
+TABLE FILE ADHOCCOMPUTEDFIELDS
+PRINT COLUMN_NAME DATA_FMT EXPRESSION
+WHERE USE_PARM EQ '&&VIEW.EVAL' AND COLUMN_NAME EQ '&COLUMNNAME.EVAL'
+ON TABLE SAVE AS COLMCOMP
+END
+-RUN
+
+-READ COLMCOMP &COLUMNNAME.20. &DATAFMT.10. &EXPR.200.
+-SET &DCOLUMN.&INDX = '&COLUMNNAME.EVAL' || '/&DATAFMT.EVAL' || '=' | '&EXPR.EVAL';

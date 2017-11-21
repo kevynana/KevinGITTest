@@ -1,0 +1,33 @@
+-INCLUDE SETECHO
+-*SET TEMPERASE = OFF
+-* Focexec is used to help debug problems with the eTTek Review
+-* reports.  This focexec will simulate the code that is executed
+-* through Report Caster for jobs that are scheduled in a 'Run Now'
+-* state.  Once the variables are supplied this job can be executed 
+-* multiple times without having to log back into the User Interface
+-* of the application and reschedule the report(s).
+-*
+-*
+-* Changable variables
+-*
+-SET &pyfm='01/01/2001';
+-SET &ix_pm='MUTM  TT20010417115803';
+-SET &cyfm='01/01/2002';
+-SET &pmto='12/31/2001';
+-SET &outfmt='PDF';
+-SET &cmto='12/31/2002';
+-SET &outto='TC';
+-SET &sk_pm='MUTM-R  MUTM  CO20000204093507';
+-SET &se_pm='TSMUOM';
+-SET &rp_pm='STS';
+-SET &pmfm='12/01/2001';
+-SET &cmfm='12/01/2002';
+-SET &in_pm=
+- 'MUTM-R  MUTM  CO20000204093507STSMaster           MUTM  CO20000204095531';
+-SET &st_pm='TRVLSUMB';
+-SET &sn_pm='Monthly travel summaries';
+-SET &pyto='12/31/2001';
+-SET &cyto='12/31/2002';
+-SET &rt_pm='Mutual of Omaha  KP158287  first page';
+
+-INCLUDE WRUNINDV

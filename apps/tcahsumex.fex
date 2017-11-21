@@ -1,0 +1,112 @@
+-*5/12/15 JEK STORY ID S-08688 Created for new hotel attachment report
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT
+
+
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+TKT_PURCH1/P8.2       = IF (TICKET_CODE EQ '1') AND
+                            (SEG_NBR EQ '01') AND
+                            (FARE_PAID GE 0) AND
+                            (SEG_COUNT EQ 1) AND 
+                            (CONJ_REL EQ 1) THEN 1 ELSE 0;
+-INCLUDE TRANTYPE
+
+TT_PUR/P12 = IF EX_FLAG EQ 'E' THEN TKT_PURCH1 ELSE 
+               IF SALES_FLAG EQ 'S' THEN TKT_PURCH1 ELSE 0;
+               
+TT_PURHA/P12 = IF HOTEL_FLAG NE ' ' THEN TT_PUR ELSE 0;
+
+TT_PURNHA/P12 = IF HOTEL_FLAG EQ ' ' THEN TT_PUR ELSE 0;               
+
+
+ROLLCD/A8 = '&&ROLL';
+
+          
+END
+
+TABLE FILE &&EXTRACT
+SUM TT_PUR 
+    TT_PURHA
+    TT_PURNHA
+BY ROLLCD
+-INCLUDE &AIRDATES
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TCASUM 
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+
+
+-*========================================================================
+-*   PROCESS EXTRACTED DATA FROM ABOVE
+-*========================================================================
+
+TABLE FILE TCASUM
+SUM TT_PUR 
+    TT_PURHA
+    TT_PURNHA
+BY ROLLCD
+ON TABLE HOLD AS TCAS
+END
+-RUN
+
+
+DEFINE FILE TCAS
+ NMB/I5 = NMB + 1;
+END
+
+TABLE FILE TCAS
+PRINT TT_PUR 
+      TT_PURHA
+      TT_PURNHA
+BY ROLLCD
+ON TABLE HOLD AS TCA1
+END
+-RUN
+
+
+MODIFY FILE TC_AHATT
+LOG DUPL MSG OFF
+LOG NOMATCH MSG OFF
+FIXFORM FROM TCA1
+MATCH ROLLCD 
+ON NOMATCH INCLUDE
+ON MATCH REJECT
+DATA ON TCA1
+END
+-RUN
+-GOTO NEXTONE
+
+
+-NEXTONE
+

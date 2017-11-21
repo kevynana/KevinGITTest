@@ -1,0 +1,460 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File AIREXTRT.FEX
+-********************************************************************
+-* This program extracts data for the Airline Segment Analysis
+-********************************************************************
+-* MODIFICATIONS
+-* 4/29/2002 CHANGED MRK_TKT_CNT DEFINE TO CORRECTLY BACK OUT PARTIAL
+-*           REFUNDS AND EXCHANGES SC DB
+-* 6/28/02   ADDED DEFINE FOR NEW_SEG_AMT AND NET_COMM - DB
+-* 6/10/03  Added Defines for Base_fare/Base_fare1/Base_fare2 - Joy
+-* 8/15/03  ADDED AGENT_NUM  - DEB
+-* 9/25/03  ADDED SEG_COUNT EMB_APT_NM RTE_APT_NM AND SEG_CNT DEFINE - DEB
+-* 11/26/03 ADDED CGBOOK DEFINE
+-* 12/31/03 ADDED LEVEL3
+-* 1/12/04  ADDED DEFINE MILEAGE/CARRIED THROUGH SEG_MILES - JOY
+-* 1/15/04  ADDED TOT_TNT_FEE SEG_COM
+-* 1/21/04  ADDED BR_CL_IDX
+-* 2/10/04   ADDED DFARE DTKT_CNT IFARE ITKT_CNT TRAN_MY DEFINE - DEB
+-* 2/23/04  ADDED LEVEL1 JK 
+-* 2/23/04  ADDED AROLL_LEV4 JK
+-* 4/27/04  Added defines for NW special Fares
+-* 5/04/04  ADDED AL_TKTNUM DEFINE ADDED TOUR_CODE
+-* 7/22/04  ADDED EMB_CNTRY_CD AS NAME JK
+-* 8/23/04  ADDED VALAS AND VALAA DEFINE   ADDED FLIGHT DV
+-* 9/21/04  Changed the class_cat define to include class after the category
+-*          so that the other column can be drillable JK 
+-*11/10/04  ADDED CODE FOR GLOBAL CURRENCY
+-*12/21/04  CHANGED CGBOOK DEFINE TO INCLUDE 'J' DOD_TYPE - DV
+-* 6/14/04  ADDED ORG_APC DST_APC
+-*10/11/05  ADDED DOD_TYPE H TO CGBOOK DEFINE
+-*12/16/08  ADDED ANONSTP DEFINE - JK
+-*02/28/13  CHANGED CLASS_CAT DEFINE DUE TO CLASS CATEGORY CHANGES - DV
+-*1/24/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+-*07/08/14  ADDED DISSAVINGS DEFINE - DV
+-*12/10/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+
+-********************************************************************
+-INCLUDE SETECHO
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+
+-SET &&IDLEVELBREAK = '';
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+DEFINE FILE &&EXTRACT
+ANONSTP/A6 = EDIT(ANON_STP, '999999');
+BASE_FARE/D12.2CS = SEG_AMT;
+-*CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST CLASS'     'C' 'COACH CLASS'   
+-*                              'D' 'DISCOUNT CLASS'  'B' 'BUSINESS CLASS'
+-*                              ' ' 'OTHER CLASS');
+CLASS_CAT/A21 = DECODE CL_CAT ('F' 'FIRST CLASS'     'P' 'PREMIUM ECONOMY CLASS'   
+                              'D' 'DEFAULT CLASS'  'B' 'BUSINESS CLASS'
+                              'E' 'ECONOMY CLASS'   'U'  'UPGRADE' 
+                              ' ' 'DEFAULT CLASS');
+                              
+CGBOOK/A11 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'ONLINE' ELSE 'TRADITIONAL'; 
+ 
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+LEVEL_DESC1/A80 = &&LDESC;
+GEOX/A65 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$99999999999999999999999999999999999999999999999999999999999999999');
+CTRX/A65 =  EDIT(TKT_MAIN.CTRY_COD, 
+'$$$99999999999999999999999999999999999999999999999999999999999999999');
+GEO1/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO2/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO3/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO4/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO5/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO6/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO7/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO8/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO9/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO10/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO11/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO12/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$');
+GEO13/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$');
+GEO14/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$');
+GEO15/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$');
+GEO16/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$');
+GEO17/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999');
+
+MILEAGE/A12 = IF (SEG_MILES GE 0) AND (SEG_MILES LE 2549) OR
+                 (SEG_MILES LE 0) AND (SEG_MILES GE (-2549)) THEN '0 - 2549'
+         ELSE IF (SEG_MILES GE 2550) AND (SEG_MILES LE 3549) OR
+                 (SEG_MILES LE (-2550)) AND (SEG_MILES GE (-3549)) THEN 
+                 '2550 - 3549' 
+                 ELSE '3500 +';
+MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+NEW_SEG_AMT/D12.2CS = SEG_AMT;
+NET_COMM/D12.2S = (SEG_AMT - SEG_COM);
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+NEW_ADV_PURCH/D9    = ADV_PURCH;
+NEW_SEG_MILES/D9= SEG_MILES;
+OCTRY/A2 = EDIT(TKT_MAIN.CTRY_COD, '99');
+OGZONE/A3 = EDIT(TKT_MAIN.GEO_ZONE, '999');
+SEG_CNT/D8CS         = SEG_COUNT;
+TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                           (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' '; 
+TRAN_MONTH/MT        = TRN_DATE;
+TRAN_MY/MTYY         = TRN_DATE;  
+XDPT_DT/MDYY         = DPT_DATE;
+XFST_DPT/MDYY = FST_DPT_DATE;
+XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+XTRAN_DT/MDYY        = TRN_DATE;
+UPFARE/A20 = IF (AIRLINE EQ 'NW') AND (FARE_BAS CONTAINS 'BIZ' OR 'BZ' 
+                OR '26' OR '27' OR 'UP') THEN 'UP SPECIAL FARES' ELSE CLASS;
+VALAS/A1 = IF (VAL_AIRLINE EQ 'AA') AND 
+                (FLIGHT GE '6700') AND
+                (FLIGHT LE '6999') THEN 'Y' ELSE 'N';
+VALAA/A1 = IF (VAL_AIRLINE EQ 'AS') AND
+                (FLIGHT GE '1000') AND
+                (FLIGHT LE '1999') THEN 'Y' ELSE 'N'; 
+            
+
+-* DEFINES ON PREVIOUS DEFINES
+BASE_FARE1/D12.2CS = IF (CLASS NE 'Q' OR 'V' OR 'N' OR 'L') THEN
+                        BASE_FARE ELSE 0;
+BASE_FARE2/D12.2CS = IF (CLASS EQ 'Q' OR 'V' OR 'N' OR 'L') THEN
+                        BASE_FARE ELSE 0;
+DFARE/D12.2CS = IF AIR_MAIN.INTL_DOM EQ 'D' THEN FARE_PAID ELSE 0;
+IFARE/D12.2CS = IF AIR_MAIN.INTL_DOM EQ 'I' THEN FARE_PAID ELSE 0;
+DTKT_CNT/D8CS = IF AIR_MAIN.INTL_DOM EQ 'D' THEN NET_TKT_CNT ELSE 0;
+ITKT_CNT/D8CS = IF AIR_MAIN.INTL_DOM EQ 'I' THEN NET_TKT_CNT ELSE 0;
+GEO_FLAG/A1 = IF (GEO1 EQ 'USA' OR 'EUR') AND 
+  (GEO2 EQ 'USA' OR 'EUR' OR ' ') AND 
+  (GEO3 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO4 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO5 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO6 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO7 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO8 EQ 'USA' OR 'EUR' OR ' ') AND 
+  (GEO9 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO10 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO11 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO12 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO13 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO14 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO15 EQ 'USA' OR 'EUR' OR ' ') AND
+  (GEO16 EQ 'USA' OR 'EUR' OR ' ') AND 
+  (GEO17 EQ 'USA' OR 'EUR' OR ' ') THEN 'Y' ELSE 'N';
+AL_TKTNUM/A13 = AIRLINE.AIRLINE_NUM||TKT_NUM;
+
+-* MOFO ANA AIRLINES DEFINE TO BLANK OUT ALN NAMES
+MFNH/A12 = IF AIRLINE EQ 'NH' THEN AIRLINE_NAME ELSE 'OTHER';
+DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+ -INCLUDE IDLEVDEFINE 
+                        
+END
+
+TABLEF FILE &&EXTRACT
+PRINT
+  AGENT_NUM
+  AIR_KEY	
+  AIR_MAIN.INTL_DOM
+  AIRLINE	
+  AIRLINE_NAME
+  AL_TKTNUM
+  AROLL_LEV4
+  BASE_FARE1
+  BASE_FARE2
+  BR_CL_IDX
+  CGBOOK
+  CITYPAIR.EMBARK      AS 'EMB_APT_CD'  
+  CL_CAT	
+  CLASS	
+  CLASS_CAT
+  DISSAVINGS
+  DFARE
+  DOC_TYPE
+  DST_APC
+  DPT_TIME
+  DTKT_CNT
+  EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'	
+  EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'	
+  EMB_CTY.COUNTRY_CODE AS 'EMB_CNTRY_CODE'
+  FARE_PAID
+  FARE_BAS
+  FLIGHT
+  IFARE
+  ITKT_CNT	
+  LEVEL_DESC
+  LEVEL1
+  LEVEL3
+  MILEAGE
+  MRK_TKT_CNT
+  NET_COMM
+  NEW_ADV_PURCH
+  NEW_SEG_AMT
+  NET_TKT_CNT
+  NEW_SEG_MILES
+  MFNH
+  ORG_APC
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'	
+  RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'
+  SEG_CNT
+  SEG_COM
+  SEG_COUNT
+  SEG_MILES
+  SEG_NBR
+  TOT_TNT_FEE
+  TOUR_CODE
+  TRAN_MONTH
+  TRAN_MY
+  TKT_DATE	
+  TKT_NUM	
+  TKT_SORT
+  TKT_TYPE	
+  TRN_DATE
+  UPFARE
+  VAL_AIR.AIRLINE_NAME AS 'VALAIR'
+  XDPT_DT
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT	
+  
+-INCLUDE &AIRDATES
+
+WHERE VOID_DATE EQ 0
+
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS ACLASS
+END
+-RUN
+
+ 
+
+TABLE FILE ACLASS
+PRINT
+  AGENT_NUM
+  AIR_KEY	
+  INTL_DOM
+  AIRLINE	
+  AIRLINE_NAME
+  AL_TKTNUM
+  AROLL_LEV4
+  BASE_FARE1
+  BASE_FARE2
+  BR_CL_IDX
+  CGBOOK	
+  CL_CAT	
+  CLASS	
+  CLASS_CAT
+  DFARE	
+  DISSAVINGS
+  DOC_TYPE
+  DPT_TIME
+  DST_APC
+  DTKT_CNT
+  EMB_APT_CD
+  EMB_APT_NM	
+  EMB_CTY_NM	
+  EMB_CNTRY_CODE
+  FARE_PAID
+  FARE_BAS
+  FLIGHT
+  IFARE
+  ITKT_CNT	
+  LEVEL_DESC
+  LEVEL1
+  LEVEL3
+  MFNH
+  MILEAGE
+  MRK_TKT_CNT
+  NET_COMM
+  NEW_SEG_AMT
+  NET_TKT_CNT
+  NEW_ADV_PURCH
+  NEW_SEG_MILES
+  ORG_APC
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT_NM	
+  RTE_CTY_NM
+  SEG_CNT
+  SEG_COM
+  SEG_COUNT
+  SEG_MILES
+  SEG_NBR
+  TOT_TNT_FEE
+  TOUR_CODE
+  TRAN_MONTH
+  TRAN_MY
+  TKT_NUM	
+  TKT_SORT
+  TKT_TYPE	
+  TRN_DATE
+  UPFARE
+  VALAIR
+  XDPT_DT
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT
+BY TKT_DATE
+ON TABLE HOLD AS AIRCLASS FORMAT FOCUS INDEX TKT_DATE
+END
+-RUN
+
+-* Global Reporting JOIN
+JOIN AIRCLASS.TKT_DATE IN AIRCLASS TO GLOBAL.DATE IN GLOBAL AS J1
+
+
+DEFINE FILE AIRCLASS
+NAMEC/A30 = CNAME;
+
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+CURR1X/D20.6 = 1 / USDPU ;
+
+-* DEFINES ON PREVIOUS DEFINES
+PAID_FAREX/D20.6C = FARE_PAID * CURR1X;
+NEW_SEGAX/D20.6C = NEW_SEG_AMT * CURR1X;
+
+-* DEFINES ON PREVIOUSLY DEFINES DEFINES
+
+PAID_FARE1/D20.6C = PAID_FAREX;
+NEW_SEGA1/D20.6C = NEW_SEGAX;
+END
+-RUN
+
+TABLE FILE AIRCLASS
+PRINT
+  AGENT_NUM
+  AIR_KEY	
+  INTL_DOM
+  AIRLINE	
+  AIRLINE_NAME
+  AL_TKTNUM
+  AROLL_LEV4
+  BASE_FARE1
+  BASE_FARE2
+  BR_CL_IDX
+  CGBOOK	
+  CL_CAT	
+  CLASS	
+  CLASS_CAT
+  DFARE
+  DISSAVINGS
+  DOC_TYPE
+  DPT_TIME
+  DST_APC
+  DTKT_CNT
+  EMB_APT_CD
+  EMB_APT_NM	
+  EMB_CTY_NM	
+  EMB_CNTRY_CODE
+  FARE_PAID
+  FARE_BAS
+  FLIGHT
+  IFARE
+  ITKT_CNT	
+  LEVEL_DESC
+  LEVEL1
+  LEVEL3
+  MFNH
+  MILEAGE
+  MRK_TKT_CNT
+  NAMEC
+  NET_COMM
+  NEW_ADV_PURCH
+  NEW_SEG_AMT
+  NET_TKT_CNT
+  NEW_SEG_MILES
+  ORG_APC
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT_NM	
+  RTE_CTY_NM
+  SEG_CNT
+  SEG_COM
+  SEG_COUNT
+  SEG_MILES
+  SEG_NBR
+  TOT_TNT_FEE
+  TOUR_CODE
+  TRAN_MONTH
+  TRAN_MY
+  TKT_DATE
+  TKT_NUM	
+  TKT_SORT
+  TKT_TYPE	
+  TRN_DATE
+  UPFARE
+  VALAIR
+  XDPT_DT
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT
+  PAID_FAREX/D16.2CS
+  NEW_SEGAX/D16.2CS
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS AIRCLS
+END
+-RUN	
+
+
+

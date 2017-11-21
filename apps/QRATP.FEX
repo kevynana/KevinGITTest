@@ -1,0 +1,85 @@
+-***************************************************
+-* Set up to run Average Ticket Price
+-* -IF &&BASEROLL NE &&ROLLUP THEN GOTO NORPTPARMS;
+-* -INCLUDE RPTPARMS
+-* -NORPTPARMS
+-***************************************************
+-INCLUDE SETECHO
+
+-SET &&AUSEPASS = &&WEB_PATH || 'AUSEINCL.FTM';
+-SET &&CUSEPASS = &&WEB_PATH || 'CUSEINCL.FTM';
+-SET &&HUSEPASS = &&WEB_PATH || 'HUSEINCL.FTM';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+FILEDEF CUSEINCL DISK &&CUSEPASS
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+-***************************************************
+-* get date values from BRPTINST database and
+-* assign to the global variables.
+-***************************************************
+EX QRSetDate
+-RUN
+-***************************************************
+-* reset dates and report type in control file
+-***************************************************
+-*specify the values for program catqtr
+-SET &&RPTTYP = 'SPD';
+-SET &&SMD = 'S';
+-*reset the date ranges for Air Spend
+-SET &&FROMDT = '&&CYFMDT.EVAL';
+-SET &&TODT = '&&CYTODT.EVAL';
+-SET &&FXDATE = '&&PYFMDT.EVAL';
+-SET &&TXDATE = '&&PYTODT.EVAL';
+
+-* initialize the temp file to hold peer group data
+CREATE FILE QRATP2
+-RUN
+CREATE FILE QRATP4
+-RUN
+-**************************************************************
+-* LOOP THROUGH ALL THE PEERS SELECTED
+-**************************************************************
+-IF &&TOTPEERS EQ 0 THEN GOTO ALLPEERS;
+-SET &CNT = 1;
+-REPEAT ALLPEERS &&TOTPEERS TIMES
+-SET &&ROLLUP = &&PEERMBR.&CNT;
+-TYPE &&ROLLUP
+
+EX QRSETBDB
+-RUN
+EX AIRUSE
+-RUN
+-IF &FOCERRNUM EQ 36 THEN GOTO INCAPEERS;
+-********************************************************
+-*Execute program to generate data from selected Peers
+-********************************************************
+EX QRATPEX
+-RUN
+-INCAPEERS
+
+-SET &CNT = &CNT + 1;
+-ALLPEERS
+-**************************************************************
+-*RESET rollup_code and comp to the base rollup_code and comp.
+-**************************************************************
+-SET &&ROLLUP = '&&BASEROLL.EVAL';
+-SET &&COMPNY = '&&BASECOMP.EVAL';
+EX QRSETBDB
+-RUN
+
+EX AIRUSE
+-RUN
+-********************************************************
+-* EXECUTE THE PROGRAM TO GENERATE data from the base
+-* rollup
+-********************************************************
+EX QRATBEX
+-RUN
+-********************************************************
+-* EXECUTE THE PROGRAM TO GENERATE final report
+-* after data is put into 1 file
+-********************************************************
+
+EX NQATP
+-RUN

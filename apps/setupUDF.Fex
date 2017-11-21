@@ -1,0 +1,45 @@
+-************************************************************************
+-*  PROGRAM : setupUDIDFiles.FEX                           
+-*    Used one time only to setup all the databases of UDID.
+-*
+-*  Author: Lusheng Si
+-*  Date:   09/21/2005
+-************************************************************************
+-INCLUDE SETECHO
+
+-*create UDID files for this rollup_code
+
+-*destination files
+-SET &DEST_PATN = 'D:\TNT\TTRACKER\DATA\';
+-*source files
+-SET &SRC_PATH = 'D:\TNT\TTRACKER\UDIDFILES\';
+
+-SET &AIR_SRC = &SRC_PATH || 'AIRDUMMY.FOC';
+-SET &CAR_SRC = &SRC_PATH || 'CARDUMMY.FOC';
+-SET &HTL_SRC = &SRC_PATH || 'HTLDUMMY.FOC';
+-SET &UF_SRC = &SRC_PATH ||  'UFDUMMY.FOC';
+
+-SET &AIR_MAS =  &SRC_PATH || 'AIRUDID.MAS';
+-SET &CAR_MAS =  &SRC_PATH || 'CARUDID.MAS';
+-SET &HTL_MAS =  &SRC_PATH || 'HTLUDID.MAS';
+-SET &UF_MAS  =  &SRC_PATH || 'UDFILE.MAS';
+
+-SET &AIR_DST = &DEST_PATN || 'UA' | &&COMP || '.FOC';
+-SET &CAR_DST = &DEST_PATN || 'UC' | &&COMP || '.FOC';
+-SET &HTL_DST = &DEST_PATN || 'UH' | &&COMP || '.FOC';
+-SET &UF_DST = &DEST_PATN || 'UF' | &&COMP || '.FOC';
+
+-SET &MA_DST = &DEST_PATN || 'UA' | &&COMP || '.MAS';
+-SET &MC_DST = &DEST_PATN || 'UC' | &&COMP || '.MAS';
+-SET &MH_DST = &DEST_PATN || 'UH' | &&COMP || '.MAS';
+-SET &MF_DST = &DEST_PATN || 'UF' | &&COMP || '.MAS';
+
+-DOS COPY &AIR_SRC &AIR_DST
+-DOS COPY &CAR_SRC &CAR_DST
+-DOS COPY &HTL_SRC &HTL_DST
+-DOS COPY &UF_SRC &UF_DST
+
+-DOS COPY &AIR_MAS &MA_DST
+-DOS COPY &CAR_MAS &MC_DST
+-DOS COPY &HTL_MAS &MH_DST
+-DOS COPY &UF_MAS &MF_DST

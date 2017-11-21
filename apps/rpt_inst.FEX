@@ -1,0 +1,895 @@
+-* File RPT_INST.FEX                                                            
+-*                                                                              
+-*****   This routine allows the entry and editing of Report Instances          
+-*****     and their associated fields and properties. Called from              
+-*****     Report Set maintenance.                                              
+-*****   AUTHOR:  Dave Kuzanek                                                  
+-*****   PRODUCTION DATE:                                                       
+-************************************************************************       
+-*DATE          NAME            DESCRIPTION                                     
+-*7/31/00     IBISTL-KR         REPLACED &FOCSYSYYMD WITH TODAY2                
+-*9/01/00     IBISTL-KR         DELETED CHECK FOR RKEY_LEN SINCE IT WILL        
+-*                                ALWAYS BE FIXED AT 50. CHANGED Hnn_SEL        
+-*                                TO H50_SEL.                                   
+-*9/12/00     IBISTL-RJ         COMMENTED OUT CODE DEALING WITH WINFORMS        
+-*                              THAT ARE NOT CURRENTLY USED. MARKED - ibirj.    
+-*                              COMMENTED OUT CALLS TO RI_PRT, RI_SORT,         
+-*                              RI_SEL, RI_RANK, & RI_SUMM. MARKED - ibirj.     
+-*9/27/00     IBISTL-RJ         Workaround code for FocIndex problem -          
+-*                              1 stack tied to 2 objects                       
+-************************************************************************       
+                                                                                
+MAINTAIN FILE INST_FLD AND isel_lst AND RPT_INST AND RPT_SET AND RPT_MSTR       
+ AND CONTROL AND ROLLUP AND I_SUMM                                              
+ FROM Cntl_Stack Roll_Stack RS_Pass RI_Pass RI_Index ID_Name Inst_Parm          
+      RI_NZ INP_FIELD                                                           
+ INTO RI_Pass RI_Index ID_Name Inst_Parm RI_NZ                                  
+MODULE IMPORT (MNTUWS);                                                         
+COMPUTE LastRow/I4 =;                                                           
+COMPUTE CurrRow/I4 =;                                                           
+COMPUTE Hold_MF/I4 =;                                                           
+COMPUTE SStack_Hold/I4 = ;                                                      
+COMPUTE Sel_Head/A20 =;                                                         
+COMPUTE Kancel/A1 = ;                                                           
+COMPUTE Inst_Parm/A72 = ;                                                       
+COMPUTE Key_Len/I2 = ;                                                          
+COMPUTE Lev_Y/I2 = ;                                                            
+COMPUTE Cnt1/I4 = ;                                                             
+COMPUTE Cnt2/I4 = ;                                                             
+COMPUTE Cnt3/I4 = ;                                                             
+COMPUTE PCnt/I4 = ;                                                             
+COMPUTE SelTyp/A1 =;                                                            
+COMPUTE RI_NZ/A1 =;                                                             
+COMPUTE MFld_Get/A38 = ;                                                        
+COMPUTE Summ_Limit/I4 = ;                                                       
+COMPUTE Type_Stack.List_Type/A5 = ;                                             
+COMPUTE Prt_YN.Rad/A8 = ;                                                       
+COMPUTE Srt_YN.Rad/A8 = ;                                                       
+COMPUTE Sel_YN.Rad/A8 = ;                                                       
+COMPUTE Sum_YN.Rad/A8 = ;                                                       
+COMPUTE Rnk_YN.Rad/A8 = ;                                                       
+COMPUTE Sum_TS.Rad/A8 = ;                                                       
+COMPUTE SOrd_HL.Rad/A7 = ;                                                      
+COMPUTE PBk_YN.Rad/A7 = ;                                                       
+COMPUTE SkpL_YN.Rad/A7 = ;                                                      
+COMPUTE rmeth_cs.Rad/A7 = ;                                                     
+COMPUTE rkord_hl.Rad/A7 = ;                                                     
+COMPUTE smord_hl.Rad/A8 = ;                                                     
+COMPUTE smpnp_pn.Rad/A8 = ;                                                     
+COMPUTE Sum_Num.Rad/A10 = ;                                                     
+COMPUTE Confirm_Code/A1 = ;                                                     
+COMPUTE RI_Index/I3 = ;                                                         
+COMPUTE SRD/A1 = ;                                                              
+COMPUTE SRD_Hold/A3 = ;                                                         
+COMPUTE XDate/A10 = ;                                                           
+COMPUTE XTime/A8 = ;                                                            
+COMPUTE XDay/YYMD = ;                                                           
+COMPUTE ID_Date/A8 = ;                                                          
+COMPUTE ID_Time/A6 = ;                                                          
+COMPUTE ID_User/A2 = ;                                                          
+COMPUTE ID_Name/A1 = ;                                                          
+COMPUTE Init/A1 = ;                                                             
+COMPUTE Err_msg / A100 ;                                                        
+COMPUTE INP_FIELD/A24=;                                                         
+COMPUTE XDEST/A40=;                                                             
+COMPUTE GLID/A72=;                                                              
+                                                                                
+INFER RPT_SET INTO RS_Temp                                                      
+INFER RPT_SET INTO RS_Stack                                                     
+INFER RPT_INST.INST_KEY I_CODE.PRT_LN1 RPT_INST.I_SUMM.SUMM_SUBJ1 INTO RI_Temp  
+INFER RPT_INST.INST_KEY I_CODE.PRT_LN1 RPT_INST.I_SUMM.SUMM_SUBJ1 INTO          
+RI_Stack                                                                        
+-*9/27/00     IBISTL-RJ         Workaround code for FocIndex problem -          
+-*                              1 stack tied to 2 objects                       
+INFER RPT_INST.INST_KEY I_CODE.PRT_LN1 RPT_INST.I_SUMM.SUMM_SUBJ1 INTO          
+RI_Stack2                                                                       
+-*                                                                              
+INFER RPT_INST.INST_KEY I_CODE.PRT_LN1 RPT_INST.I_SUMM.SUMM_SUBJ1 INTO RI_Pass  
+INFER RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 INTO RM_Temp                            
+INFER INST_FLD INTO IF_Temp                                                     
+INFER INST_FLD INTO FSel_Stack                                                  
+INFER INST_FLD INTO DSel_Stack                                                  
+INFER INST_FLD INTO Sel_Stack                                                   
+INFER ISEL_LST INTO IL_Temp                                                     
+INFER RPT_SET INTO RS_Pass                                                      
+INFER CONTROL INTO Cntl_Stack                                                   
+INFER ROLLUP INTO Roll_Stack                                                    
+                                                                                
+COMPUTE Sum_Num(1).Rad = 'Summary 1';                                           
+COMPUTE Sum_Num(2).Rad = 'Summary 2';                                           
+COMPUTE Sum_Num(3).Rad = 'Summary 3';                                           
+COMPUTE Sum_Num(4).Rad = 'Summary 4';                                           
+COMPUTE Sum_Num(5).Rad = 'Summary 5';                                           
+COMPUTE Sum_Num(6).Rad = 'Summary 6';                                           
+COMPUTE Sum_Num(7).Rad = 'Summary 7';                                           
+COMPUTE Sum_Num(8).Rad = 'Summary 8';                                           
+COMPUTE Init = 'Y';                                                             
+                                                                                
+PERFORM Init_Inst_List                                                          
+                                                                                
+IF RI_Stack.FocIndex EQ 0 THEN                                                  
+  BEGIN                                                                         
+    COMPUTE RI_Index = 1;                                                       
+  ENDBEGIN                                                                      
+  ELSE BEGIN                                                                    
+    COMPUTE RI_Index = RI_Stack.FocIndex;                                       
+  ENDBEGIN                                                                      
+STACK CLEAR RI_Pass                                                             
+STACK COPY FROM RI_Stack INTO RI_Pass                                           
+GOTO END                                                                        
+                                                                                
+CASE ShowBy_Name                                                                
+  IF Init EQ 'N' THEN                                                           
+    COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                   
+  COMPUTE ID_Name = 'N';                                                        
+  STACK SORT RI_Stack BY RPT_NAME                                               
+  IF Init EQ 'N' THEN PERFORM Repo_Frame                                        
+  WINFORM SET RptInstMain.RptInstIDList.VISIBLE TO NO                           
+  WINFORM SET RptInstMain.RptInstNameList.VISIBLE TO YES                        
+  WINFORM SET RptInstMain.RptInstNameList.FOCUS TO HERE                         
+  COMPUTE Init = 'N';                                                           
+endcase                                                                         
+                                                                                
+CASE ShowBy_ID                                                                  
+  IF Init EQ 'N' THEN                                                           
+    COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                   
+  COMPUTE ID_Name = 'I';                                                        
+-*9/27/00     IBISTL-RJ         Workaround code for FocIndex problem -          
+-*                              1 stack tied to 2 objects                       
+  STACK CLEAR RI_Stack2                                                         
+  STACK COPY FROM RI_Stack INTO RI_Stack2                                       
+  STACK SORT RI_Stack2 BY INSTANCE_ID                                           
+  STACK CLEAR RI_Stack                                                          
+  STACK COPY FROM RI_Stack2 INTO RI_Stack                                       
+  COMPUTE RI_Stack2.FocIndex = RI_Index;                                        
+  COMPUTE RI_Stack.FocIndex = RI_Index;                                         
+-*  STACK SORT RI_Stack BY INSTANCE_ID                                          
+-*                                                                              
+  IF Init EQ 'N' THEN PERFORM Repo_Frame                                        
+  WINFORM SET RptInstMain.RptInstNameList.VISIBLE TO NO                         
+  WINFORM SET RptInstMain.RptInstIDList.VISIBLE TO YES                          
+  WINFORM SET RptInstMain.RptInstIDList.FOCUS TO HERE                           
+  COMPUTE Init = 'N';                                                           
+endcase                                                                         
+                                                                                
+CASE Repo_Frame                                                                 
+  COMPUTE Cnt1 = 1;                                                             
+  COMPUTE RI_Stack.FocIndex = 1;                                                
+  REPEAT WHILE Cnt1 LE RI_Stack.FocCount                                        
+    IF RI_Stack(Cnt1).INST_KEY EQ Inst_Parm THEN                                
+    BEGIN                                                                       
+      COMPUTE RI_Stack.FocIndex = Cnt1;                                         
+      COMPUTE RI_Index = Cnt1;                                                  
+      GOTO EXITREPEAT                                                           
+    ENDBEGIN                                                                    
+    ELSE COMPUTE Cnt1 = Cnt1 + 1;                                               
+  ENDREPEAT                                                                     
+-*9/27/00     IBISTL-RJ         Workaround code for FocIndex problem -          
+-*                              1 stack tied to 2 objects                       
+  COMPUTE RI_Stack2.FocIndex = RI_Stack.FocIndex;                               
+-*                                                                              
+endcase                                                                         
+                                                                                
+CASE What_Inst_Frame                                                            
+  IF ID_Name EQ 'N' THEN PERFORM ShowBy_Name                                    
+  IF ID_Name EQ 'I' THEN PERFORM ShowBy_ID                                      
+endcase                                                                         
+                                                                                
+CASE Gen_ID                                                                     
+  COMPUTE XTime = HHMMSS();                                                     
+-************************************************************************       
+-*DATE          NAME            DESCRIPTION                                     
+-*7/31/00     IBISTL-KR         REPLACED &FOCSYSYYMD WITH TODAY2                
+-************************************************************************       
+  COMPUTE XDay_A10/A10= TODAY2();                                               
+  COMPUTE Xday_yymd/a10=MASK(Xday_A10,'$$$$$$9999') | '/' |                     
+    MASK(Xday_A10,'99') | '/' | MASK(Xday_A10,'$$$99');                         
+  COMPUTE XDate = XDay_yymd;                                                    
+  COMPUTE ID_Date = MASK(XDate, '9999$99$99');                                  
+  COMPUTE ID_Time = MASK(XTime, '99$99$99');                                    
+  COMPUTE ID_User = MASK(Cntl_Stack(1).USER_ID, '99$$$$$$');                    
+endcase                                                                         
+                                                                                
+CASE Init_Inst_List                                                             
+  STACK COPY FROM RS_Pass INTO RS_Stack                                         
+  STACK COPY FROM RS_Stack INTO RS_Temp                                         
+  PERFORM Revise_Select                                                         
+  COMPUTE RI_Stack.FocIndex = RI_Index;                                         
+  PERFORM Select_Inst                                                           
+  WINFORM SHOW_INACTIVE RptInstMain                                             
+  PERFORM Func_Buttons                                                          
+  PERFORM What_Inst_Frame                                                       
+-* 10/10/00  ibistl-rj  added for user interface changes                        
+  IF ID_Name EQ 'N' THEN                                                        
+	COMPUTE RPTINSTMAIN.ListRButt1.ListItems.FocIndex = 1;                         
+  ELSE                                                                          
+   COMPUTE RPTINSTMAIN.ListRButt1.ListItems.FocIndex = 2;                       
+-*                                                                              
+  WINFORM SHOW RptInstMain                                                      
+endcase                                                                         
+                                                                                
+CASE Func_Buttons                                                               
+  IF RI_NZ EQ 'N' THEN                                                          
+  BEGIN                                                                         
+    WINFORM SET RptInstMain.DelButt.VISIBLE TO NO                               
+    WINFORM SET RptInstMain.DupButt.VISIBLE TO NO                               
+    WINFORM SET RptInstMain.ParButt.VISIBLE TO NO                               
+-*    WINFORM SET RptInstMain.RollButt.VISIBLE TO NO                            
+    WINFORM SET RptInstMain.ListRButt1.VISIBLE TO NO                            
+  ENDBEGIN                                                                      
+  ELSE BEGIN                                                                    
+    WINFORM SET RptInstMain.DelButt.VISIBLE TO YES                              
+    WINFORM SET RptInstMain.DupButt.VISIBLE TO YES                              
+    WINFORM SET RptInstMain.ParButt.VISIBLE TO YES                              
+-*    WINFORM SET RptInstMain.RollButt.VISIBLE TO YES                           
+    WINFORM SET RptInstMain.ListRButt1.VISIBLE TO YES                           
+  ENDBEGIN                                                                      
+  IF CNTL_STACK(1).Security_Level eq 1                                          
+   Begin                                                                        
+	 WINFORM SET RptInstMain.RiAdd.VISIBLE to NO                                   
+-*	 WINFORM SET RptInstMain.RollButt.VISIBLE to NO                              
+	EndBegin                                                                       
+endcase                                                                         
+                                                                                
+CASE Pop_Inst_List                                                              
+  STACK COPY FROM RS_Pass INTO RS_Stack                                         
+  STACK COPY FROM RS_Stack INTO RS_Temp                                         
+  PERFORM Revise_Select                                                         
+  COMPUTE RI_Stack.FocIndex = RI_Index;                                         
+-*9/27/00     IBISTL-RJ         Workaround code for FocIndex problem -          
+-*                              1 stack tied to 2 objects                       
+  COMPUTE RI_Stack2.FocIndex = RI_Index;                                        
+-*                                                                              
+-*  PERFORM Select_Inst                                                         
+  PERFORM Func_Buttons                                                          
+  PERFORM What_Inst_Frame                                                       
+endcase                                                                         
+                                                                                
+CASE Revise_Select                                                              
+  COMPUTE RI_NZ = 'Y';                                                          
+  REPOSITION RPT_INST.RPT_ID                                                    
+  STACK CLEAR RI_Stack                                                          
+  FOR ALL NEXT RPT_INST.INST_KEY I_CODE.PRT_LN1 RPT_INST.I_SUMM.SUMM_SUBJ1      
+    INTO RI_Stack                                                               
+    WHERE (RPT_INST.ROLLUP_CODE EQ Cntl_Stack(1).ROLLUP_CODE) AND               
+          (RPT_INST.SET_ID EQ RS_Pass(1).SET_ID)                                
+  IF RI_Stack.FocCount EQ 0 THEN COMPUTE RI_NZ = 'N';                           
+  IF ID_Name EQ 'N' THEN                                                        
+    STACK SORT RI_Stack BY RPT_NAME                                             
+  ELSE                                                                          
+    Begin                                                                       
+    STACK SORT RI_Stack BY INSTANCE_ID                                          
+	 STACK COPY FROM RI_Stack into RI_Stack2                                       
+	 EndBegin                                                                      
+  STACK CLEAR RI_Temp                                                           
+  STACK COPY FROM RI_Stack INTO RI_Temp                                         
+endcase                                                                         
+                                                                                
+CASE Refresh_IFTemp                                                             
+  REPOSITION INST_FLD.IFLD_KEY                                                  
+  STACK CLEAR IF_Temp                                                           
+  FOR ALL NEXT INST_FLD.IFLD_KEY INTO IF_Temp                                   
+    WHERE INST_FLD.INST_KEY EQ RI_Stack(RI_Stack.FocIndex).INST_KEY             
+  STACK SORT IF_Temp BY PRT_SEQ                                                 
+endcase                                                                         
+                                                                                
+CASE Pop_Mstr                                                                   
+  REPOSITION RPT_MSTR.RPT_ID                                                    
+  STACK CLEAR RM_Stack                                                          
+  FOR ALL NEXT RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 INTO RM_Stack                  
+endcase                                                                         
+                                                                                
+CASE Sel_Mstr                                                                   
+  COMPUTE Kancel = 'N';                                                         
+  WINFORM SHOW MstrSel                                                          
+  IF Kancel EQ 'Y' THEN GOTO ENDCASE                                            
+  PERFORM Xfer_Mstr_Inst                                                        
+endcase                                                                         
+                                                                                
+CASE Mstr_Selected                                                              
+  COMPUTE RM_Temp.RPT_ID = RM_Stack(RM_Stack.FocIndex).RPT_ID;                  
+endcase                                                                         
+                                                                                
+CASE Xfer_Mstr_Inst                                                             
+  STACK CLEAR RI_Temp                                                           
+  COMPUTE Kancel = 'N';                                                         
+  COMPUTE XDEST='PDF';                                                          
+  PERFORM Gen_ID                                                                
+  COMPUTE RI_Temp(1).INSTANCE_ID =                                              
+    Roll_Stack(1).COMP || ID_User | ID_Date | ID_Time;                          
+  COMPUTE RI_TEMP(1).OUTPUT_DEST=XDEST;                                         
+  PERFORM WINFORM_GetInstID                                                     
+                                                                                
+  IF Kancel EQ 'Y' THEN GOTO ENDCASE                                            
+  CALL RI_XMI DROP                                                              
+    FROM Cntl_Stack Roll_Stack RS_Pass RI_Pass RI_Index RM_Stack                
+         RS_Stack RM_Temp RI_Temp                                               
+    INTO Inst_Parm                                                              
+                                                                                
+  REPOSITION RPT_INST.RPT_ID                                                    
+  STACK CLEAR RI_Stack                                                          
+  NEXT RPT_INST.INST_KEY I_CODE.PRT_LN1 RPT_INST.I_SUMM.SUMM_SUBJ1              
+    INTO RI_Stack WHERE RPT_INST.INST_KEY EQ Inst_Parm                          
+  CALL RI_Parm DROP FROM Cntl_Stack Roll_Stack RI_Stack                         
+  PERFORM POP_RInst                                                             
+  COMPUTE Init = 'Y';                                                           
+-*  PERFORM Pop_Inst_List                                                       
+endcase                                                                         
+                                                                                
+CASE Xfer_Inst_Mstr                                                             
+  STACK CLEAR RM_Temp                                                           
+  PERFORM WINFORM_GetMstrID                                                     
+                                                                                
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  COMPUTE Init = 'Y';                                                           
+  PERFORM Pop_Inst_List                                                         
+endcase                                                                         
+                                                                                
+CASE POP_RInst                                                                  
+  PERFORM Revise_Select                                                         
+-*  PERFORM What_Inst_Frame                                                     
+  COMPUTE Cnt1 = 1;                                                             
+  COMPUTE RI_Stack.FocIndex = 1;                                                
+  REPEAT WHILE Cnt1 LE RI_Stack.FocCount                                        
+    IF RI_Stack(Cnt1).INST_KEY EQ Inst_Parm THEN                                
+    BEGIN                                                                       
+      COMPUTE RI_Stack.FocIndex = Cnt1;                                         
+      COMPUTE RI_Index = Cnt1;                                                  
+      GOTO EXITREPEAT                                                           
+    ENDBEGIN                                                                    
+    ELSE COMPUTE Cnt1 = Cnt1 + 1;                                               
+  ENDREPEAT                                                                     
+  COMPUTE RI_Stack2.FocIndex = RI_Stack.FocIndex;                               
+  PERFORM Func_Buttons                                                          
+  PERFORM What_Inst_Frame                                                       
+endcase                                                                         
+                                                                                
+CASE Copy_Inst                                                                  
+  COMPUTE Kancel = 'N';                                                         
+  COMPUTE XDEST='PDF';                                                          
+  STACK CLEAR RI_Temp                                                           
+  PERFORM Gen_ID                                                                
+  COMPUTE RI_Temp(1).INSTANCE_ID =                                              
+     Roll_Stack(1).COMP || ID_User | ID_Date | ID_Time;                         
+  COMPUTE RI_TEMP(1).OUTPUT_DEST=XDEST;                                         
+  PERFORM WINFORM_GetInstID                                                     
+  IF Kancel EQ 'N' THEN                                                         
+  BEGIN                                                                         
+    PERFORM Select_Inst                                                         
+    COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                   
+    CALL RI_CI DROP                                                             
+    FROM Cntl_Stack Roll_Stack RI_Temp RI_Pass RI_Index RI_Stack RS_Stack       
+       RM_Stack INTO RI_Temp                                                    
+	 COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+-*  COMPUTE Inst_Parm = RI_Temp(1).INST_KEY;                                    
+  ENDBEGIN                                                                      
+  PERFORM POP_RInst                                                             
+  COMPUTE Init = 'Y';                                                           
+-*  PERFORM Pop_Inst_List                                                       
+endcase                                                                         
+                                                                                
+CASE Parm_Upd                                                                   
+                                                                                
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  PERFORM Select_Inst                                                           
+  CALL RI_Parm DROP                                                             
+    FROM Cntl_Stack Roll_Stack RI_Stack                                         
+-*  PERFORM POP_RInst                                                           
+  COMPUTE Init = 'Y';                                                           
+  PERFORM Pop_Inst_List                                                         
+                                                                                
+endcase                                                                         
+                                                                                
+CASE Del_Inst                                                                   
+                                                                                
+IF ((RS_Stack(RS_Stack.FocIndex).User_Name) eq (Cntl_Stack(1).User_ID))         
+  BEGIN                                                                         
+  ENDBEGIN                                                                      
+ELSE                                                                            
+  IF (Cntl_Stack(1).Security_Level lt 7) THEN                                   
+  BEGIN                                                                         
+    COMPUTE ERR_MSG =                                                           
+      "You do not have authority to delete this report !";                      
+	 WINFORM SHOW EMsgs                                                            
+    GOTO ENDCASE                                                                
+  ENDBEGIN                                                                      
+                                                                                
+  WINFORM SHOW DelConfirm                                                       
+  IF Confirm_Code EQ 'N' THEN GOTO ENDCASE                                      
+                                                                                
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  CALL RI_DI DROP                                                               
+    FROM Cntl_Stack Roll_Stack RI_Stack RI_Index                                
+                                                                                
+  PERFORM POP_RInst                                                             
+  COMPUTE Init = 'Y';                                                           
+-*  PERFORM Pop_Inst_List                                                       
+endcase                                                                         
+                                                                                
+CASE Refresh_Stack                                                              
+-* This CASE refreshes the Instance Field grid object following an Update or    
+-*   Delete action within the grid                                              
+  REPOSITION INST_FLD.IFLD_KEY                                                  
+  STACK CLEAR IF_Temp                                                           
+  FOR ALL NEXT INST_FLD.IFLD_KEY INTO IF_Temp                                   
+    WHERE INST_FLD.INST_KEY EQ RI_Stack(RI_Stack.FocIndex).INST_KEY;            
+  STACK SORT IF_Temp BY PRT_SEQ                                                 
+  COMPUTE Prt_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).PRT_OPTION EQ 'Y' THEN 1 ELSE 2;               
+  COMPUTE Srt_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SORT_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Sel_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SELECT_OPTION EQ 'Y' THEN 1 ELSE 2;            
+  COMPUTE Sum_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SUMM_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Rnk_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).RANK_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Sum_TS.FocIndex = IF IF_Temp(IF_Temp.FocIndex).TARG_SUBJ EQ 'T'       
+    THEN 1 ELSE 2;                                                              
+endcase                                                                         
+                                                                                
+CASE Pop_Fields                                                                 
+-* This CASE populates and initializes the Radio buttons used in conjunction    
+-*   with the Instance Field grid object                                        
+  COMPUTE Prt_YN(1).Rad = 'OPTIONAL';                                           
+  COMPUTE Prt_YN(2).Rad = 'ALWAYS';                                             
+  COMPUTE Srt_YN(1).Rad = 'OPTIONAL';                                           
+  COMPUTE Srt_YN(2).Rad = 'NEVER';                                              
+  COMPUTE Sel_YN(1).Rad = 'OPTIONAL';                                           
+  COMPUTE Sel_YN(2).Rad = 'NEVER';                                              
+  COMPUTE Sum_YN(1).Rad = 'ON';                                                 
+  COMPUTE Sum_YN(2).Rad = 'OFF';                                                
+  COMPUTE Rnk_YN(1).Rad = 'ON';                                                 
+  COMPUTE Rnk_YN(2).Rad = 'OFF';                                                
+  COMPUTE Sum_TS(1).Rad = 'TARGET';                                             
+  COMPUTE Sum_TS(2).Rad = 'SUM';                                                
+  COMPUTE Prt_YN.FocIndex = 1;                                                  
+  COMPUTE Srt_YN.FocIndex = 1;                                                  
+  COMPUTE Sel_YN.FocIndex = 1;                                                  
+  COMPUTE Sum_YN.FocIndex = 1;                                                  
+  COMPUTE Rnk_YN.FocIndex = 1;                                                  
+  COMPUTE Sum_TS.FocIndex = 1;                                                  
+  PERFORM Refresh_Stack                                                         
+  COMPUTE Hold_MF = IF_Temp.FocCount;                                           
+-* Set the Radio buttons according to the                                       
+-*   flag value within the corresponding Master Field stack row                 
+  COMPUTE Prt_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).PRT_OPTION EQ 'Y' THEN 1 ELSE 2;               
+  COMPUTE Srt_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SORT_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Sel_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SELECT_OPTION EQ 'Y' THEN 1 ELSE 2;            
+  COMPUTE Sum_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SUMM_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Rnk_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).RANK_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Sum_TS.FocIndex = IF IF_Temp(IF_Temp.FocIndex).TARG_SUBJ EQ 'T'       
+      THEN 1 ELSE 2;                                                            
+endcase                                                                         
+                                                                                
+CASE Chg_Radio                                                                  
+  IF Cntl_Stack(1).CONTROL_ID EQ 'USR' THEN                                     
+  BEGIN                                                                         
+-* ibirj    WINFORM SET InstanceFields.UpdButt.VISIBLE TO NO                    
+    PERFORM Grid_Sel_Chg                                                        
+    GOTO ENDCASE                                                                
+  ENDBEGIN                                                                      
+  COMPUTE IF_Temp(IF_Temp.FocIndex).PRT_OPTION =                                
+    IF Prt_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';                                  
+  COMPUTE IF_Temp(IF_Temp.FocIndex).SORT_OPTION =                               
+    IF Srt_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';                                  
+  COMPUTE IF_Temp(IF_Temp.FocIndex).SELECT_OPTION =                             
+    IF Sel_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';                                  
+  COMPUTE IF_Temp(IF_Temp.FocIndex).SUMM_OPTION =                               
+    IF Rnk_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';                                  
+  COMPUTE IF_Temp(IF_Temp.FocIndex).RANK_OPTION =                               
+    IF Sum_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';                                  
+  IF (IF_Temp(IF_Temp.FocIndex).SUMM_OPTION EQ 'Y') OR                          
+     (IF_Temp(IF_Temp.FocIndex).RANK_OPTION EQ 'Y')                             
+  THEN                                                                          
+    COMPUTE IF_Temp(IF_Temp.FocIndex).TARG_SUBJ =                               
+      IF Sum_TS.FocIndex EQ 1 THEN 'T' ELSE 'S';                                
+  ELSE                                                                          
+    COMPUTE IF_Temp(IF_Temp.FocIndex).TARG_SUBJ = ' ';                          
+  IF IF_Temp(IF_Temp.FocIndex).RANK_OPTION EQ 'Y' THEN                          
+  BEGIN                                                                         
+    COMPUTE IF_Temp(IF_Temp.FocIndex).TARG_SUBJ =                               
+      IF Sum_TS.FocIndex EQ 1 THEN 'T' ELSE 'S';                                
+-* ibirj    WINFORM SET InstanceFields.SumTypTxt.VISIBLE TO YES                 
+-* ibirj    WINFORM SET InstanceFields.SumTypRad.VISIBLE TO YES                 
+  ENDBEGIN                                                                      
+  ELSE                                                                          
+  BEGIN                                                                         
+    COMPUTE IF_Temp(IF_Temp.FocIndex).TARG_SUBJ = ' ';                          
+-* ibirj    WINFORM SET InstanceFields.SumTypTxt.VISIBLE TO NO                  
+-* ibirj    WINFORM SET InstanceFields.SumTypRad.VISIBLE TO NO                  
+  ENDBEGIN                                                                      
+endcase                                                                         
+                                                                                
+CASE Grid_Sel_Chg                                                               
+  COMPUTE Prt_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).PRT_OPTION EQ 'Y' THEN 1 ELSE 2;               
+  COMPUTE Srt_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SORT_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Sel_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SELECT_OPTION EQ 'Y' THEN 1 ELSE 2;            
+  COMPUTE Sum_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).SUMM_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Rnk_YN.FocIndex =                                                     
+    IF IF_Temp(IF_Temp.FocIndex).RANK_OPTION EQ 'Y' THEN 1 ELSE 2;              
+  COMPUTE Sum_TS.FocIndex = IF IF_Temp(IF_Temp.FocIndex).TARG_SUBJ EQ 'T'       
+    THEN 1 ELSE 2;                                                              
+  IF (IF_Temp(IF_Temp.FocIndex).SUMM_OPTION EQ 'Y') OR                          
+     (IF_Temp(IF_Temp.FocIndex).RANK_OPTION EQ 'Y') THEN                        
+  BEGIN                                                                         
+    COMPUTE IF_Temp(IF_Temp.FocIndex).TARG_SUBJ =                               
+      IF Sum_TS.FocIndex EQ 1 THEN 'T' ELSE 'S';                                
+-* ibirj    WINFORM SET InstanceFields.SumTypTxt.VISIBLE TO YES                 
+-* ibirj    WINFORM SET InstanceFields.SumTypRad.VISIBLE TO YES                 
+  ENDBEGIN                                                                      
+  ELSE                                                                          
+  BEGIN                                                                         
+    COMPUTE IF_Temp(IF_Temp.FocIndex).TARG_SUBJ = ' ';                          
+-* ibirj    WINFORM SET InstanceFields.SumTypTxt.VISIBLE TO NO                  
+-* ibirj    WINFORM SET InstanceFields.SumTypRad.VISIBLE TO NO                  
+  ENDBEGIN                                                                      
+endcase                                                                         
+                                                                                
+CASE Fld_Update                                                                 
+  IF (RI_Stack(RI_Stack.FocIndex).CONTROL_ID EQ 'PGM' OR                        
+      RI_Stack(RI_Stack.FocIndex).CONTROL_ID EQ 'SPC') AND                      
+     (Cntl_Stack(1).CONTROL_ID NE 'PGM' AND                                     
+      Cntl_Stack(1).CONTROL_ID NE 'SPC') THEN                                   
+  BEGIN                                                                         
+    TYPE " You do not have authority to update this report ! "                  
+    PERFORM Refresh_Stack                                                       
+    GOTO ENDCASE                                                                
+  ENDBEGIN                                                                      
+-* This CASE updates the entire grid stack to the DB, then refreshes the        
+-*   grid object                                                                
+  FOR ALL UPDATE INST_FLD.FLD_NAME INST_FLD.FLD_DESC                            
+    INST_FLD.DEF_NAME INST_FLD.FLD_FORMAT INST_FLD.PRT_OPTION INST_FLD.PRT_SEQ  
+    INST_FLD.PRT_AS INST_FLD.SORT_OPTION INST_FLD.SELECT_OPTION                 
+    INST_FLD.RANK_OPTION INST_FLD.TARG_SUBJ INST_FLD.DECODE_FLD                 
+    INST_FLD.SUMM_OPTION FROM IF_Temp                                           
+  COMMIT                                                                        
+  PERFORM Refresh_Stack                                                         
+endcase                                                                         
+                                                                                
+CASE Del_Field                                                                  
+  IF (RI_Stack(RI_Stack.FocIndex).CONTROL_ID EQ 'PGM' OR                        
+      RI_Stack(RI_Stack.FocIndex).CONTROL_ID EQ 'SPC') AND                      
+     (Cntl_Stack(1).CONTROL_ID NE 'PGM' AND                                     
+      Cntl_Stack(1).CONTROL_ID NE 'SPC') THEN                                   
+  BEGIN                                                                         
+    TYPE " You do not have authority to delete this report ! "                  
+    GOTO ENDCASE                                                                
+  ENDBEGIN                                                                      
+  WINFORM SHOW DelConfirm                                                       
+  IF Confirm_Code EQ 'N' THEN GOTO ENDCASE                                      
+-* This CASE deletes the current selected grid row from the DB, then            
+-*   refreshes the grid object                                                  
+  REPOSITION ISEL_LST.IFLD_KEY                                                  
+  STACK CLEAR IL_Temp                                                           
+  FOR ALL NEXT ISEL_LST.IFLD_KEY INTO IL_Temp                                   
+    WHERE ISEL_LST.IFLD_KEY EQ                                                  
+      IF_Temp(IF_Temp.FocIndex).IFLD_KEY                                        
+  FOR ALL DELETE ISEL_LST.IFLD_KEY FROM IL_Temp                                 
+  FOR 1 DELETE INST_FLD.IFLD_KEY FROM                                           
+    IF_Temp(IF_Temp.FocIndex)                                                   
+  COMMIT                                                                        
+  PERFORM Refresh_Stack                                                         
+endcase                                                                         
+                                                                                
+CASE Field_Main                                                                 
+-* ibirj WINFORM SHOW InstanceFields                                            
+endcase                                                                         
+                                                                                
+CASE Pop_Sel                                                                    
+  STACK CLEAR Sel_Stack                                                         
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IF_Temp.FocCount                                         
+    IF IF_Temp(Cnt1).SELECT_OPTION EQ 'Y' THEN                                  
+    BEGIN                                                                       
+      COMPUTE PCnt = Sel_Stack.FocCount + 1;                                    
+      COPY FROM IF_Temp(Cnt1) INTO Sel_Stack(PCnt)                              
+    ENDBEGIN                                                                    
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+endcase                                                                         
+                                                                                
+CASE PrtSel_Main                                                                
+                                                                                
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  COMPUTE Init = 'Y';                                                           
+  PERFORM Pop_Inst_List                                                         
+                                                                                
+endcase                                                                         
+                                                                                
+CASE Sel_Main                                                                   
+                                                                                
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  COMPUTE Init = 'Y';                                                           
+  PERFORM Pop_Inst_List                                                         
+                                                                                
+endcase                                                                         
+                                                                                
+CASE Sort_Main                                                                  
+                                                                                
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  COMPUTE Init = 'Y';                                                           
+  PERFORM Pop_Inst_List                                                         
+                                                                                
+endcase                                                                         
+                                                                                
+                                                                                
+CASE Disp_Summary                                                               
+                                                                                
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  COMPUTE Init = 'Y';                                                           
+  PERFORM Pop_Inst_List                                                         
+                                                                                
+endcase                                                                         
+                                                                                
+CASE Disp_Ranking                                                               
+                                                                                
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  COMPUTE Init = 'Y';                                                           
+  PERFORM Pop_Inst_List                                                         
+                                                                                
+endcase                                                                         
+                                                                                
+CASE Inst_Hier                                                                  
+  PERFORM Select_Inst                                                           
+  COMPUTE Inst_Parm = RI_Stack(RI_Stack.FocIndex).INST_KEY;                     
+  COMPUTE Lev_Y = Roll_Stack(1).NUM_LEVELS;                                     
+  COMPUTE INP_FIELD='NORMAL';                                                   
+                                                                                
+-************************************************************************       
+-*  DATE        NAME             DESCRIPTION                                    
+-*9/01/00     IBISTL-KR          DELETED CHECK FOR RKEY_LEN SINCE IT WILL       
+-*                                 ALWAYS BE FIXED AT 50. CHANGED Hnn_SEL       
+-*                                 TO H50_SEL.                                  
+-************************************************************************       
+                                                                                
+CALL H50_SEL DROP FROM INP_FIELD Inst_Parm Lev_Y Roll_Stack Cntl_Stack          
+                                                                                
+  COMPUTE Init = 'Y';                                                           
+-*  PERFORM Pop_RInst                                                           
+  PERFORM Pop_Inst_List                                                         
+endcase                                                                         
+                                                                                
+CASE Confirm_Yes                                                                
+  COMPUTE Confirm_Code = 'Y';                                                   
+-*  PERFORM Build_Code                                                          
+-* ibirj  WINFORM CLOSE Confirm                                                 
+endcase                                                                         
+                                                                                
+CASE Confirm_No                                                                 
+  COMPUTE Confirm_Code = 'N';                                                   
+-*  PERFORM Build_Code                                                          
+-* ibirj  WINFORM CLOSE Confirm                                                 
+endcase                                                                         
+                                                                                
+CASE Disp_Print                                                                 
+-* ibirj  WINFORM SHOW PrintLines                                               
+endcase                                                                         
+                                                                                
+CASE Disp_If                                                                    
+-* ibirj  WINFORM SHOW IfLines                                                  
+endcase                                                                         
+                                                                                
+CASE Disp_By                                                                    
+-* ibirj  WINFORM SHOW ByLines                                                  
+endcase                                                                         
+                                                                                
+CASE Disp_On                                                                    
+-* ibirj  WINFORM SHOW OnLines                                                  
+endcase                                                                         
+                                                                                
+CASE Disp_Targ                                                                  
+-* ibirj  WINFORM SHOW TargLines                                                
+endcase                                                                         
+                                                                                
+CASE Disp_Subj                                                                  
+-* ibirj  WINFORM SHOW SubjLines                                                
+endcase                                                                         
+                                                                                
+CASE Disp_Confirm                                                               
+  WINFORM CLOSE RptInstMain                                                     
+  GOTO EXIT                                                                     
+endcase                                                                         
+                                                                                
+CASE Conf_Yes                                                                   
+  COMPUTE Confirm_Code = 'Y';                                                   
+  WINFORM CLOSE DelConfirm                                                      
+endcase                                                                         
+                                                                                
+CASE Conf_No                                                                    
+  COMPUTE Confirm_Code = 'N';                                                   
+  WINFORM CLOSE DelConfirm                                                      
+endcase                                                                         
+                                                                                
+CASE Push_Kancel                                                                
+  COMPUTE Kancel = 'Y';                                                         
+  WINFORM CLOSE                                                                 
+endcase                                                                         
+                                                                                
+CASE Select_Inst                                                                
+-*  COMPUTE SRD =                                                               
+-*    SUBSTR(3, RI_Stack(RI_Stack.FocIndex).SRD_Flag, 1, 1, 1, SRD);            
+-*  COMPUTE Summ_Flag = IF SRD EQ 'S' THEN 1 ELSE 0;                            
+-*  COMPUTE SRD =                                                               
+-*    SUBSTR(3, RI_Stack(RI_Stack.FocIndex).SRD_Flag, 2, 2, 1, SRD);            
+-*  COMPUTE Rank_Flag = IF SRD EQ 'R' THEN 1 ELSE 0;                            
+-*  COMPUTE SRD =                                                               
+-*    SUBSTR(3, RI_Stack(RI_Stack.FocIndex).SRD_Flag, 3, 3, 1, SRD);            
+-*  COMPUTE Detl_Flag = IF SRD EQ 'D' THEN 1 ELSE 0;                            
+  COMPUTE RI_Index = RI_Stack.FocIndex;                                         
+endcase                                                                         
+                                                                                
+CASE Check_Summ                                                                 
+-*  COMPUTE SRD = IF Summ_Flag EQ 0 THEN ' ' ELSE 'S';                          
+-*  COMPUTE SRD_Hold = RI_Stack(RI_Stack.FocIndex).SRD_Flag;                    
+-*  COMPUTE RI_Stack(RI_Stack.FocIndex).SRD_Flag =                              
+-*    OVRLAY(SRD_Hold, 3, SRD, 1, 1, RI_Stack(RI_Stack.FocIndex).SRD_Flag);     
+-*  UPDATE RPT_INST.SRD_Flag FROM RI_Stack(RI_Stack.FocIndex)                   
+-*  COMMIT                                                                      
+endcase                                                                         
+                                                                                
+CASE Check_Rank                                                                 
+-*  COMPUTE SRD = IF Rank_Flag EQ 0 THEN ' ' ELSE 'R';                          
+-*  COMPUTE SRD_Hold = RI_Stack(RI_Stack.FocIndex).SRD_Flag;                    
+-*  COMPUTE RI_Stack(RI_Stack.FocIndex).SRD_Flag =                              
+-*    OVRLAY(SRD_Hold, 3, SRD, 1, 2, RI_Stack(RI_Stack.FocIndex).SRD_Flag);     
+-*  UPDATE RPT_INST.SRD_Flag FROM RI_Stack(RI_Stack.FocIndex)                   
+-*  COMMIT                                                                      
+endcase                                                                         
+                                                                                
+CASE Check_Detl                                                                 
+-*  COMPUTE SRD = IF Detl_Flag EQ 0 THEN ' ' ELSE 'D';                          
+-*  COMPUTE SRD_Hold = RI_Stack(RI_Stack.FocIndex).SRD_Flag;                    
+-*  COMPUTE RI_Stack(RI_Stack.FocIndex).SRD_Flag =                              
+-*    OVRLAY(SRD_Hold, 3, SRD, 1, 3, RI_Stack(RI_Stack.FocIndex).SRD_Flag);     
+-*  UPDATE RPT_INST.SRD_Flag FROM RI_Stack(RI_Stack.FocIndex)                   
+-*  COMMIT                                                                      
+endcase                                                                         
+                                                                                
+CASE RptInst_Off                                                                
+  WINFORM SET RptInstMain.ListRButt1.VISIBLE TO NO                              
+  WINFORM SET RptInstMain.DelButt.VISIBLE TO NO                                 
+  WINFORM SET RptInstMain.DupButt.VISIBLE TO NO                                 
+  WINFORM SET RptInstMain.RIAdd.VISIBLE TO NO                                   
+  WINFORM SET RptInstMain.ParButt.VISIBLE TO NO                                 
+-*  WINFORM SET RptInstMain.RollButt.VISIBLE TO NO                              
+  WINFORM SET RptInstMain.RIExt.VISIBLE TO NO                                   
+endcase                                                                         
+                                                                                
+CASE RptInst_On                                                                 
+  WINFORM SET RptInstMain.ListRButt1.VISIBLE TO NO                              
+  WINFORM SET RptInstMain.DelButt.VISIBLE TO YES                                
+  WINFORM SET RptInstMain.DupButt.VISIBLE TO YES                                
+  WINFORM SET RptInstMain.RIAdd.VISIBLE TO YES                                  
+  WINFORM SET RptInstMain.ParButt.VISIBLE TO YES                                
+-*  WINFORM SET RptInstMain.RollButt.VISIBLE TO YES                             
+  WINFORM SET RptInstMain.RIExt.VISIBLE TO YES                                  
+  IF CNTL_STACK(1).Security_Level eq 1                                          
+   Begin                                                                        
+	 WINFORM SET RptInstMain.RiAdd.VISIBLE to NO                                   
+-*	 WINFORM SET RptInstMain.RollButt.VISIBLE to NO                              
+	EndBegin                                                                       
+endcase                                                                         
+                                                                                
+CASE Push_NamButt                                                               
+  PERFORM RptInst_Off                                                           
+  PERFORM ShowBy_Name                                                           
+  PERFORM RptInst_On                                                            
+endcase                                                                         
+                                                                                
+CASE Push_IDButt                                                                
+  PERFORM RptInst_Off                                                           
+  PERFORM ShowBy_ID                                                             
+  PERFORM RptInst_On                                                            
+endcase                                                                         
+                                                                                
+CASE Push_DelButt                                                               
+  PERFORM RptInst_Off                                                           
+  PERFORM Del_Inst                                                              
+  PERFORM RptInst_On                                                            
+endcase                                                                         
+                                                                                
+CASE Push_DupButt                                                               
+  PERFORM RptInst_Off                                                           
+  PERFORM Copy_Inst                                                             
+  PERFORM RptInst_On                                                            
+endcase                                                                         
+                                                                                
+CASE Push_RIAdd                                                                 
+  PERFORM RptInst_Off                                                           
+  PERFORM Sel_Mstr                                                              
+  PERFORM RptInst_On                                                            
+endcase                                                                         
+                                                                                
+CASE Push_ParButt                                                               
+  PERFORM RptInst_Off                                                           
+  PERFORM Parm_Upd                                                              
+  PERFORM RptInst_On                                                            
+endcase                                                                         
+                                                                                
+CASE Push_RollButt                                                              
+  PERFORM RptInst_Off                                                           
+  PERFORM Inst_Hier                                                             
+  PERFORM RptInst_On                                                            
+endcase                                                                         
+                                                                                
+Case INST_Emsgs                                                                 
+  IF (RI_Temp(1).RPT_NAME EQ ' ') OR (RI_Temp(1).RPT_NAME EQ '') THEN           
+   BEGIN                                                                        
+     COMPUTE ERR_MSG =                                                          
+       "You must enter a Report Name";                                          
+	  WINFORM SHOW EMsgs                                                           
+   ENDBEGIN                                                                     
+                                                                                
+ELSE                                                                            
+IF (RI_Temp(1).RPT_NAME CONTAINS ',') OR (RI_Temp(1).RPT_NAME CONTAINS '!') OR  
+   (RI_Temp(1).RPT_NAME CONTAINS '*') OR (RI_Temp(1).RPT_NAME CONTAINS '%') OR  
+	(RI_Temp(1).RPT_NAME CONTAINS '"') OR (RI_Temp(1).RPT_NAME CONTAINS '<') OR    
+	(RI_Temp(1).RPT_NAME CONTAINS '>') OR (RI_Temp(1).RPT_NAME CONTAINS '&') THEN  
+                                                                                
+ BEGIN                                                                          
+   COMPUTE ERR_MSG =                                                            
+       "Report Name Cannot Contain Special Characters, Check Your Work ......." 
+;                                                                               
+   	 WINFORM SHOW EMsgs                                                         
+   GOTO ENDCASE                                                                 
+ ENDBEGIN                                                                       
+  ELSE                                                                          
+   BEGIN                                                                        
+    WINFORM CLOSE GetInstID                                                     
+	ENDBEGIN                                                                       
+EndCase                                                                         
+                                                                                
+case Winform_RptInstMain                                                        
+   Winform show RptInstMain                                                     
+endcase                                                                         
+case Winform_MstrSel                                                            
+   Winform show MstrSel                                                         
+endcase                                                                         
+case Winform_GetInstID                                                          
+   Winform show GetInstID                                                       
+endcase                                                                         
+case Winform_InstanceFields                                                     
+-* ibirj   Winform show InstanceFields                                          
+endcase                                                                         
+case Winform_GetMstrID                                                          
+-* ibirj   Winform show GetMstrID                                               
+endcase                                                                         
+case Winform_Confirm                                                            
+-* ibirj   Winform show Confirm                                                 
+endcase                                                                         
+case Winform_PrintLines                                                         
+-* ibirj   Winform show PrintLines                                              
+endcase                                                                         
+case Winform_ByLines                                                            
+-* ibirj   Winform show ByLines                                                 
+endcase                                                                         
+case Winform_IfLines                                                            
+-* ibirj   Winform show IfLines                                                 
+endcase                                                                         
+case Winform_OnLines                                                            
+-* ibirj   Winform show OnLines                                                 
+endcase                                                                         
+case Winform_DelConfirm                                                         
+   Winform show DelConfirm                                                      
+endcase                                                                         
+case Winform_TargLines                                                          
+-* ibirj   Winform show TargLines                                               
+endcase                                                                         
+case Winform_SubjLines                                                          
+-* ibirj   Winform show SubjLines                                               
+endcase                                                                         
+                                                                                
+                                                                                
+                                                                                
+                                                                                
+END                                                                             

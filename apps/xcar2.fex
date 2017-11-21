@@ -1,0 +1,86 @@
+-*-*-*-* program #2 (xcar2.fex) -*-*-*-*-*-*-*-*-*
+-*&CTRY is the name of the listbox in LSCAR1.fex
+-*
+-INCLUDE SETECHO
+-SET &CTRYX=&CTRY;
+TABLE FILE CAR
+PRINT DST.COUNTRY
+ON TABLE HOLD AS H1
+END
+-*
+DEFINE FILE H1
+QT/A1='''';
+END
+TABLE FILE H1
+PRINT
+COMPUTE FLDX/A100 = 
+('document.write("' || '<option value=' | QT || COUNTRY ||
+QT | '>' | COUNTRY | '</OPTION>");'
+) ;
+BY COUNTRY NOPRINT
+ON TABLE HOLD AS HCNTRY
+END
+-RUN
+-*
+-*
+TABLE FILE CAR
+PRINT 
+DST.CAR
+WHERE COUNTRY EQ '&CTRY'
+ON TABLE HOLD AS H3
+END
+-*
+DEFINE FILE H3
+QT/A1='''';
+END
+TABLE FILE H3
+PRINT
+COMPUTE FLDX/A100 = 
+('document.write("' || '<option value=' | QT || CAR ||
+QT | '>' | CAR | '</OPTION>");'
+) ;
+BY CAR NOPRINT
+ON TABLE HOLD AS HCAR
+END
+-RUN
+-*-EXIT
+-*
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+<script language='javascript'>
+function runit() {
+var opt=document.FRM1.CTRY.options(document.FRM1.CTRY.selectedIndex).value;
+if (opt != 'NADA'){ 
+document.FRM1.IBIF_ex.value = 'app/xcar2.fex' ;
+document.FRM1.IBIMR_fex.value = 'app/xcar2.fex' ;
+document.FRM1.submit(); 
+} 
+} 
+function runit2() {
+var opt=document.FRM1.CAR.options(document.FRM1.CAR.selectedIndex).value;
+if (opt != 'NADA'){ 
+document.FRM1.IBIF_ex.value = 'xcar3.fex' ;
+document.FRM1.submit(); 
+} 
+} 
+</script>
+</head> 
+<body>
+<form action="/ibi_apps/WFServlet" method="GET" name="FRM1"> 
+<input type='hidden' name='IBIF_ex' value='xcar3'>
+<TABLE><TR><TD WIDTH=30%>Country=
+<select name="CTRY" size="1" onChange='runit()'>
+<option value="!IBI.AMP.CTRYX;" SELECTED>!IBI.AMP.CTRYX;</option>
+!IBI.FIL.HCNTRY;
+</SELECT></TD><TD WIDTH=30%> Car= 
+<select name="CAR" size="1" onChange='runit2()'>
+<option value="NADA">Select From the Following.....</option>
+!IBI.FIL.HCAR;
+</SELECT></TD>
+<TD WIDTH=30%> Seats=</TD></TR></TABLE>
+</FORM>
+</BODY>
+</HTML>
+-HTMLFORM END
+-*

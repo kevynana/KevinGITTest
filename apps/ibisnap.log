@@ -1,0 +1,124 @@
+tktrap 338 304
+05/15/2002 13:48
+
+         0        0  01:01 pcreate  60520000 tscom3.exe
+         0        0  01:01 load     77f60000 ntdll.dll 
+         0        0  01:01 load     60bd0000 emgsrv.dll 
+         0        0  01:01 load     613b0000 mbx.dll 
+         0        0  01:01 load     78000000 msvcrt.dll 
+         0        0  01:01 load     77f00000 kernel32.dll 
+         0        0  01:01 load     612a0000 nlsp.dll 
+         0        0  01:01 load     60fd0000 kkdo.dll 
+         0        0  01:01 load     61720000 ntdump.dll 
+         0        0  01:01 load     60b10000 fxcmem.dll 
+         0        0  01:01 load     61490000 qopsys.dll 
+         0        0  01:01 load     61530000 r1fns.dll 
+         0        0  01:01 load     77dc0000 advapi32.dll 
+         0        0  01:01 load     77e70000 user32.dll 
+         0        0  01:01 load     77ed0000 gdi32.dll 
+         0        0  01:01 load     77e10000 rpcrt4.dll 
+         0        0  01:01 load     612c0000 nlssys.dll 
+         0        0  01:01 load     60fc0000 intcbs.dll 
+         0        0  01:01 load     612f0000 nwh.dll 
+         0        0  01:01 load     61400000 pth.dll 
+         0        0  01:01 load     77bf0000 rpcltc1.dll 
+         0        0  01:01 load     61580000 r1sec.dll 
+         0        0  01:01 load     61670000 ngpt.dll 
+         0        0  01:01 load     61550000 r1ine2.dll 
+         0        0  01:01 load     776b0000 ws2_32.dll 
+         0        0  01:01 load     776a0000 ws2help.dll 
+         0        0  01:01 load     61520000 r1fd.dll 
+         0        0  01:01 load     615f0000 rth.dll 
+         0        0  01:01 load     609f0000 focutl.dll 
+         0        0  01:01 load     618f0000 prdid.dll 
+         0        0  01:01 load     60eb0000 ibiuth.dll 
+         0        0  01:01 load     61710000 ntdm.dll 
+         0        0  01:01 load     61930000 qcvtin.dll 
+         0        0  01:01 load     77660000 msafd.dll 
+         0        0  01:01 load     77690000 wshtcpip.dll 
+         0        0  01:01 load     776d0000 wsock32.dll 
+         0        0  01:01 load     60760000 dqsqlf.dll 
+         0        0  01:01 load     61340000 odbfoc.dll 
+         0        0  01:01 load     61a50000 qstrac.dll 
+         0        0  01:01 load     00ac0000 tabp.dll 
+         0        0  01:01 load     606d0000 comph.dll 
+        16       16  01:01 load     61040000 maspar.dll 
+        16       16  01:01 load     60c60000 grmdba.dll 
+        16       16  01:01 load     613d0000 parser.dll 
+        16       16  01:01 load     61b40000 ufaapi.dll 
+        16       16  01:01 load     61b50000 utl.dll 
+        16       16  01:01 load     610f0000 mfp.dll 
+        16       16  01:01 load     60f50000 grmdef.dll 
+        16       16  01:01 load     60c70000 grmmas.dll 
+        16       16  01:01 load     61af0000 tabutl.dll 
+        16       16  01:01 load     61480000 qmfint.dll 
+        16       16  01:01 load     612d0000 nthr.dll 
+        16       16  01:01 load     61910000 ptree.dll 
+        16       16  01:01 load     60c40000 focini.dll 
+        16       16  01:01 load     00db0000 gntint.dll 
+        16       16  01:01 load     00de0000 hffunc.dll 
+        16       16  01:01 load     61220000 ncache.dll 
+        16       16  01:01 load     61770000 ssgui.dll 
+        16       16  01:01 load     77d80000 comdlg32.dll 
+        16       16  01:01 load     77c40000 shell32.dll 
+        16       16  01:01 load     71700000 comctl32.dll 
+        16       16  01:01 load     77c00000 winspool.drv 
+        16       16  01:01 load     60710000 dmh.dll 
+        16       16  01:01 load     609d0000 focgui.dll 
+        16       16  01:01 load     60de0000 hlisu.dll 
+        16       16  01:01 load     60940000 edatcp.dll 
+        16       16  01:01 load     74ff0000 rnr20.dll 
+        16       16  01:01 load     609b0000 fmi.dll 
+        47       47  01:01 load     60fe0000 leth.dll 
+        47       47  01:01 load     01040000 mntdrv.dll 
+        47       47  01:01 load     61130000 mntipr.dll 
+        47       47  01:01 load     60f70000 grmmnt.dll 
+        47       47  01:01 load     01050000 osl.dll 
+        47       47  01:01 load     62310000 wfinit.dll 
+        47       47  01:01 load     62390000 wtinit.dll 
+        47       47  01:01 load     60650000 cacxsv.dll 
+        47       47  01:01 load     61960000 qfocqmf.dll 
+        47       47  01:01 load     61430000 qfqdbe.dll 
+        47       47  01:01 load     61500000 qvsamx.dll 
+        47       47  01:01 load     609e0000 focsgtst.dll 
+        47       47  01:01 load     61bd0000 vvset.dll 
+        47       47  01:01 load     61790000 styh.dll 
+        47       47  01:01 load     60c80000 grph.dll 
+        63       63  01:01 load     60c90000 grphtm.dll 
+        79       79  01:01 load     61300000 ocapi.dll 
+        94       94  01:01 load     77a90000 version.dll 
+        94       94  01:01 load     779c0000 lz32.dll 
+        94        0  01:02 tcreate  77f05290 kernel32.dll/77f05290
+       110       16  01:02 texit    0
+       110      110  01:01 error    c0000005 access violation        
+  msvcrt.dll/memcpy(00980b6c,4ee01afc,00000094)
+  tabp.dll/00b80d94(??)
+  tabp.dll/00b80d7c(00cc81f4,4ee01afc,0012f1ec)
+  tabp.dll/00c14664(??)
+  tabp.dll/00c145a0(0012f2b2,0012f27c)
+  tabp.dll/00afb9ad(??)
+  tabp.dll/00afaf00(00cb2ef8)
+  tabp.dll/00b15d00(??)
+  tabp.dll/00b15c19(00cfebd0)
+  tabp.dll/00b16e1a(??)
+  tabp.dll/00b16d9b(00cfebd0)
+  tabp.dll/00b1422a(??)
+  tabp.dll/00b13c70(??)
+  tabp.dll/00c55a06(??)
+  tabp.dll/00c54590(??)
+  tabp.dll/tabctp(00306920,0000004a)
+  rth.dll/615f6086(??)
+  rth.dll/615f5e13(00306320,0000005a,00306920,0000004a)
+  rth.dll/615f3f08(00306320,00940040,00000050)
+  nwh.dll/612f5255(??)
+  nwh.dll/612f50b5(00305100)
+  nwh.dll/612f37e8(??)
+  nwh.dll/612f31dc(00305100)
+  nwh.dll/nwctx(00305100)
+  tscom3.exe/60521df5(??)
+  tscom3.exe/60521bf0(0012ff2c,00000000)
+  tscom3.exe/60522369(??)
+  tscom3.exe/605222f0(00000003,00300f50,003001a0)
+  tscom3.exe/6052261f(??)
+  tscom3.exe/60522520(??)
+       438      438  01:01 pexit    128 tscom3.exe

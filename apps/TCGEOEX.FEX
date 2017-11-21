@@ -1,0 +1,131 @@
+-***************************************************************************
+-* REPORT NAME: TOP ORIGINATION SUMMARY
+-* TOTAL COMPANY REPORTING
+-*8/19/15     DV  S-07664 ADDED ADDITIONAL HOLD FILE
+-*                        TO BALANCE TO TCTRVLS 
+-***************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-* -SET &&INTDOM = IF &&SETF EQ 'TCTPORGD' THEN 'D' ELSE
+-* -               IF &&SETF EQ 'TCTPORGI' THEN 'I' ELSE 'T';
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED IN STEP7
+-*========================================================================
+DEFINE FILE &&EXTRACT
+FARE_PAID/D12.2CSM   = SEG_AMT + SEG_TAX;
+
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;  
+MILES/D9CS = CITYPAIR.SEG_MILES;                           
+
+GZONE1/A6=ORG_GEO_CODE||FNL_DEST_GEO_ZONE;                      
+GZONE/A7=ORG_GEO_CODE||'-'||FNL_DEST_GEO_ZONE;                      
+
+                           
+-* Defines on Previous Defines
+
+
+END
+
+TABLEF FILE &&EXTRACT
+PRINT  
+  MILES
+  GZONE
+  FARE_PAID  AS 'CP_FARE_PD'
+  NET_TKT_CNT
+  ORG_GEO_CODE
+  FNL_DEST_GEO_ZONE
+-* IF &&INTDOM EQ 'T' THEN GOTO SKIP;
+-* WHERE AIR_MAIN.INTL_DOM EQ '&&INTDOM.EVAL'
+-* -SKIP
+WHERE TRN_DATE GE &&FROMDT.EVAL AND TRN_DATE LE &&TODT.EVAL
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TC_GZ 
+END
+-RUN
+
+DEFINE FILE TC_GZ
+GZON/A7 = IF GZONE EQ '-' THEN 'EXC-TKT' ELSE GZONE;
+END
+TABLE FILE TC_GZ
+SUM CP_FARE_PD  
+    MILES	
+    NET_TKT_CNT	
+BY GZON AS 'GZONE'
+BY ORG_GEO_CODE
+BY FNL_DEST_GEO_ZONE
+ON TABLE HOLD AS TC_GZ2 
+END
+-RUN
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM STEP4 - HOLD TO FOCUS DATABASE TCRANK        
+-*========================================================================
+
+DEFINE FILE TC_GZ2
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TC_GZ2
+SUM CP_FARE_PD AS 'FARE'
+    MILES	
+    NET_TKT_CNT	
+BY ROLLCD
+BY GZONE
+BY ORG_GEO_CODE
+BY FNL_DEST_GEO_ZONE
+ON TABLE HOLD AS HOLD2 
+END
+-RUN
+ 
+
+
+DEFINE FILE HOLD2
+NMB/I5 = NMB + 1;
+END
+
+TABLE FILE HOLD2
+PRINT ORG_GEO_CODE
+    FNL_DEST_GEO_ZONE
+    NET_TKT_CNT
+    FARE
+    MILES
+BY ROLLCD
+BY NMB
+BY GZONE
+ON TABLE HOLD AS TC_GZ1
+END
+-RUN
+
+
+MODIFY FILE TCGEOOD
+LOG DUPL MSG OFF
+FIXFORM FROM TC_GZ1
+DATA ON TC_GZ1
+END
+-RUN
+
+
+-NEXTONE;
+-XXIT;

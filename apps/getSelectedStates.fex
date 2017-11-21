@@ -1,0 +1,67 @@
+-* 07/27/15 - DEB - S-10299 COMMENTED OUT SET &ECHO=ALL
+-*getSelectedStates.fex
+-*-SET &ECHO=ALL;
+-SET &SPC='&' | 'nbsp;';
+-DEFAULT &1 = 'US';
+ 
+DEFINE FILE STATE
+CNT/I5 = CNT + 1;
+IMD/I5 = IMOD(CNT, 2, IMD);
+STATE/A40 = STATE_NAME ||  ' (' | STATE_CODE | ' - ' | COUNTRY_CODE || ')';
+OPTS/A100=IF IMD NE 0 THEN '<option value="' || STATE_CODE || '">' || STATE
+  ELSE '<option style="background-color:#dcdcdc;" value="' || STATE_CODE || '">' || STATE;
+END
+
+TABLE FILE STATE
+PRINT OPTS
+-*BY STATE_CODE NOPRINT
+WHERE COUNTRY_CODE EQ &1.EVAL
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE HOLD AS HLDCNTRY
+END
+-RUN
+
+-HTMLFORM BEGIN
+<html>
+<head>
+<script>
+function moveItems() {
+ from=document.STATE.STATE;
+ var nbr = &nbrSelected;
+  
+ var startPos = from.options.selectedIndex;
+ for (i=startPos; i<from.options.length;i++) {
+     if (from.options[i].selected) { nbr++; 
+         if (nbr > 25) { alert("A maximum of 25 items can be selected.\nOnly the first 25 will be selected."); break;}
+         else {txt = from.options[i].text; window.opener.pasteState(txt);  }
+     }
+ }
+ window.close();
+}
+ 
+</script>
+</head>Select States/Provinces
+<body >
+<form name="STATE">
+<table border=0>
+<tr>
+<td>
+<select name="STATE" size="8" multiple>
+!IBI.FIL.HLDCNTRY;
+</select>
+</td>
+</tr>
+<tr>
+<td>&SPC</td>
+</tr>
+<tr>
+<td>
+<input type="button" value="  OK  " onclick="moveItems();">&SPC &SPC
+<input type="button" value="Close" onclick="window.close();">
+</td>
+</tr>
+</table>
+</form>
+</body>
+</html>
+-HTMLFORM END

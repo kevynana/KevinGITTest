@@ -1,0 +1,65 @@
+-* 07/27/15 - DEB - S-10299 COMMENTED OUT SET &ECHO=ALL
+
+
+-*-SET &ECHO=ALL;
+EX CLEARSELECTIONS
+-RUN
+
+TABLE FILE CONTROL
+PRINT ROLLUP_CODE
+BY USER_ID AS USER_NAME
+ON TABLE SAVE
+END
+-RUN
+
+-READ SAVE &USERID.A20.
+-CLOSE SAVE
+
+TABLE FILE USRTBL
+PRINT PUSHTECK
+WHERE USER_NAME EQ '&USERID.EVAL'
+ON TABLE SAVE AS SAVE2
+END
+-RUN
+
+-READ SAVE2 &PUSHOK.A1.
+-CLOSE SAVE2
+
+-IF '&PUSHOK.EVAL' EQ 'Y' OR '&PUSHOK.EVAL' EQ 'y' THEN GOTO StartDBPlus;
+
+
+-HTMLFORM BEGIN
+<!--DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"-->
+<html>
+<head>
+<title>ETTek Dashboard</title>
+</head>
+<body>
+<script language="JavaScript">
+location.href='/approot/dashboard/StartDB.htm';
+</script>
+</body>
+</html>
+-HTMLFORM END
+
+-GOTO XXXEXIT
+
+-StartDBPlus
+
+-HTMLFORM BEGIN
+<!--DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"-->
+<html>
+<head>
+<title>ETTek Dashboard</title>
+</head>
+<body>
+<script language="JavaScript">
+location.href='/approot/dashboard/StartDBPlus.htm';
+</script>
+</body>
+</html>
+-HTMLFORM END
+
+
+
+-XXXEXIT

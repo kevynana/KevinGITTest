@@ -1,0 +1,285 @@
+-* File qr_build_extract_code.fex
+-*
+-* Purpose:  Builds the extact program logic for the Quarterly Review.
+-*           Rewritten for ER5 since the original was a Maintain program.
+-*
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+-INCLUDE SETECHO
+ 
+-DEFAULT &HLDEX='';
+ 
+ 
+JOIN CLEAR *
+-RUN
+ 
+-* BRPT_FLDS_QREVIEW and BRPT_FLDS_QREVIEW2 will contain the selected user options
+-* for the report that is being generatedd.  QRPAGES_SQL is a table of all the QR pages
+-* and the options that apply to each.  Joining these tables to get the required data
+-* that is needed to generate the code.
+SET ALL=PASS
+JOIN RPT_ABBR IN RPT_FLDS_QREVIEW TO RPT_ABBR IN QRPAGES_SQL AS J1
+JOIN RPT_SEQ IN RPT_FLDS_QREVIEW TO ALL RPT_SEQ IN RPT_FLDS_QREVIEW2 AS J2
+-RUN
+ 
+DEFINE FILE RPT_FLDS_QREVIEW
+EXTRACT/A30='EX QR_EXTRACT_' | RPT_ABBR;
+LAYOUT1_ALL/A20=IF COMBINED EQ 'Y' THEN 'QR_' || RPT_ABBR || '_01' ELSE '';
+LAYOUT1_DOM/A20=IF COMBINED EQ 'Y' OR RPT_DOMESTIC EQ 0 THEN '' ELSE 'QR_' || RPT_ABBR || 'D_01';
+LAYOUT1_INT/A20=IF COMBINED EQ 'Y' OR RPT_INTERNATIONAL EQ 0 THEN '' ELSE 'QR_' || RPT_ABBR || 'I_01';
+LAYOUT1_TOT/A20=IF COMBINED EQ 'Y' OR RPT_TOTAL EQ 0 THEN '' ELSE 'QR_' || RPT_ABBR || 'T_01';
+LAYOUT2_ALL/A20=IF COMBINED EQ 'Y' THEN 'QR_' || RPT_ABBR || '_02' ELSE '';
+LAYOUT2_DOM/A20=IF COMBINED EQ 'Y' OR RPT_DOMESTIC EQ 0 THEN '' ELSE 'QR_' || RPT_ABBR || 'D_02';
+LAYOUT2_INT/A20=IF COMBINED EQ 'Y' OR RPT_INTERNATIONAL EQ 0 THEN '' ELSE 'QR_' || RPT_ABBR || 'I_02';
+LAYOUT2_TOT/A20=IF COMBINED EQ 'Y' OR RPT_TOTAL EQ 0 THEN '' ELSE 'QR_' || RPT_ABBR || 'T_02';
+ 
+END
+TABLE FILE RPT_FLDS_QREVIEW
+PRINT RPT_ABBR
+	  PAGES
+	  COMBINED
+      EXTRACT
+	  LAYOUT1_ALL
+	  LAYOUT2_ALL
+      RPT_DOMESTIC
+	  LAYOUT1_DOM
+	  LAYOUT2_DOM
+	  RPT_INTERNATIONAL
+	  LAYOUT1_INT
+	  LAYOUT2_INT
+	  RPT_TOTAL
+	  LAYOUT1_TOT
+	  LAYOUT2_TOT
+	  HOTEL_SURROUND_AREA
+	  HOTEL_PREFERRED_INFO
+	  HOTEL_EXCLUDE_ZERO
+	  EXCLUDE_LIMO
+	  SELECTED_QUARTER
+	  RPT_NAME
+	  MOVE_PCT_OPT
+	  ONLINE_ANALYSIS_PCT_OPT
+	  LS_AMOUNT_OPT
+	  CONTRACT_AIRLINE_OPT
+	  AIRLINE_OPT
+	  HOTEL_SURROUND_OPT
+	  EXCLUDE_0_DOLLARS_OPT
+	  LIMO_OPT
+	  PREF_HOTEL_OPT
+	  PERCENTAGE
+	  AIRLINE
+	  AMOUNT
+BY RPT_SEQ
+BY SEQ_NO
+WHERE INST_KEY EQ 501552
+ON TABLE HOLD AS HQR00001
+END
+-RUN
+ 
+
+-* This table request will create a hold file that will contain the data that is needed
+-* to generate the extract program logic.
+DEFINE FILE HQR00001
+CDOM/A20=IF COMBINED NE 'Y' THEN '' ELSE IF RPT_DOMESTIC EQ 1 THEN '-SET &&' | 'DOM=' | '''' | 'Y' | '''' | ';' ELSE '-SET &&' | 'DOM=' | '''' | 'N' | '''' | ';';
+CINT/A20=IF COMBINED NE 'Y' THEN '' ELSE IF RPT_INTERNATIONAL EQ 1 THEN '-SET &&' | 'INT=' | '''' | 'Y' | '''' | ';' ELSE '-SET &&' | 'INT=' | '''' | 'N' | '''' | ';';
+CTOT/A20=IF COMBINED NE 'Y' THEN '' ELSE IF RPT_TOTAL EQ 1 THEN '-SET &&' | 'TOT=' | '''' | 'Y' | '''' | ';' ELSE '-SET &&' | 'TOT=' | '''' | 'N' | '''' | ';';
+SDOM/A20=IF COMBINED EQ 'Y' THEN '' ELSE IF RPT_DOMESTIC EQ 1 THEN '-SET &&' | 'INTDOM=' | '''' | 'D' | '''' | ';' ELSE '';
+SINT/A20=IF COMBINED EQ 'Y' THEN '' ELSE IF RPT_INTERNATIONAL EQ 1 THEN '-SET &&' | 'INTDOM=' | '''' | 'I' | '''' | ';' ELSE '';
+STOT/A20=IF COMBINED EQ 'Y' THEN '' ELSE IF RPT_TOTAL EQ 1 THEN '-SET &&' | 'INTDOM=' | '''' | 'T' | '''' | ';' ELSE '';
+ALPHA_AMT0/A15 = IF RPT_ABBR NE 'LSO' THEN '' ELSE FTOA(AMOUNT, '(D12)', ALPHA_AMT0);
+ALPHA_AMT1/A15=EDIT(ALPHA_AMT0,'999$999$999$999');
+ALPHA_AMT/A15 = LJUST(15,TRIM('B', ALPHA_AMT1, 15, ' ', 1, 'A15'),'A15');
+LSO_AMT/A50=IF RPT_ABBR NE 'LSO' THEN '' ELSE ('-SET &&' | 'ANALYSIS=' | '''') || ALPHA_AMT || '''' || ';';
+S_NO/I11=IF COMBINED EQ 'Y' THEN 1 ELSE SEQ_NO;
+NTOT/A20='-SET &&' | 'TOT=' | '''' | 'N' | '''' | ';';
+YTOT/A20='-SET &&' | 'TOT=' | '''' | 'Y' | '''' | ';';
+NDOM/A20='-SET &&' | 'DOM=' | '''' | 'N' | '''' | ';';
+NINT/A20='-SET &&' | 'INT=' | '''' | 'N' | '''' | ';';
+END
+TABLE FILE HQR00001
+SUM EXTRACT RPT_ABBR COMBINED
+      CDOM CINT CTOT
+      SDOM SINT STOT
+	  LSO_AMT
+	  NTOT YTOT
+	  NDOM NINT
+	  RPT_DOMESTIC
+	  RPT_INTERNATIONAL
+	  RPT_TOTAL
+BY RPT_SEQ
+BY S_NO AS SEQ_NO
+ON TABLE SET ASNAMES ON
+ON TABLE SAVE AS HQR00002 FORMAT ALPHA
+END
+-RUN
+ 
+-* Read through HQR00002 and write out a fex called QREXCODE.  This fex will be dynamically included
+-* in the execution of the QR report to extract the required data for the selected pages.
+-*
+-* If a page is a combined page, meaning Domestic, International, and Total are all the same page the variables
+-* &&DOM, &&INT, and &&TOT will be passed to indicate if each type was selected to be included on the page.
+-*
+-* If a separate page is generated for Domestic, International, and Total a variable called &&INTDOM will be
+-* passed to indicate which types goes on a specfic page.
+-*
+-* The LSO page needs the dollar amount that it is running for.  &&ANALYSIS will contain this amount.
+-SET &RCTR=0;
+-:READ
+-READ HQR00002 NOCLOSE &RSEQ.11,&SEQ.11,&EXTRACT.30.&ABBR.10,&COMBINED.1,&CDOM.20.&CINT.20,&CTOT.20.&SDOM.20,&SINT.20,
+-, &STOT.20,&LSOAMT.50, &NTOT.20, &YTOT.20, &NDOM.20, &NINT.20, &D.11, &I.11, &T.11
+-IF &IORETURN NE 0 GOTO XEXIT;
+-SET &RCTR=&RCTR+1;
+-SET &HLDEX=IF &RCTR EQ 1 THEN '' ELSE
+-           IF &HLDEX EQ '' THEN &EXTRACT ELSE &HLDEX;
+APP FI QREXCODE DISK QREXCODE.FEX (APPEND
+-RUN
+-IF '&COMBINED.EVAL' NE 'Y' GOTO :NOCMB0;
+-IF &ABBR EQ 'MPA' OR 'CSA' GOTO :CMBSPL;
+-:CMBNORMAL
+-WRITE QREXCODE -*
+-WRITE QREXCODE &CDOM
+-WRITE QREXCODE &CINT
+-WRITE QREXCODE &CTOT
+-WRITE QREXCODE &EXTRACT
+-SET &HLDEX = &EXTRACT;
+-WRITE QREXCODE -RUN
+-GOTO :CDONE;
+-* Special code for MPA and CSA
+-:CMBSPL
+-IF &T EQ 0 GOTO :CMBNORMAL;
+-IF &D EQ 0 AND &I EQ 0 AND &T EQ 1 GOTO :CMBNORMAL;
+-WRITE QREXCODE -*
+-WRITE QREXCODE &CDOM
+-WRITE QREXCODE &CINT
+-WRITE QREXCODE &NTOT
+-WRITE QREXCODE &EXTRACT
+-SET &HLDEX = &EXTRACT;
+-WRITE QREXCODE -RUN
+-WRITE QREXCODE -*
+-WRITE QREXCODE &NDOM
+-WRITE QREXCODE &NINT
+-WRITE QREXCODE &YTOT
+-WRITE QREXCODE &EXTRACT
+-SET &HLDEX = &EXTRACT;
+ 
+-GOTO :CDONE;
+-:NOCMB0
+-IF &ABBR EQ 'LSO' GOTO :CD;
+-IF &EXTRACT EQ &HLDEX GOTO :CDONE;
+-:CD
+-IF &SDOM EQ '' GOTO :CI;
+-WRITE QREXCODE -*
+-WRITE QREXCODE &LSOAMT
+-WRITE QREXCODE &SDOM
+-WRITE QREXCODE &EXTRACT
+-WRITE QREXCODE -RUN
+-:CI 
+-IF &SINT EQ '' GOTO :CT;
+-WRITE QREXCODE -*
+-WRITE QREXCODE &LSOAMT
+-WRITE QREXCODE &SINT
+-WRITE QREXCODE &EXTRACT
+-WRITE QREXCODE -RUN
+-:CT
+-IF &STOT EQ '' GOTO :CDONE;
+-WRITE QREXCODE -*
+-WRITE QREXCODE &LSOAMT
+-WRITE QREXCODE &STOT
+-WRITE QREXCODE &EXTRACT
+-WRITE QREXCODE -RUN
+-:CDONE
+-SET &HLDEX = &EXTRACT;
+-GOTO :READ;
+ 
+-:NOCMB1
+-XEXIT
+-SET &&CYFMDT = '2017/01/01';
+-SET &&CYTODT = '2017/03/31';
+-SET &&PYFMDT = '2016/01/01';
+-SET &&PYTODT = '2016/03/31';
+-SET &&FROMDT = '2017/01/01';
+-SET &&TODT   = '2017/03/31';
+-SET &&FXDATE = '2016/01/01';
+-SET &&TXDATE = '2016/03/31';
+-SET &&PYTDDATE = '2016/03/31';
+-SET &&PQFMDT = '2016/10/01';
+-SET &&PQTODT = '2016/12/31';
+-SET  &&CQFMDT = '2017/01/01';
+-SET &&CQTODT = '2017/03/31'; 
+-SET &&BASEROLL = 'FUJI-R';
+-SET &&BASECOMP = 'FUJI'; 
+
+-SET &&AIR_PATH = '\\omawebfocus04\d' || '\TNT\TTRACKER\DATA\';
+-SET &&CAR_PATH = '\\omawebfocus04\d' || '\TNT\TTRACKER\DATA\';
+-SET &&HTL_PATH = '\\omawebfocus04\d' || '\TNT\TTRACKER\DATA\';
+-SET &&LIM_PATH = '\\omawebfocus04\d' || '\TNT\TTRACKER\DATA\';
+-SET &&COM_PATH = '\\omawebfocus04\d' || '\TNT\TTRACKER\SYSTEM\DATA\';
+-SET &&SET_DONE = 'N';
+-SET &&ROLLFY = '04';
+-SET &&FYFLAG = '01';
+-SET &&WEB_PATH = '\\omawebfocus04\d' ;
+
+-TYPE &&AIR_PATH
+-TYPE &&WEB_PATH
+
+
+-SET &&IKEY = 501552; 
+-SET &&CMFMDT = '2017/03/01';
+-SET &&CMTODT = '2017/03/31';
+-SET &&PMFMDT = '2016/03/01';
+-SET &&PMTODT = '2016/03/31';
+-SET &&UNAME = 'deb';
+
+ 
+-*EX QRSetDate
+-*-RUN 
+-***************************************************
+-* reset dates and report type in control file
+-***************************************************
+-*specify the values for program catqtr
+-SET &&RPTTYP = 'ADD';
+-SET &&SMD    = 'M';
+-*reset the date ranges for Trending Data
+-SET &&FROMDT = '&&CYFMDT.EVAL';
+-SET &&TODT   = '&&CYTODT.EVAL';
+-SET &&FXDATE = '&&PYFMDT.EVAL';
+-SET &&TXDATE = '&&PYTODT.EVAL';
+
+-*-SET &&TXDATE = '&&PYTDDATE.EVAL';
+ 
+-**************************************************************
+-*RESET rollup_code and comp to the base rollup_code and comp.
+-**************************************************************
+-SET &&ROLLUP = '&&BASEROLL.EVAL';
+-SET &&COMPNY = '&&BASECOMP.EVAL';
+
+ 
+
+ 
+
+-IF &&FROMER5 NE 'Y' GOTO :NER5_CONT;
+-SET &&RPTGRP_OVERRIDE='AIR';
+EX CODEGEN
+-INCLUDE SELCATQT
+-RUN  
+-*EX QRSetDate
+-*-RUN
+
+-*reset the date ranges
+-SET &&FROMDT = '&&CYFMDT.EVAL';
+-SET &&TODT = '&&CYTODT.EVAL';
+-SET &&FXDATE = '&&PYFMDT.EVAL';
+-SET &&TXDATE = '&&PYTODT.EVAL';
+-:NER5_CONT;
+
+EX CONCAT_ALL_DBS ROLL=FUJI-R,FID=MKT,CLEAR=Y
+-RUN
+-********************************************************
+-* Execute program to generate data from base rollup
+-********************************************************
+ 
+CREATE FILE QRMKTD
+-RUN
+ 
+CREATE FILE QRMKTI
+-RUN
+ 
+ 

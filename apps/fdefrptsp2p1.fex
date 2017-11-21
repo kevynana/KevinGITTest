@@ -1,0 +1,213 @@
+-INCLUDE SETECHO
+-TYPE "IN FDEFRPTS"
+-*-SET &ECHO=ALL;
+-* ROUTINE TO FILEDEF REPORTS THAT WILL BE SAVED
+-*   &&RPTSUF SHOULD BE SET BEFORE EACH -INCLUDE OF THIS FEX, TO
+-*   THE TYPE OF REPORT BEING SAVED (SUMMARY(SMY), DETAIL(DTL)).
+-*
+-*  - Actual Reports will be saved using Report Name.
+-*
+-*  "&&OUTTO='T'" = the report is to be saved on the TandT server,
+-*                  the filedef will be directly to the TTWEB
+-*                  directory structure.
+-*  "&&OUTTO='E'" = the report sent via email, the filedef will be
+-*                  to the TE directory.  Subdirectories will be
+-*                  buit based on UserID and within the UserID directory
+-*                  a directory will be buitly based on Report Set
+-*                  Key (&&SETKEY = 'Y') or Instance Key.
+-*  "&&OUTTO='F'" = the report sent via FTP, the filedef will be
+-*                  to the TE directory.  Subdirectories will be
+-*                  buit based on UserID and within the UserID directory
+-*                  a directory will be buitly based on Instance Key.
+-*
+-* 09/14/2004 = ARGLEN LOGIC ADDED TO CODE (SEE &XV0) DUE TO ABENDS
+-*              OCURRING AT RUN TIME.  William Torres
+-*
+-* 06/16/2008 - Added Logic to save Report Names to file in order to email
+-*              links to the saved reports on the server - REJ
+-*
+-* 01/17/2012 - Added EXL2KON as a valid format with .xls extension to 
+-*              support BYDISPLAY changes -GSE
+-*
+-*9/26/16-JEM-S-23779-Added -set for ABP2PBS &DTTMIID to include bonus save name
+
+-************** Parse the Report Instance Name **************************
+-* THIS REPEAT LOOP WILL CHANGE ALL NON-ALPHA-NUMERIC CHARACTERS TO
+-* UNDERSCORES FOR THE REPORT INSTANCE NAME .
+SET USERFCHK=OFF
+-*-INCLUDE SetParmtime
+  
+-DEFAULT &WWW_PATH='';
+-DEFAULT &&BURST='';
+ 
+-SET &RNLENX=&&RN.LENGTH;
+-SET &RNLEN=
+- ARGLEN(50, &&RN, 'I3');
+-SET &RNLEN=IF &RNLENX LT &RNLEN
+- THEN &RNLENX ELSE
+- &RNLEN;
+-SET &IRN=&&RN;
+-SET &&IRN =
+- CTRAN(&RNLEN, &IRN, 32, 95, 'A50');
+
+-SET &IRN = &&IRN;
+-SET &&IRN =
+- CTRAN(&RNLEN, &IRN, 47, 95, 'A50');
+
+-SET &IRN = &&IRN;
+-SET &&IRN =
+- CTRAN(&RNLEN, &IRN, 92, 95, 'A50');
+-************************************************************************
+ 
+-SET &IIKEY = &&IDKEY;
+ 
+-****************** Using INTIME for Report Sets ************************
+-*-SET &ISKEY=EDIT('&&ITIME.EVAL','99999999$$99$99$99');
+-SET &ISKEY= IF &&ITIME EQ 'WRUNINDV' THEN 'WRUNINDV'
+- ELSE EDIT('&&ITIME.EVAL','99999999$$99');
+ 
+-SET &COMP = GETTOK('&&ROLLUP.EVAL',8,1,'-R',6,COMP);
+-SET &SETKEY = &&SKEY;
+ 
+-SET &ISKEY= '&COMP.EVAL' || '&ISKEY.EVAL' || '_' || '&SETKEY.EVAL';
+ 
+-TYPE ISKEY==> &ISKEY
+ 
+-**********DETERMINE DATE AND TIME FOR FILE AND DIRECTORY NAMES
+-*-SET &NOWTM = HHMMSS ('A8');
+-*-SET &NOWTM = EDIT(&NOWTM,'99$99$99');
+-*-SET &NOWDT = &YYMD;
+-*-SET &NOWDTTM = &NOWDT || '_' || &NOWTM;
+-*-SET &DTTMIID = &&IRN || '_' || &&RPTSUF  || '_' || &NOWDTTM;
+
+-SET &&IRN = STRIP(50, &&IRN, ',', 'A50');
+-SET &&IRN = STRIP(50, &&IRN, ';', 'A50');
+-SET &&IRN = STRIP(50, &&IRN, ' ', 'A50');
+
+-IF &&BURST NE 'Y' GOTO :NBURST;
+-SET &&IRN='&&IRN.EVAL' || '_' || '&&MEMBER.EVAL';
+-:NBURST
+
+-IF '&&SETF.EVAL' EQ 'ABP2PBS' THEN GOTO P2PBONUS;
+ 
+-SET &DTTMIID = IF '&&UNAME.EVAL' EQ 'sample' THEN
+- '&&IRN.EVAL' ELSE
+- '&&ROLLUP.EVAL' || '_' || '&&RPTSUF.EVAL' || '_' || '&&NOWDTTM.EVAL' || '';
+
+-GOTO P2PDNE;
+
+-P2PBONUS;
+-SET &DTTMIID = '&&ROLLUP.EVAL' || '_' || 'BONUS_' || '&&RPTSUF.EVAL' || '_' || '&&NOWDTTM.EVAL' || '';
+-GOTO P2PDNE;
+
+-P2PDNE;
+ 
+-SET &&SEPATH = '&&WEBSRV.EVAL' || '\TE\' || '&&UNAME.EVAL' || '\ '||
+- '&ISKEY.EVAL'
+- || '\' ;
+-SET &&EPATH  = '&&WEBSRV.EVAL' || '\TE\' || '&&UNAME.EVAL' || '\ '||
+- '&IIKEY.EVAL'
+- || '\EMAIL\';
+-SET &&FPATH  = '&&WEBSRV.EVAL' || '\TE\' || '&&UNAME.EVAL' || '\ '||
+- '&ISKEY.EVAL'
+- || '\FTP\';
+ 
+-SET &&TEMPPATH = IF &&SETZIP EQ 'Y' AND EDIT(&&OUTTO,'9') EQ 'E'
+- THEN &&SEPATH
+- ELSE IF EDIT(&&OUTTO,'9') EQ 'E'
+- THEN &&EPATH
+- ELSE IF EDIT(&&OUTTO,'9') EQ 'F'
+- THEN &&FPATH
+- ELSE &&WEBPATH;
+ 
+-SET &&SETMPATH =
+- '&&WEBSRV.EVAL' || '\\TE\\' || '&&UNAME.EVAL' || '\\' || '&ISKEY.EVAL' || '\\';
+-SET &&MAILPATH =
+-  '&&MNTWEBSRV.EVAL' || '\\TE\\ ' || '&&UNAME.EVAL' || '\\'||
+-  '&IIKEY.EVAL' || '\\EMAIL\\';
+ 
+ 
+-IF EDIT(&&OUTTO,'9') EQ 'T' GOTO SKIP_MKDIR;
+-IF EDIT(&&OUTTO,'$9') EQ 'B' GOTO SKIP_MKDIR;
+
+-*-TYPE "Make Dir" 
+-DOS MKDIR &&TEMPPATH
+-SKIP_MKDIR
+
+-SET &&OUTFMT = 'COMT';
+
+-SET &&XTN = IF '&&RPTTYPE.EVAL' EQ 'DVR' THEN '.xls' ELSE IF (&&OUTFMT EQ 'PDF') THEN '.pdf'
+- ELSE IF (&&OUTFMT EQ 'EXCEL') THEN '.xls'
+- ELSE IF (&&OUTFMT EQ 'EXL2K') THEN '.xls'
+- ELSE IF (&&OUTFMT EQ 'EXL2KON') THEN '.xls'
+- ELSE IF (&&OUTFMT EQ 'COMT') THEN '.csv'
+- ELSE IF (&&OUTFMT EQ 'PPT') THEN '.pht'
+- ELSE '.pdf';
+
+-SET &&SAVSUM = '"'| &&TEMPPATH ||
+- &DTTMIID || &&XTN.EVAL || '"' ;
+
+-*****************************************************************************
+-IF &&ELINKS NE 'Y' GOTO SKIP_LINK;
+
+
+-SET &WWW_PATH =  '&&SRVR.EVAL' || '/TTWEB/' || '&&ROLLUP.EVAL' || '/' ||
+- '&&UNAME.EVAL' || '/' || '&DTTMIID.EVAL' || '&&XTN.EVAL';
+
+-TYPE "check values in fderpts.fex"
+-SET &&SAVSUM = '&&SAVSUM.EVAL';
+
+-SET &&IRN = '&&IRN.EVAL' || '';
+
+DEFINE FILE ROLLUP
+RPT/A100=IF '&&UNAME' EQ 'sample' THEN '&&IRN' ELSE
+         IF '&&PUSHNAME' EQ '' THEN '&&IRN' || '_' || '&&RPTSUF' ELSE '&&PUSHNAME' || '_' || '&&RPTSUF';
+LNK/A255='&WWW_PATH';
+SCH/A12='&&SCHED';
+RLEN/I3=ARGLEN(255, '&&SAVSUM.EVAL', RLEN);
+RFILE/A255=STRIP(RLEN, '&&SAVSUM.EVAL', '"', RFILE);
+IKEY/I11=&IIKEY;
+END
+TABLE FILE ROLLUP
+PRINT RPT AS RPT_NAME
+      LNK AS RPT_LINK
+      RFILE AS RPT_FILE
+      IKEY AS RPT_INST_KEY
+BY ROLLUP_CODE NOPRINT
+BY SCH AS SCHEDULE_ID
+ON TABLE SET ASNAMES ON
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE HOLD AS HLDLINK
+WHERE RECORDLIMIT EQ 1
+END
+-RUN
+ 
+-TYPE "in fderpts 2"
+
+MODIFY FILE PUSH_LINKS
+LOG DUPL MSG OFF
+FIXFORM FROM HLDLINK
+MATCH SCHEDULE_ID RPT_LINK
+  ON NOMATCH INCLUDE
+  ON MATCH REJECT
+ DATA ON HLDLINK
+END
+-RUN
+ 
+-SKIP_LINK
+-*****************************************************************************
+ 
+FILEDEF SAVREP CLEAR
+-RUN
+ 
+FILEDEF SAVREP DISK -
+&&SAVSUM
+-RUN
+-IF &&RCRUN EQ 'Y' GOTO XFDEF;
+
+-TYPE "AFTER FDEFRPTS"
+
+-XFDEF
+
+
+ 

@@ -1,0 +1,121 @@
+-INCLUDE SETECHO
+-RUN
+
+-SET &&RPTSUF = 'GRAPHTEST';
+
+-INCLUDE FDEFRPTS
+-RUN
+
+DEFINE FILE STEVEGRAPH
+PER/A2 = EDIT(PERIOD, '$$99');
+END
+-RUN
+
+TABLE FILE STEVEGRAPH
+SUM TOTAL_VOL AS 'Total,Volume' NET_TKTS AS 'Net,Tickets'
+BY PER NOPRINT
+BY PERIOD AS 'Period'
+ON TABLE HOLD AS FIRSTHOLD
+END
+-RUN
+
+
+GRAPH FILE STEVEGRAPH
+SUM TOTAL_VOL AS 'Total Volume' NET_TKTS AS 'Net Tickets'
+ACROSS PERIOD AS ' ' 
+ON GRAPH SET LOOKGRAPH VBAR2AX
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID ON
+ON GRAPH SAVE AS STEVEG FORMAT SVG
+ON GRAPH SET GRAPHSTYLE *
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(1, new Color, 128 255 128));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setConnectScatterMarkers(true);
+setO1LabelDisplay(true);
+setO1LabelRotate(0);
+setAxisAssignment(0,0);
+setSeriesType(0,1);
+setAxisAssignment(1,1);
+setSeriesType(1,2);
+setY2TitleString("Net Tickets");
+setTextFormatPreset(getY1Label(),5);
+setTextFormatPreset(getY2Label(),-1);
+setTextFormatPattern(getY2Label(),"#,###");
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setTitleString("Air Volume and Net Tickets");
+setFontSizeAbsolute(getTitle(),true);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+END
+-RUN
+
+
+-SET &&N1_GIF=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+
+TABLE FILE FIRSTHOLD
+SUM TOTAL_VOL AS 'Total,Volume' NET_TKTS AS 'Net,Tickets'
+BY PERIOD AS 'Period'
+ON TABLE NOTOTAL
+ON TABLE SET PAGE-NUM OFF
+&&OUTLINE1
+&&OUTLINE2
+HEADING
+" "
+"</1"
+FOOTING BOTTOM
+" "
+" "
+" "
+"&&CRIGHT"
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=1.0000, RIGHTMARGIN=0.250000, 
+    TOPMARGIN=3.000000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FOCEXEC=NONE, FONT=TIMES NEW ROMAN, SIZE=6, COLOR=BLACK,
+    BACKCOLOR=NONE, STYLE=NORMAL, $
+-IF &&N1_GIF EQ 'N' GOTO SKIP_CLS1;
+TYPE=REPORT, 
+ IMAGE=STEVEG.SVG,
+ POSITION=(-0.4 -2.8), SIZE=(4 3), $
+-SKIP_CLS1
+TYPE=TITLE, SIZE=10, STYLE=BOLD, $
+TYPE=HEADING, LINE=1, ITEM=1, SIZE=7, FONT=COURIER NEW,
+    STYLE=BOLD+ITALIC, $
+TYPE=HEADING, LINE=1, ITEM=2, SIZE=7, FONT=COURIER NEW,
+    STYLE=BOLD+ITALIC, $
+TYPE=HEADING, LINE=1, ITEM=3, SIZE=7, FONT=ARIAL,
+    STYLE=BOLD, $
+TYPE=HEADING, LINE=2, ITEM=1, SIZE=7, FONT=COURIER NEW,
+    STYLE=BOLD+ITALIC, $
+TYPE=HEADING, LINE=2, ITEM=2, SIZE=7, FONT=COURIER NEW,
+    STYLE=BOLD+ITALIC, $
+TYPE=HEADING, LINE=2, ITEM=3, SIZE=7, FONT=ARIAL,
+    STYLE=BOLD, $
+TYPE=HEADING, LINE=3, SIZE=7, FONT=COURIER NEW,
+    STYLE=BOLD+ITALIC, $
+TYPE=HEADING, LINE=4, SIZE=7, FONT=COURIER NEW,
+    STYLE=BOLD+ITALIC, $
+TYPE=HEADING, LINE=10, OBJECT=TEXT, ITEM=1, FONT=COURIER NEW,
+    STYLE=BOLD+ITALIC, $
+TYPE=SUBTOTAL, STYLE=BOLD, $
+TYPE=FOOTING, SIZE=6, $
+END
+-RUN

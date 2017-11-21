@@ -1,0 +1,167 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File SMRYRPT.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-*2/05/01      TANDT-SS             ADD BASE_FARE, DEPT_MONTH, SEG_DESIG 
+-*                                  AND TOUR_CODE.
+-*5/10/01      TANDT-SS             ADD EMB_APT_CD AND RTE_APT_CD.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*4/2/04       JOYK                 CARRIED THROUGH TKT_PURCH
+-**********************************************************************
+
+
+SET ASNAMES = ON
+-RUN
+
+TABLEF FILE &&RPT_HOLD
+PRINT AGENT_NUM
+      AIR_KEY
+      AIRLINE_NAME
+      LEVEL_DESC
+      MRK_TKT_CNT
+      TKT_PURCH
+ON TABLE HOLD AS HLD1
+END
+-RUN
+
+
+JOIN HLD1.AGENT_NUM IN HLD1 TO ALL AGENT.AGENT IN AGENT AS J1
+END
+-RUN
+
+TABLE FILE HLD1
+SUM MRK_TKT_CNT AS 'TMKT'
+    TKT_PURCH AS 'TPURCH'
+BY AGENT_NUM
+BY AGENT_NAME
+BY AIRLINE_NAME
+ON TABLE HOLD AS HOLDONE
+END
+-RUN
+
+TABLE FILE HLD1
+PRINT AIR_KEY	
+      LEVEL_DESC
+      MRK_TKT_CNT
+      TKT_PURCH
+BY AGENT_NUM
+BY AGENT_NAME
+BY AIRLINE_NAME
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT AIR_KEY
+      LEVEL_DESC
+      MRK_TKT_CNT
+      TKT_PURCH
+BY AGENT_NUM
+BY AGENT_NAME
+BY AIRLINE_NAME
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM TMKT
+    TPURCH
+BY AGENT_NUM
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW 
+END
+-RUN
+
+DEFINE FILE XTHREE
+  PCTMKT/D8.1S= IF ((TMKT LT 1) AND (TMKT GT (-1))) THEN 0
+                ELSE ((MRK_TKT_CNT/TMKT)*100);
+  AGT_INFO/A26 = AGENT_NUM||'-'||AGENT_NAME;
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+
+TABLE FILE XTHREE
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYS
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3
+
+

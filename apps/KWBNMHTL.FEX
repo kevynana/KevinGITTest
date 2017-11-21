@@ -1,0 +1,133 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* 10/28/2015 DLV S-12409 - Added new routine for KWBNMPX 
+-*                          created from CEBNMHTL
+-*S-25167-9/27/16-JEM-Updated from level2 to emp_id
+-* 07/07/2017 - RSB - S-36531 Reports that do not use a view to be updated with standard footer (part 2)
+-*                             Needed to remove single quotes around date amper variables.   	
+
+-SET &HDTDESC = IF &&DATETYPE EQ 'I' THEN 'INVOICE_DATE' ELSE 'CHKIN_DATE';
+
+
+-INCLUDE SETECHO 
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+-DEFAULT &&HTLDATA = 'Y';
+
+DEFINE FILE &&EXTRACT
+
+  LEVEL_DESC/A60  = &&LDESC;
+  NBR_DAYS/P12CS=NUM_DAYS;
+  NBR_ROOMS/P12CS = NUM_ROOMS;
+  NEW_TOTAL_AMT/D14.2C = TOTAL_AMT;
+  NNROOMS/P12CS = IF ((NBR_DAYS LT 0) AND (NUM_ROOMS LT 0)) THEN 
+                ((NBR_DAYS*NUM_ROOMS) * (-1)) ELSE NBR_DAYS*NUM_ROOMS;
+  TRAN_MY/MTYY = INVOICE_DATE;
+  XPSNGR_NM/A15        = 
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');   
+  FLAG/A1 = 'H';
+   
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT AROLL_DSC3
+  CATEGORY
+  EMP_ID
+  INVOICE_DATE	
+  FLAG
+  LEVEL_DESC
+  LEVEL1
+  LEVEL2
+  NBR_DAYS	
+  NNROOMS
+  PASSNGR_NAME
+  NEW_TOTAL_AMT
+  TRAN_MY 
+  XPSNGR_NM
+-* WHERE (&HDTDESC GE '&&FROMDT.EVAL') AND (&HDTDESC LE '&&TODT.EVAL') 
+WHERE (&HDTDESC GE &&FROMDT.EVAL) AND (&HDTDESC LE &&TODT.EVAL) 
+      
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+-*&&WHERE1
+-*&&WHERE2
+-*&&WHERE3
+-*&&WHERE4
+&&WHERE5
+&&WHERE6
+-*&&WHERE7
+-*&&WHERE8
+-*&&WHERE9
+-* &&WHERE10
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS HTLHLD
+END
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NOHTL ELSE GOTO Continueh;
+
+
+-Continueh;
+-SET &&SORT1 = EMP_ID;
+-SET &&SORT2 = PASSNGR_NAME;
+-SET &&IDXFIELD = &&SORT1;
+
+TABLE FILE HTLHLD
+SUM NBR_DAYS	
+  NNROOMS
+  NEW_TOTAL_AMT
+BY &&SORT1
+BY &&SORT2
+ON TABLE HOLD AS HTLHLD1
+END
+-RUN
+
+DEFINE FILE HTLHLD1
+CHTTLA/D12.2CS = NEW_TOTAL_AMT;
+CHTTLN/P8CS = NNROOMS ;
+END
+TABLE FILE HTLHLD1
+SUM CHTTLA
+    CHTTLN  
+COMPUTE AVGRATE/D12.2CS = IF CHTTLA EQ 0 THEN 0 ELSE 
+                          IF ((CHTTLN LT 1) AND (CHTTLN GT (-1))) THEN 0 ELSE (CHTTLA/CHTTLN); 
+BY &&SORT1
+BY &&SORT2
+ON TABLE HOLD AS HTLHLD2
+END
+-RUN
+
+
+ 
+
+
+TABLE FILE HTLHLD2
+PRINT CHTTLA
+    CHTTLN
+    AVGRATE
+    PASSNGR_NAME AS 'HPAX'
+BY &&SORT1
+BY &&SORT2
+ON TABLE HOLD AS HTLHLD3 FORMAT FOCUS INDEX &&IDXFIELD
+END
+-RUN
+-GOTO XXITH;
+
+
+
+ 
+
+-NOHTL;
+-SET &&HTLDATA = 'N';
+-RUN
+
+
+-XXITH
+ 
+
+

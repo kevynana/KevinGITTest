@@ -1,0 +1,12 @@
+-**************************************************************************************************
+-* CHKCPFLAG.FEX
+-* 04/22/2014
+-**************************************************************************************************
+-SET &RIND = ' ';
+
+TABLE FILE VIEWLIST
+PRINT CPFLAG
+WHERE RPT_STREAM EQ '&RPTSTREAM.EVAL' AND USE_PARM EQ '&VIEW.EVAL'
+ON TABLE SAVE AS CPFLAG
+END
+-RUN

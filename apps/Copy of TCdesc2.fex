@@ -1,0 +1,1428 @@
+-****************************************************************************
+-* This program updated as we added some selections in the report setting.
+-* Basically, there are three steps here.  First, it is to extract selection
+-* criteria from I_summ and RPT_flds files, and construct to the appropriate
+-* printlines and where statements; secondly it retrieves code + desc from
+-* code tables; the last step is to write to sbfoot.fex
+-* Date: March 4, 2003   - LS
+-* Added &rpttyp of ETS to only allow 50 lines JK 5/29/03
+-* Changed AVIW23 to be 52 lines - Steve (06/05/03)
+-* Changed the ELSE to be 60 lines - Steve (06/05/03)
+-* 10/22/03 LS - made changes as SU databases changes
+-* 07/13/2004 LS - Global currency changes
+-****************************************************************************
+-INCLUDE SETECHO
+
+-DEFAULT &&USEPARM='X';
+-DEFAULT &&STREAM='X';
+
+FILEDEF SBFOOT CLEAR
+FILEDEF SBFOOT DISK SBFOOT.FEX 
+-RUN
+
+-SET &FOOTLINES=IF &&STREAM EQ 'TRVLSUMK' THEN 55 ELSE
+-               IF &&RPTTYP EQ 'STS' THEN 60 ELSE 
+-               IF &&RPTTYP EQ 'ETS' THEN 50 ELSE
+-               IF &&USEPARM.EVAL EQ 'AVIW23' THEN 52 ELSE 60;
+
+-*Change start - new su databases
+-SET &CNT = 200;
+-REPEAT TOHDES 50 TIMES
+-SET &FT.&CNT = '';
+-SET &CNT = &CNT + 1;
+-TOHDES
+
+TABLE FILE BRPTFLDS
+PRINT SEG HIEORG1.ID
+IF INST_KEY EQ &&IKEY
+ON TABLE SAVE AS HDES1
+END
+-RUN
+
+-READ HDES1 &ID.1. &INCL1.1. &INCL2.1. &INCL3.1. &LEVEL.A2.
+-CLOSE HDES1
+
+-*Hierarchy selection headings
+-SET &K0 = 'NO SELECTION';
+-SET &FT200 = IF &INCL3 EQ '1' THEN '** HIERARCHY SELECTION - INCLUDED **'
+-  ELSE IF &INCL3 EQ 2 THEN '** HIERARCHY SELECTION - EXCLUDED **'
+-  ELSE '** HIERARCHY SELECTION CRITERIA **';
+-SET &FT201=' --------------------------------------------------------------';
+-SET &FT202 = IF &INCL3 EQ 0 THEN 'NO SELECTION' ELSE ' ';
+
+-*Client selection headings
+-SET &FT230=IF &INCL1 EQ 0 THEN '** CLIENT SELECTION CRITERIA **'
+- ELSE IF &INCL1 EQ 1 THEN '** CLIENT NUMBER SELECTION CRITERIA - INCLUDED **'
+- ELSE IF &INCL1 EQ 2 THEN '** CLIENT NUMBER SELECTION CRITERIA - EXCLUDED **';
+-SET &FT231=' --------------------------------------------------------------';
+-SET &FT232=IF &INCL1 EQ 0 THEN 'NO SELECTION' ELSE ' ';
+
+-*Category selection headings
+-SET &FT240=IF &INCL2 EQ 0 THEN '** CATEGORY SELECTION CRITERIA **'
+- ELSE IF &INCL2 EQ 1 THEN '** CATEGORY SELECTION CRITERIA - INCLUDED **'
+- ELSE IF &INCL2 EQ 2 THEN '** CATEGORY SELECTION CRITERIA - EXCLUDED **';
+-SET &FT241=' --------------------------------------------------------------';
+-SET &FT242=IF &INCL2 EQ 0 THEN 'NO SELECTION' ELSE ' ';
+
+-*IF &INCL1,2,3 are all zero, that means no selections.
+-IF &INCL1 EQ 0 AND &INCL2 EQ 0  AND &INCL3 EQ 0 THEN GOTO NoHDES;
+
+-IF &INCL3 EQ 0 THEN GOTO CHK_CLIENT;
+DEFINE FILE BRPTFLDS
+  MEM1/A17 WITH MEMBER = '''' | MEMBER | '''';
+END
+TABLE FILE BRPTFLDS
+PRINT MEM1
+IF INST_KEY EQ &&IKEY
+WHERE MEM1 NE ' '
+ON TABLE SAVE AS ORGMEM1
+END
+-RUN
+
+-INCLUDE GETHRMEM
+-SET &CNT=202;
+-REPEAT EndMember &LINES TIMES
+-READ MEMBER1 NOCLOSE &FT.&CNT.A60.
+-SET &CNT = &CNT + 1;
+-EndMember
+
+-CHK_CLIENT
+-IF &INCL1 EQ 0 THEN GOTO CHK_CAT;
+TABLE FILE BRPTFLDS
+PRINT CLIENT
+IF INST_KEY EQ &&IKEY 
+WHERE CLIENT NE ' '
+ON TABLE SAVE AS CLIENT1
+END
+-RUN
+
+-*Original variables: &&WHERE11 - &&WHERE15
+-SET &CNT=232;
+-REPEAT ClientEnd &LINES TIMES
+-READ CLIENT1 NOCLOSE &VAL.A6
+-SET &VAL2=&FT.&CNT;
+-SET &CNT = IF &VAL2.LENGTH GT 64 THEN &CNT + 1 ELSE &CNT;
+-SET &FT.&CNT = IF &VAL2.LENGTH GT 64 THEN '  ' | &VAL
+-  ELSE &VAL2 || ' ' | &VAL;
+-ClientEnd
+-CLOSE CLIENT1
+
+-CHK_CAT
+-IF &INCL2 EQ 0 THEN GOTO NoHDES;
+TABLE FILE BRPTFLDS
+PRINT CATG
+IF INST_KEY EQ &&IKEY 
+WHERE CATG NE ' '
+ON TABLE SAVE AS CATG1
+END
+-RUN
+-*Original variables: &&WHERE16 - &&WHERE18
+-SET &CNT=242;
+-REPEAT CATGEnd &LINES TIMES
+-READ CATG1 NOCLOSE &VAL.A15
+-SET &VAL2=&FT.&CNT;
+-SET &CNT = IF &VAL2.LENGTH GT 64 THEN &CNT + 1 ELSE &CNT;
+-SET &FT.&CNT = IF &VAL2.LENGTH GT 64 THEN '  ' | &VAL
+-  ELSE &VAL2 || ' ' | &VAL;
+-CATGEnd
+-CLOSE CATG1
+
+-NoHDES
+-*Change End - new su databases
+-**************************************************
+-* the following portion of subfoot come from BRPTFLDS database
+-* Date: 02/27/03 level descriptives from rollup file
+-**************************************************
+-*========================================================================
+-* GET DESCRIPTIVE VALUES FROM ROLLUP
+-*========================================================================
+-*Initialize the variables used as printline
+-SET &CNT = 100;
+-REPEAT ENDFORMAT 50 TIMES
+-SET &FT.&CNT = ' ';
+-SET &CNT = &CNT + 1;
+-ENDFORMAT 
+
+TABLE FILE BRPTINST
+PRINT ROLLUP_CODE USE_PARM
+IF INST_KEY EQ &&IKEY
+ON TABLE SAVE AS RUCODE
+END
+-RUN
+-READ RUCODE &ROLLUP.A8. &VIEW.A8. 
+-SET &VIEWTYPE = EDIT('&VIEW.EVAL', '9');
+
+TABLE FILE ROLLUP
+PRINT LEV1 LEV2 LEV3
+IF ROLLUP_CODE EQ '&ROLLUP.EVAL'
+ON TABLE SAVE AS LEVINFO
+END
+-RUN
+-READ LEVINFO &LEVEL1.A20. &LEVEL2.A20. &LEVEL3.A20.
+-CLOSE LEVINFO
+
+-SET &Temp1='''' || &LEVEL1 || '''';
+-SET &LEN = 
+- ARGLEN(22, &Temp1, 'I2') - 1;
+-SET &LEVEL1 = 
+- SUBSTR(22, &Temp1, 2, &LEN, &LEN, 'A&LEN.EVAL');
+ 
+-SET &Temp1='''' || &LEVEL2 || '''';
+-SET &LEN = 
+- ARGLEN(22, &Temp1, 'I2') - 1;
+-SET &LEVEL2 = 
+- SUBSTR(22, &Temp1, 2, &LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &Temp1='''' || &LEVEL3 || '''';
+-SET &LEN = 
+- ARGLEN(22, &Temp1, 'I2') - 1;
+-SET &LEVEL3 = 
+- SUBSTR(22, &Temp1, 2, &LEN, &LEN, 'A&LEN.EVAL');
+
+-*========================================================================
+-* GET VALUES FROM COMMON1 SEGMENT - DATA FILE: BRPTFLDS.FOC
+-*========================================================================
+TABLE FILE BRPTFLDS
+-*PRINT USE_PARM VIEW_TYPE 
+PRINT SEG.COMMON1.INCL1 
+BY INST_KEY NOPRINT
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE AS COMMON1
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+-*-READ COMMON1 &VIEW.A8. &VIEWTYPE.A1. &COM1A.A1. &COM1B.A1. &COM1C.A1. 
+-READ COMMON1 &COM1A.A1. &COM1B.A1. &COM1C.A1. 
+-CLOSE COMMON1
+
+-************
+-ChkLevel1
+-************
+-IF &COM1A EQ 0 THEN GOTO ChkLevel2;
+-SET &FT100= IF &COM1A EQ 1 THEN 
+- '**  &LEVEL1.EVAL Selection Criteria IS EQUAL TO  **'
+- ELSE IF &COM1A EQ 2 THEN 
+- '**  &LEVEL1.EVAL Selection Criteria IS NOT EQUAL TO  **'
+- ELSE  '**  &LEVEL1.EVAL Selection Criteria CONTAINS  ** ';
+
+TABLE FILE BRPTFLDS
+PRINT ID_LEVEL1 
+WHERE INST_KEY EQ &&IKEY
+WHERE COMMON2.ID_LEVEL1 NE ' '
+BY INST_KEY NOPRINT
+ON TABLE SAVE AS COMMON2
+END
+-RUN
+
+-SET &CNT = 0;
+-SET &IND = 1;
+-REPEAT A100 &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ COMMON2 NOCLOSE &V1.A15. 
+-SET &Temp1 = '''' || &V1 || '''';
+-SET &LEN = ARGLEN(17, &Temp1, 'I2') - 1;
+-SET &V1A = 
+- SUBSTR(17, &Temp1, 2, &LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &FT10.&IND = IF &V1A EQ ' ' THEN &FT10.&IND
+- ELSE IF &CNT = 1 THEN &V1A 
+- ELSE &FT10.&IND || '; ' | &V1A;
+-SET &FTLINE = &FT10.&IND;
+-IF &FTLINE.LENGTH GT 90 
+- THEN GOTO INCREMENT1 ELSE GOTO A100;
+-INCREMENT1
+-SET &IND = &IND + 1;
+-*****
+-A100
+-*****
+-CLOSE COMMON2
+
+-************
+-ChkLevel2
+-************
+-IF &COM1B EQ 0 THEN GOTO ChkLevel3;
+-SET &FT103= IF &COM1B EQ 1 THEN 
+- '**  &LEVEL2.EVAL Selection Criteria IS EQUAL TO  **'
+- ELSE IF &COM1B EQ 2 THEN 
+- '**  &LEVEL2.EVAL Selection Criteria IS NOT EQUAL TO  **'
+- ELSE IF &COM1B EQ 3 THEN 
+- '**  &LEVEL2.EVAL Selection Criteria CONTAINS  **';
+
+TABLE FILE BRPTFLDS
+PRINT COMMON2.ID_LEVEL2
+WHERE INST_KEY EQ &&IKEY
+WHERE COMMON2.ID_LEVEL2 NE ' '
+BY INST_KEY NOPRINT
+BY COMMON2.SEQ_NO NOPRINT
+ON TABLE SAVE AS COMMON2
+END
+-RUN
+
+-SET &IND = 4;
+-SET &CNT = 0;
+-REPEAT A200 &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ COMMON2 NOCLOSE &V1.A15. 
+-SET &Temp1 = '''' || &V1 || '''';
+-SET &LEN = ARGLEN(17, &Temp1, 'I2') - 1;
+-SET &V1A = 
+- SUBSTR(17, &Temp1, 2, &LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &FT10.&IND = IF &V1A EQ ' ' THEN &FT10.&IND
+- ELSE IF &CNT = 1 THEN &V1A 
+- ELSE &FT10.&IND || '; ' | &V1A;
+-SET &FTLINE = &FT10.&IND;
+-IF &FTLINE.LENGTH GT 90 
+- THEN GOTO INCREMENT2 ELSE GOTO A200;
+-INCREMENT2
+-SET &IND = &IND + 1;
+-*****
+-A200
+-*****
+-CLOSE COMMON2
+
+-************
+-ChkLevel3
+-************
+-IF &COM1C EQ 0 THEN GOTO ChkViewType;
+-SET &FT106= IF &COM1C EQ 1 THEN 
+- '**  &LEVEL3.EVAL Selection Criteria IS EQUAL TO  **'
+- ELSE IF &COM1C EQ 2 THEN 
+- '**  &LEVEL3.EVAL Selection Criteria IS NOT EQUAL TO  **'
+- ELSE IF &COM1C EQ 3 THEN 
+- '**  &LEVEL3.EVAL Selection Criteria CONTAINS  **';
+
+TABLE FILE BRPTFLDS
+PRINT COMMON2.ID_LEVEL3
+WHERE INST_KEY EQ &&IKEY
+BY INST_KEY NOPRINT
+WHERE COMMON2.ID_LEVEL3 NE ' '
+BY COMMON2.SEQ_NO NOPRINT
+ON TABLE SAVE AS COMMON2
+END
+-RUN
+
+-SET &CNT = 0;
+-SET &IND = 7;
+-REPEAT A300 &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ COMMON2 NOCLOSE &V1.A15. 
+-SET &Temp1 = '''' || &V1 || '''';
+-SET &LEN = ARGLEN(17, &Temp1, 'I2') - 1;
+-SET &V1A = 
+- SUBSTR(17, &Temp1, 2, &LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &FT10.&IND = IF &V1A EQ ' ' THEN &FT10.&IND
+- ELSE IF &CNT = 1 THEN &V1A 
+- ELSE &FT10.&IND || '; ' | &V1A;
+-SET &FTLINE = &FT10.&IND;
+-IF &FTLINE.LENGTH GT 90 
+- THEN GOTO INCREMENT3 ELSE GOTO A300;
+
+-INCREMENT3
+-SET &IND = &IND + 1;
+-*****
+-A300
+-*****
+-CLOSE COMMON2
+
+-*********************
+-ChkViewType
+-*********************
+-IF &VIEWTYPE EQ 'C' THEN GOTO CarReport
+-  ELSE IF &VIEWTYPE EQ 'H' THEN GOTO HtlReport
+-    ELSE GOTO AirReport;
+
+-**********
+-AirReport
+-**********
+-*========================================================================
+-* GET VALUES FROM AIR SEGMENT
+-*========================================================================
+TABLE FILE BRPTFLDS
+PRINT SEG.AIR.ID
+BY INST_KEY NOPRINT
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE AS AIR1
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+
+-READ AIR1 &ID.1. &INCL1.1. &INCL2.1. &INCL3.1. &INCL4.1. &INCL5.1. ,
+-   &INCL6.1. &INCL7.1. &INCL8.1. &INCL9.1. &INCL10.1.,
+-   &INTDOMT.1. &INTDOMS.1. &&RANK_LIMIT.5. &RankMeth.1. ,
+-   &ClassA.1. &ClassF.1. &ClassB.1. &ClassC.1. &ClassD.1. ,
+-   &TransS.1. &TransE.1. &TransR.1. &TransV.1. ,
+-   &AdvA.1. &Adv0.1. &Adv7.1. &Adv14.1. &Adv21.1. &&RANK_LIMIT2.5. &CPfld.1.
+-CLOSE AIR1
+
+-SET &FT109 = IF &INTDOMT EQ 0 THEN ' '
+- ELSE IF &VIEW EQ 'AVIW16' OR &VIEW EQ 'AVIW18' OR &VIEW EQ 'AVIW38' THEN ' '
+- ELSE IF &INTDOMT EQ 1 THEN '** Intl/Dom/All Ticket Selection: ALL  **'
+- ELSE IF &INTDOMT EQ 2 THEN '** Intl/Dom/All Ticket Selection: DOMESTIC  **'
+- ELSE '** Intl/Dom/All Ticket selection: INTERNATIONAL  **';
+
+-SET &FT110 = IF &INTDOMS EQ 0 THEN ' '
+- ELSE IF &INTDOMS EQ 1 THEN '** Intl/Dom/All CityPair Selection: ALL  **'
+- ELSE IF &INTDOMS EQ 2 THEN '** Intl/Dom/All CityPair Selection: DOMESTIC  **'
+- ELSE '** Intl/Dom/All CityPair selection: INTERNATIONAL  **'
+
+-SET &FT111=IF &ClassA EQ 0 AND &ClassF EQ 0 AND &ClassB EQ 0 AND &ClassC EQ 0
+-	AND &ClassB EQ 0 THEN ' '
+- ELSE '** Class Category Selection(s): ';
+-SET &FT111 = IF &ClassF NE 0 THEN &FT111 | 'FIRST '    ELSE &FT111;
+-SET &FT111 = IF &ClassB NE 0 
+- THEN &FT111 | 'BUSINESS ' ELSE &FT111;
+-SET &FT111 = IF &ClassC NE 0 
+- THEN &FT111 | 'COACH '    ELSE &FT111;
+-SET &FT111 = IF &ClassD NE 0 
+- THEN &FT111 | 'DISCOUNTED COACH ' ELSE &FT111;
+-SET &FT111 = IF &ClassA NE 0 
+- THEN &FT111 | 'ALL **'   
+-  ELSE IF &FT111 NE ' ' THEN &FT111 | '**' ELSE &FT111;
+
+-SET &FT112=IF &TransS EQ 0 AND &TransE EQ 0 AND &TransR EQ 0 AND &TransV EQ 0
+-	THEN ' '
+- ELSE '** Transaction Type Selection(s): ';
+-SET &FT112 = IF &TransS NE 0 THEN &FT112 | 'SALES '     ELSE &FT112;
+-SET &FT112 = IF &TransE NE 0 THEN &FT112 | 'EXCHANGES ' ELSE &FT112;
+-SET &FT112 = IF &TransR NE 0 
+- THEN &FT112 | 'REFUNDS '   ELSE &FT112;
+-SET &FT112 = IF &TransV NE 0 
+- THEN &FT112 | 'VOIDS '     ELSE &FT112;
+-SET &FT112 = IF &FT112 EQ ' ' THEN ' ' 
+- ELSE &FT112 | '**';
+
+-IF &AdvA EQ 0 AND &Adv0 EQ 0 AND &Adv7 EQ 0 AND &Adv14 EQ 0 AND
+-	&Adv21 EQ 0 THEN GOTO chkAirPass;
+
+-SET &FT113 = IF &AdvA EQ 0 AND &Adv0 EQ 0 AND &Adv7 EQ 0 AND &Adv14 EQ 0 AND
+-	&Adv21 EQ 0 THEN ' '
+- ELSE '** Advanced Purchase Selection(s): ';
+-SET &FT113 = IF &Adv0  NE 0 THEN '&FT113.EVAL' | '0-6 Days '  
+- ELSE '&FT113.EVAL';
+-SET &FT113 = IF &Adv7  NE 0 THEN '&FT113.EVAL' | '7-13 Days '  
+- ELSE '&FT113.EVAL';
+-SET &FT113 = IF &Adv14 NE 0 THEN '&FT113.EVAL' | '14-20 Days ' 
+- ELSE '&FT113.EVAL';
+-SET &FT113 = IF &Adv21 NE 0 THEN '&FT113.EVAL' | '21+ Days '   
+- ELSE '&FT113.EVAL';
+-SET &FT113 = IF &AdvA  EQ 1 THEN '&FT113.EVAL' | 'ALL  **'    
+- ELSE IF &FT113 NE ' ' THEN
+- '&FT113.EVAL' | '**' ELSE &FT113;
+
+-*========================================================================
+-* GET VALUES FROM AIRFLDS SEGMENT
+-*========================================================================
+-chkAirPass
+-IF &INCL1 EQ 0 THEN GOTO ChkTicket;
+-SET &FT114= IF &INCL1 EQ 1 THEN 
+- '**  Passenger Selection Criteria CONTAINS  **'
+- ELSE '**  Passenger Selection Criteria OMITS  **'
+
+-*Get Passengers
+TABLE FILE BRPTFLDS
+PRINT AIRFLDS.PASSENGER
+BY AIRFLDS.SEQ_NO NOPRINT
+WHERE INST_KEY EQ &&IKEY
+WHERE AIRFLDS.PASSENGER NE ' ' 
+ON TABLE SAVE AS CUSTFILE
+END
+-RUN
+
+-SET &IND = 115;
+
+-REPEAT A400 &LINES TIMES
+-READ CUSTFILE NOCLOSE &V1.A33. 
+-SET &V1B = '''' || &V1 || '''';
+-SET &LEN = ARGLEN(35, &V1B, 'I2') - 1;
+-SET &V1A = 
+- SUBSTR(35, &V1B, 2, &LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &FT.&IND = IF &V1A EQ ' ' THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V1A;
+
+-SET &FTLINE = &FT.&IND;
+-IF &FTLINE.LENGTH GT 80 THEN GOTO Increment40 ELSE GOTO A400;
+-Increment40
+-SET &IND = &IND + 1;
+-*****
+-A400
+-*****
+-CLOSE CUSTFILE
+
+-**********
+-ChkTicket
+-**********
+-IF &INCL2 EQ 0 THEN GOTO ChkAirCodes;
+-SET &FT120= IF &INCL2 EQ 1 THEN 
+- '**  Ticket Number Selection Criteria CONTAINS  **'
+- ELSE '**  Ticket Number Selection Criteria OMITS  **';
+
+-*Get Tickets
+TABLE FILE BRPTFLDS
+PRINT TICKET_NO
+WHERE INST_KEY EQ &&IKEY
+WHERE TICKET_NO NE ' ' 
+ON TABLE SAVE AS TICKFILE
+END
+-RUN
+
+-REPEAT A410 &LINES TIMES
+-READ TICKFILE NOCLOSE &V1.A10. 
+-SET &V1A = '''' || &V1 || '''';
+
+-SET &FT121 = IF &V1A EQ ' ' THEN &FT121
+- ELSE &FT121 || ' ' | &V1A;
+-*****
+-A410
+-*****
+-CLOSE TICKFILE
+
+-********
+-ChkAirCodes
+-********
+-SET &Temp1 = ' ';
+-IF &INCL3 EQ 0 THEN GOTO A420;
+-SET &FT124 = IF &INCL3 EQ 1 THEN '**  Origin Airport INCLUDED **'
+- ELSE '**  Origin Airport EXCLUDED **';
+-SET &Temp1 = IF &INCL3 NE 0 THEN 'WHERE AIRPORT_CODE EQ ' ELSE ' ';
+
+-A420
+-SET &Temp2 = ' ';
+-IF &INCL4 EQ 0 THEN GOTO A430;
+-SET &FT129 = 
+- IF &VIEW EQ 'AVIW56' AND &INCL4 EQ 1 THEN '** Overnight City INCLUDED **'
+- ELSE IF &VIEW EQ 'AVIW56' AND &INCL4 EQ 2 
+- THEN '** Overnight City EXCLUDED **'
+- ELSE IF &INCL4 EQ 1 THEN '**  Return Airport INCLUDED **'
+- ELSE '**  Return Airport EXCLUDED **';
+-SET &Temp2 = IF &VIEW EQ 'AVIW56' AND &INCL4 NE 0 
+- THEN 'WHERE CITY_CODE EQ '
+- ELSE IF &INCL4 NE 0 THEN 'WHERE AIRPORT_CODE EQ ' ELSE ' ';
+
+-A430
+-SET &Temp3 = ' ';
+-IF &INCL5 EQ 0 THEN GOTO A440;
+-SET &FT134 = IF &INCL5 EQ 1 THEN '**  Validating Airline INCLUDED **'
+- ELSE '**  Validating Airline EXCLUDED **';
+-SET &Temp3 = IF &INCL5 NE 0 THEN 'WHERE AIRLINE EQ ' ELSE ' ';
+
+-A440
+-SET &Temp4 = ' ';
+-IF &INCL6 EQ 0 THEN GOTO A450;
+-SET &FT137 = IF &INCL6 EQ 1 THEN '**  Airline Flown INCLUDED **'
+- ELSE '**  Airline Flown EXCLUDED **';
+-SET &Temp4 = IF &INCL6 NE 0 THEN 'WHERE AIRLINE EQ ' ELSE ' ';
+
+-A450
+-SET &Temp5 = ' ';
+-IF &INCL7 EQ 0 THEN GOTO A460;
+-SET &FT140 = IF &INCL7 EQ 1 THEN '**  Reason Code and Description INCLUDED **'
+- ELSE '**  Reason Code and Description EXCLUDED **';
+-SET &Temp5 = IF &INCL7 NE 0 THEN 'WHERE REFUSE_CODE EQ ' ELSE ' ';
+
+-A460
+-IF &INCL8 EQ 0 THEN GOTO A470;
+-SET &FT146 = IF &INCL8 EQ 1 THEN '**  CityPair Airport Code INCLUDED **'
+- ELSE '**  CityPair Airport Code EXCLUDED **';
+
+-A470
+TABLE FILE BRPTFLDS
+PRINT ORG_AIRPORT RTE_AIRPORT VAL_AIR FLOWN_AIR AIRFLDS.REFUSE_CODE
+  CP_AIRPORT
+BY AIRFLDS.SEQ_NO NOPRINT
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE AS AIRCODES
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+
+-SET &CNT = 1;
+-REPEAT AirEnd3 &LINES TIMES
+-READ AIRCODES NOCLOSE &V0A.A3. &V1A.A3. &V2A.A3. &V3A.A3. &V4A.A2. &V5A.A6. 
+
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &V1= IF &V1A EQ ' ' THEN ' ' ELSE '''' | &V1A || '''';
+-SET &V2= IF &V2A EQ ' ' THEN ' ' ELSE '''' | &V2A || '''';
+-SET &V3= IF &V3A EQ ' ' THEN ' ' ELSE '''' | &V3A || '''';
+-SET &V4= IF &V4A EQ ' ' THEN ' ' ELSE '''' | &V4A || '''';
+-SET &V5= IF &V5A EQ ' ' THEN ' ' ELSE '''' | &V5A || '''';
+
+-SET &Temp1 = IF &V0 EQ ' '  THEN &Temp1
+- ELSE IF &CNT EQ 1 THEN &Temp1 | &V0
+- ELSE &Temp1 | ' OR ' | &V0;
+
+-SET &Temp2 = IF &V1 EQ ' '  THEN &Temp2
+- ELSE IF &CNT EQ 1 THEN &Temp2 | &V1
+- ELSE &Temp2 | ' OR ' | &V1;
+
+-SET &Temp3 = IF &V2 EQ ' '  THEN &Temp3
+- ELSE IF &CNT EQ 1 THEN &Temp3 | &V2
+- ELSE &Temp3 | ' OR ' | &V2;
+
+-SET &Temp4 = IF &V3 EQ ' '  THEN &Temp4
+- ELSE IF &CNT EQ 1 THEN &Temp4 | &V3
+- ELSE &Temp4 | ' OR ' | &V3;
+
+-SET &Temp5 = IF &V4 EQ ' '  THEN &Temp5
+- ELSE IF &CNT EQ 1 THEN &Temp5 | &V4
+- ELSE &Temp5 | ' OR ' | &V4;
+
+-SET &FT147 = IF &V5 EQ ' '  THEN &FT147
+- ELSE &FT147 || ' ' | &V5;
+
+-SET &CNT = &CNT + 1;
+-AirEnd3
+-CLOSE AIRCODES
+-RUN
+
+-********************************************************************
+-* Get Depart Airport Code + name
+-********************************************************************
+-IF &INCL3 EQ 0 THEN GOTO RTE_AIR;
+DEFINE FILE AIRPORT
+  DESC/A30 = AIRPORT_CODE | '-' | AIRPORT_NAME;
+END
+TABLE FILE AIRPORT
+PRINT DESC
+BY AIRPORT_CODE NOPRINT
+&Temp1
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO RTE_AIR;
+
+-SET &IND = 125;
+
+-REPEAT AirEnd4 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A30. 
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &FT.&IND = IF &V0 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V0;
+-SET &PRINTLINE = &FT.&IND;
+-IF &PRINTLINE.LENGTH LT 80 THEN GOTO AirEnd4;
+-SET &IND = &IND + 1;
+-AirEnd4
+-CLOSE VCODE
+
+-RTE_AIR
+-********************************************************************
+-* Get Return Airport Code + name
+-********************************************************************
+-IF &VIEW EQ 'AVIW56' THEN GOTO OVERNIGHT;
+-IF &INCL4 EQ 0 THEN GOTO Validating;
+DEFINE FILE AIRPORT
+  DESC/A30 = AIRPORT_CODE | '-' | AIRPORT_NAME;
+END
+TABLE FILE AIRPORT
+PRINT DESC
+BY AIRPORT_CODE NOPRINT
+&Temp2
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO Validating;
+
+-SET &IND = 130;
+
+-REPEAT AirEnd5 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A30. 
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &FT.&IND = IF &V0 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V0;
+-SET &PRINTLINE = &FT.&IND;
+-IF &PRINTLINE.LENGTH LT 80 THEN GOTO AirEnd5;
+-SET &IND = &IND + 1;
+-AirEnd5
+
+-CLOSE VCODE
+-GOTO Validating
+
+-OVERNIGHT
+-IF &INCL4 EQ 0 THEN GOTO Validating;
+DEFINE FILE CITY
+  CNAME/A30 = CITY_CODE | '-' | CITY_NAME;
+END
+TABLE FILE CITY
+PRINT CNAME
+BY CITY_CODE NOPRINT
+&Temp3
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-SET &IND = 130;
+
+-REPEAT AirEnd5A &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A30. 
+
+-SET &V1= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+
+-SET &FT.&IND = IF &V1 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V1;
+
+-SET &LINE = &FT.&IND;
+-IF &LINE.LENGTH LT 80 THEN GOTO AirEnd5A;
+-SET &IND = &IND + 1;
+
+-AirEnd5A
+-CLOSE VCODE
+
+
+-Validating
+-********************************************************************
+-* Get Validating Airline Code + name
+-********************************************************************
+-IF &INCL5 EQ 0 THEN GOTO FlownAir;
+DEFINE FILE AIRLINE
+  DESC/A16 = AIRLINE | '-' | AIRLINE_NAME;
+END
+TABLE FILE AIRLINE
+PRINT DESC
+BY AIRLINE NOPRINT
+&Temp3
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO FlownAir;
+
+-SET &IND = 135;
+
+-REPEAT AirEnd6 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A16. 
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &FT.&IND = IF &V0 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V0;
+-SET &PRINTLINE = &FT.&IND;
+-IF &PRINTLINE.LENGTH LT 80 THEN GOTO AirEnd6;
+-SET &IND = &IND + 1;
+-AirEnd6
+
+-CLOSE VCODE
+
+-FlownAir
+-********************************************************************
+-* Get Flown Airline Code + name
+-********************************************************************
+-IF &INCL6 EQ 0 THEN GOTO Air_ref;
+DEFINE FILE AIRLINE
+  DESC/A16 = AIRLINE | '-' | AIRLINE_NAME;
+END
+TABLE FILE AIRLINE
+PRINT DESC
+BY AIRLINE NOPRINT
+&Temp4
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO Air_ref;
+
+-SET &IND = 138;
+
+-REPEAT AirEnd7 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A16. 
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &FT.&IND = IF &V0 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V0;
+-SET &PRINTLINE = &FT.&IND;
+-IF &PRINTLINE.LENGTH LT 80 THEN GOTO AirEnd7;
+-SET &IND = &IND + 1;
+-AirEnd7
+
+-CLOSE VCODE
+-**************************************************************************
+-* Get Air Refuse Code + Description 
+-* Check Reason table to see if the client uses the standard code or not
+-**************************************************************************
+-Air_ref
+-IF &INCL7 EQ 0 THEN GOTO WriteFooter;
+TABLE FILE AIR_REF
+PRINT *
+IF REFUSE_KEY CONTAINS '&ROLLUP.EVAL'
+IF RECORDLIMIT EQ 1
+ON TABLE SAVE
+END
+-RUN
+-SET &STANDARD = IF &LINES EQ 0 THEN 'Y' ELSE 'N';
+
+DEFINE FILE AIR_REF
+  REFUSE_CODE/A2 = EDIT(REFUSE_KEY, '$$$$$$$$99');
+  ROLLUP_CODE/A8 = EDIT(REFUSE_KEY, '99999999$$');
+  DESC/A45 = REFUSE_CODE | ' - ' | REFUSAL_DESC;
+  
+END
+TABLE FILE AIR_REF
+PRINT DESC
+BY REFUSE_KEY NOPRINT
+&Temp5
+-IF &STANDARD EQ 'Y' THEN GOTO AirStandand;
+WHERE ROLLUP_CODE EQ '&ROLLUP.EVAL'
+-GOTO DONEair
+-AirStandand
+WHERE ROLLUP_CODE EQ ' '
+-DONEair
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+
+-SET &IND = 141;
+-SET &CNT = 1;
+
+-REPEAT AirEnd8 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A45. 
+
+-SET &V1= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &FT.&IND = IF &V1 EQ ' '  THEN &FT.&IND
+- ELSE IF (&CNT/2 - &CNT/2*2) EQ 0 THEN &V1 ELSE &FT.&IND || ' ' | &V1;
+-SET &LINE = &FT.&IND;
+-IF &LINE.LENGTH LT 80 THEN GOTO IncACnt8;
+-SET &IND = &IND + 1;
+
+-IncACnt8
+-SET &CNT = &CNT + 1;
+-AirEnd8
+-CLOSE VCODE
+
+-GOTO WriteFooter
+-**********
+-CarReport
+-**********
+-*========================================================================
+-* GET VALUES FROM CAR SEGMENT
+-*========================================================================
+TABLE FILE BRPTFLDS
+PRINT SEG.CAR.ID
+BY INST_KEY NOPRINT
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE AS CAR1
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+
+-READ CAR1 &ID.1. &INCL1.1. &INCL2.1. &INCL3.1. &INCL4.1. &INCL5.1. &INCL6.1. ,
+-     &&RANK_LIMIT.5. &RankMeth.1. &RateAll.1. &Rate1.1. &Rate2.1. ,
+-     &Rate3.1. &Rate4.1. &Rate5.1.  &Rate6.1. 
+-CLOSE CAR1
+
+-SET &FT109 = IF &RateAll EQ 0 AND &Rate1 EQ 0 AND &Rate2 EQ 0 AND &Rate2 EQ 0 
+- AND &Rate4 EQ 0 AND &Rate5 EQ 0  AND &Rate6 EQ 0  THEN ' '
+- ELSE '** Car Rental Rate Selection(s) ** ';
+-SET &FT110 = IF &Rate1 NE 0 THEN &FT110 | '$00.00-19.99 ' 
+- ELSE &FT110;
+-SET &FT110 = IF &Rate2 NE 0 THEN &FT110 | '$20.00-34.99 ' 
+- ELSE &FT110;
+-SET &FT110 = IF &Rate3 NE 0 THEN &FT110 | '$35.00-49.99 ' 
+- ELSE &FT110;
+-SET &FT110 = IF &Rate4 NE 0 THEN 
+- &FT110 | '$50.00-64.99 ' 
+- ELSE &FT110;
+-SET &FT110 = IF &Rate5 NE 0 THEN
+- &FT110 | '$65.00-79.99 ' 
+- ELSE &FT110;
+-SET &FT110 = IF &Rate6 NE 0 THEN &FT110 | '$80.00+ '      
+- ELSE &FT110;
+-SET &FT110 = IF &RateAll NE 0 THEN 'ALL ' 
+- ELSE &FT110;
+
+-*========================================================================
+-* GET VALUES FROM CARFLDS SEGMENT
+-*========================================================================
+-*Get Passengers
+-IF &INCL1 EQ 0  THEN GOTO ChkCarCodes;
+-SET &FT114= IF &INCL1 EQ 1 THEN 
+- '**  Passenger Selection Criteria CONTAINS  **'
+- ELSE '**  Passenger Selection Criteria OMITS  **';
+TABLE FILE BRPTFLDS
+PRINT CARFLDS.PASSENGER
+WHERE INST_KEY EQ &&IKEY
+WHERE CARFLDS.PASSENGER NE ' ' 
+ON TABLE SAVE AS CUSTFILE
+END
+-RUN
+
+-SET &IND = 115;
+-REPEAT A500 &LINES TIMES
+-READ CUSTFILE NOCLOSE &V1.A33. 
+
+-SET &V1B = '''' || &V1 || '''';
+-SET &LEN = ARGLEN(35, &V1B, 'I2') - 1;
+-SET &V1A = 
+- SUBSTR(35, &V1B, 2, &LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &FT.&IND = IF &V1A EQ ' ' THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V1A;
+
+-SET &FTLINE = &FT.&IND;
+-IF &FTLINE.LENGTH GT 80 THEN GOTO INCREMENT50 ELSE GOTO A500;
+-INCREMENT50
+-SET &IND = &IND + 1;
+-*****
+-A500
+-*****
+-CLOSE CUSTFILE
+
+-****************
+-ChkCarCodes
+-****************
+-SET &Temp1 = ' ';
+-IF &INCL2 EQ 0 THEN GOTO A520;
+-SET &FT120 = IF &INCL2 EQ 1 THEN '**  Vendor Code and Name INCLUDED **'
+- ELSE '**  Vendor Code and Name EXCLUDED **';
+-SET &Temp1 = IF &INCL2 NE 0 THEN 'WHERE VENDOR_CODE EQ ' ELSE ' ';
+
+-A520
+-SET &Temp2 = ' ';
+-IF &INCL3 EQ 0 THEN GOTO A530;
+-SET &FT124 = IF &INCL3 EQ 1 THEN '**  Reason Code and Description INCLUDED **'
+- ELSE '**  Reason Code and Description EXCLUDED **';
+-SET &Temp2 = IF &INCL3 NE 0 THEN 'WHERE REFUSE_CODE EQ ' ELSE ' ';
+
+-A530
+-SET &Temp3 = ' ';
+-IF &INCL4 EQ 0 THEN GOTO A540;
+-SET &FT130 = IF &INCL4 EQ 1 THEN '**  PickUp City Code and Name INCLUDED **'
+- ELSE '**  PickUp City Code and Name EXCLUDED **';
+-SET &Temp3 = IF &INCL4 NE 0 THEN 'WHERE CITY_CODE EQ ' ELSE ' ';
+
+-A540
+-SET &Temp4 = ' ';
+-IF &INCL5 EQ 0 THEN GOTO A550;
+-SET &FT135 = IF &INCL5 EQ 1 THEN '**  Drop off City Code and Name INCLUDED **'
+- ELSE '**  Drop off City Code and Name EXCLUDED **';
+-SET &Temp4 = IF &INCL5 NE 0 THEN 'WHERE CITY_CODE EQ ' ELSE ' ';
+
+-A550  
+-SET &Temp5 = ' ';
+-IF &INCL6 EQ 0 THEN GOTO A560;  
+-SET &FT140 = IF &INCL6 EQ 1 
+- 	THEN '**  Car Type Code and Description INCLUDED **'
+- ELSE '**  Car Type Code and Description EXCLUDED **';
+-SET &Temp5 = IF &INCL6 NE 0 THEN 'WHERE CAR_TYPE EQ ' ELSE ' ';
+
+-A560
+TABLE FILE BRPTFLDS
+PRINT VENDOR_CODE CARFLDS.REFUSE_CODE PICKUP_CITY DROPOFF_CITY CAR_TYPE
+BY CARFLDS.SEQ_NO NOPRINT
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE AS CarCODES
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+
+-SET &CNT = 1;
+-REPEAT CarEnd3 &LINES TIMES
+-READ CarCODES NOCLOSE &V0A.A2. &V1A.A2. &V2A.A3. &V3A.A3. &V4A.A7. 
+
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &V1= IF &V1A EQ ' ' THEN ' ' ELSE '''' | &V1A || '''';
+-SET &V2= IF &V2A EQ ' ' THEN ' ' ELSE '''' | &V2A || '''';
+-SET &V3= IF &V3A EQ ' ' THEN ' ' ELSE '''' | &V3A || '''';
+-SET &V4= IF &V4A EQ ' ' THEN ' ' ELSE '''' | &V4A || '''';
+
+-SET &Temp1 = IF &V0 EQ ' '  THEN &Temp1
+- ELSE IF &CNT EQ 1 THEN &Temp1 | &V0
+- ELSE &Temp1 | ' OR ' | &V0;
+
+-SET &Temp2 = IF &V1 EQ ' '  THEN &Temp2
+- ELSE IF &CNT EQ 1 THEN &Temp2 | &V1 
+- ELSE &Temp2 | ' OR ' | &V1;
+
+-SET &Temp3 = IF &V2 EQ ' '  THEN &Temp3
+- ELSE IF &CNT EQ 1 THEN &Temp3 | &V2
+- ELSE &Temp3 | ' OR ' | &V2;
+
+-SET &Temp4 = IF &V3 EQ ' '  THEN &Temp4
+- ELSE IF &CNT EQ 1 THEN &Temp4 | &V3
+- ELSE &Temp4 | ' OR ' | &V3;
+
+-SET &Temp5 = IF &V4 EQ ' '  THEN &Temp5
+- ELSE IF &CNT EQ 1 THEN &Temp5 | &V4
+- ELSE &Temp5 | ' OR ' | &V4;
+
+-SET &CNT = &CNT + 1;
+-CarEnd3
+-CLOSE CarCODES
+
+-********************************************************************
+-* Get Car Vendor Code + Description 
+-********************************************************************
+-IF &INCL2 EQ 0 THEN GOTO CAR_REF;
+DEFINE FILE CAR_VEND
+  DESC/A15 = VENDOR_CODE | '-' | VENDOR_NAME;
+END
+TABLE FILE CAR_VEND
+PRINT DESC
+BY VENDOR_CODE NOPRINT
+&Temp1
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO CAR_REF;
+
+-SET &IND = 121;
+
+-REPEAT CarEnd4 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A15. 
+
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &FT.&IND = IF &V0 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V0;
+-SET &PRINTLINE = &FT.&IND;
+-IF &PRINTLINE.LENGTH LT 75 THEN GOTO CarEnd4;
+-SET &IND = &IND + 1;
+-CarEnd4
+-CLOSE VCODE
+
+-**************************************************************************
+-* Get Car Refuse Code + Description 
+-* Check Reason table to see if the client uses the standard code or not
+-**************************************************************************
+-CAR_REF
+-IF &INCL3 EQ 0 THEN GOTO PickUpCity;
+TABLE FILE CAR_REF
+PRINT *
+IF REFUSE_KEY CONTAINS '&ROLLUP.EVAL'
+IF RECORDLIMIT EQ 1
+ON TABLE SAVE
+END
+-RUN
+-SET &STANDARD = IF &LINES EQ 0 THEN 'Y' ELSE 'N';
+
+DEFINE FILE CAR_REF
+  REFUSE_CODE/A2 = EDIT(REFUSE_KEY, '$$$$$$$$99');
+  ROLLUP_CODE/A8 = EDIT(REFUSE_KEY, '99999999$$');
+  DESC/A45 = REFUSE_CODE | ' - ' | REFUSAL_DESC;
+  
+END
+TABLE FILE CAR_REF
+PRINT DESC
+BY REFUSE_KEY NOPRINT
+&Temp2
+-IF &STANDARD EQ 'Y' THEN GOTO CarStandand;
+WHERE ROLLUP_CODE EQ '&ROLLUP.EVAL'
+-GOTO DONEROLL
+-CarStandand
+WHERE ROLLUP_CODE EQ ' '
+-DONEROLL
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO PickUpCity;
+
+-SET &IND = 125;
+-SET &CNT = 1;
+
+-REPEAT CarEnd5 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A45. 
+
+-SET &V1= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+
+-SET &FT.&IND = IF &V1 EQ ' '  THEN &FT.&IND
+- ELSE IF (&CNT/2 - &CNT/2*2) EQ 0 THEN &V1 ELSE &FT.&IND || ' ' | &V1;
+-*- ELSE IF IMOD(&CNT/2)      EQ 0 THEN &V1 ELSE &FT.&IND || ' ' | &V1;
+
+-SET &LINE = &FT.&IND;
+-IF &LINE.LENGTH LT 75 THEN GOTO IncCCnt5;
+-SET &IND = &IND + 1;
+
+-IncCCnt5
+-SET &CNT = &CNT + 1;
+-CarEnd5
+-CLOSE VCODE
+
+-PickUpCity
+-IF &INCL4 EQ 0 THEN GOTO DropOffCity; 
+DEFINE FILE CITY
+  CNAME/A30 = CITY_CODE | '-' | CITY_NAME;
+END
+TABLE FILE CITY
+PRINT CNAME
+BY CITY_CODE NOPRINT
+&Temp3
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-SET &IND = 131;
+
+-REPEAT CarEnd6 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A30. 
+
+-SET &V1= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+
+-SET &FT.&IND = IF &V1 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V1;
+
+-SET &LINE = &FT.&IND;
+-IF &LINE.LENGTH LT 80 THEN GOTO CarEnd6;
+-SET &IND = &IND + 1;
+
+-CarEnd6
+-CLOSE VCODE
+
+-DropOffCity
+-IF &INCL5 EQ 0 THEN GOTO CarType; 
+DEFINE FILE CITY
+  CNAME/A30 = CITY_CODE | '-' | CITY_NAME;
+END
+TABLE FILE CITY
+PRINT CNAME
+BY CITY_CODE NOPRINT
+&Temp4
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-SET &IND = 136;
+
+-REPEAT CarEnd7 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A30. 
+
+-SET &V1= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+
+-SET &FT.&IND = IF &V1 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V1;
+
+-SET &LINE = &FT.&IND;
+-IF &LINE.LENGTH LT 80 THEN GOTO CarEnd7;
+-SET &IND = &IND + 1;
+-CarEnd7
+-CLOSE VCODE
+
+-CarType
+-IF &INCL6 EQ 0 THEN GOTO WriteFooter; 
+DEFINE FILE CAR_TYPE
+  CAR_INFO/A40 = CAR_TYPE | ' - ' | CAR_DESC;
+END
+TABLE FILE CAR_TYPE
+PRINT CAR_INFO
+BY CAR_TYPE NOPRINT
+&Temp5
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-SET &IND = 141;
+-REPEAT CarEnd8 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A40. 
+
+-SET &V1= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+
+-SET &FT.&IND = IF &V1 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND | '  ' | &V1;
+
+-SET &LINE = &FT.&IND;
+-IF &LINE.LENGTH LT 80 THEN GOTO CarEnd8;
+-SET &IND = &IND + 1;
+-CarEnd8
+-CLOSE VCODE
+
+-GOTO WriteFooter
+-**********
+-HtlReport
+-**********
+-*========================================================================
+-* GET VALUES FROM HTL SEGMENT
+-*========================================================================
+TABLE FILE BRPTFLDS
+PRINT SEG.HTL.ID
+BY INST_KEY NOPRINT
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE AS HTL1
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+
+-READ HTL1 &ID.1. &INCL1.1. &INCL2.1. &INCL3.1. &INCL4.1. ,
+-     &&RANK_LIMIT.5. &RankMeth.1. &&RANK_LIMIT2.5.
+-CLOSE HTL1
+
+-*========================================================================
+-* GET VALUES FROM HTLFLDS SEGMENT
+-*========================================================================
+-*Get Passengers
+-IF &INCL1 EQ 0  THEN GOTO ChkHtlCodes;
+-SET &FT114= IF &INCL1 EQ 1 THEN 
+- '**  Passenger Selection Criteria CONTAINS  **'
+- ELSE '**  Passenger Selection Criteria OMITS  **';
+TABLE FILE BRPTFLDS
+PRINT HTLFLDS.PASSENGER
+WHERE INST_KEY EQ &&IKEY
+WHERE HTLFLDS.PASSENGER NE ' ' 
+ON TABLE SAVE AS CUSTFILE
+END
+-RUN
+
+-SET &IND = 115;
+-REPEAT A600 &LINES TIMES
+-READ CUSTFILE NOCLOSE &V1.A33. 
+-SET &V1B = '''' || &V1 || '''';
+-SET &LEN = ARGLEN(35, &V1B, 'I2') - 1;
+-SET &V1A = 
+- SUBSTR(35, &V1B, 2, &LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &FT.&IND = IF &V1A EQ ' ' THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V1A;
+
+-SET &FTLINE = &FT.&IND;
+-IF &FTLINE.LENGTH GT 80 THEN GOTO Increment60 ELSE GOTO A600;
+
+-Increment60
+-SET &IND = &IND + 1;
+-*****
+-A600
+-*****
+-CLOSE CUSTFILE
+
+-************
+-ChkHtlCodes
+-************
+-SET &Temp1 = ' ';
+-IF &INCL2 EQ 0 THEN GOTO A620;
+-SET &FT122 = IF &INCL2 EQ 1 THEN '**  Hotel Chain Code and Name INCLUDED **'
+- ELSE '**  Hotel Chain Code and Name EXCLUDED **';
+-SET &Temp1 = IF &INCL2 NE 0 THEN 'WHERE CHAIN_CODE EQ ' ELSE ' ';
+
+-A620
+-SET &Temp2 = ' ';
+-IF &INCL3 EQ 0 THEN GOTO A630;
+-SET &FT128 = IF &INCL3 EQ 1 THEN '**  Hotel City Code and Name INCLUDED **'
+- ELSE '**  Hotel City Code and Name EXCLUDED **';
+-SET &Temp2 = IF &INCL3 NE 0 THEN 'WHERE CITY_CODE EQ ' ELSE ' ';
+
+-A630
+-SET &Temp3 = ' ';
+-IF &INCL4 EQ 0 THEN GOTO A640;
+-SET &FT134 = IF &INCL4 EQ 1 THEN '**  Reason Code and Description INCLUDED **'
+- ELSE '**  Reason Code and Description EXCLUDED **';
+-SET &Temp3 = IF &INCL4 NE 0 THEN 'WHERE REFUSE_CODE EQ ' ELSE ' ';
+
+-A640
+TABLE FILE BRPTFLDS
+PRINT CHAIN_CODE HTL_CITY HTLFLDS.REFUSE_CODE
+BY HTLFLDS.SEQ_NO NOPRINT
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE AS HtlCODES
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+
+-SET &CNT = 1;
+-REPEAT HtlEnd3 &LINES TIMES
+-READ HtlCODES NOCLOSE &V0A.A2. &V1A.A3. &V2A.A2. 
+
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &V1= IF &V1A EQ ' ' THEN ' ' ELSE '''' | &V1A || '''';
+-SET &V2= IF &V2A EQ ' ' THEN ' ' ELSE '''' | &V2A || '''';
+
+-SET &Temp1 = IF &V0 EQ ' '  THEN &Temp1
+- ELSE IF &CNT EQ 1 THEN &Temp1 | &V0
+- ELSE &Temp1 | ' OR ' | &V0;
+
+-SET &Temp2 = IF &V1 EQ ' '  THEN &Temp2
+- ELSE IF &CNT EQ 1 THEN &Temp2 | &V1 
+- ELSE &Temp2 | ' OR ' | &V1;
+
+-SET &Temp3 = IF &V2 EQ ' '  THEN &Temp3
+- ELSE IF &CNT EQ 1 THEN &Temp3 | &V2
+- ELSE &Temp3 | ' OR ' | &V2;
+
+-SET &CNT = &CNT + 1;
+-HtlEnd3
+-CLOSE HtlCODES
+
+-********************************************************************
+-* Get HTL CHAIN Code + name 
+-********************************************************************
+-IF &INCL2 EQ 0 THEN GOTO HTL_CITY;
+DEFINE FILE HOTL_CHN
+  DESC/A35 = CHAIN_CODE | ' - ' | CHAIN_NAME;
+END
+TABLE FILE HOTL_CHN
+PRINT DESC
+BY CHAIN_CODE NOPRINT
+&Temp1
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO HTL_CITY;
+
+-SET &IND = 123;
+
+-REPEAT HtlEnd4 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A35. 
+
+-SET &V0= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+-SET &FT.&IND = IF &V0 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V0;
+-SET &PRINTLINE = &FT.&IND;
+-IF &PRINTLINE.LENGTH LT 80 THEN GOTO HtlEnd4;
+-SET &IND = &IND + 1;
+-HtlEnd4
+-CLOSE VCODE
+
+
+-HTL_CITY
+-********************************************************************
+-* Get HTL City Code + name 
+-********************************************************************
+-IF &INCL3 EQ 0 THEN GOTO HTL_REF;
+DEFINE FILE CITY
+  CNAME/A32 = CITY_CODE | ' - ' | CITY_NAME;
+END
+TABLE FILE CITY
+PRINT CNAME
+BY CITY_CODE NOPRINT
+&Temp2
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-SET &IND = 129;
+
+-REPEAT HtlEnd5 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A32. 
+
+-SET &V1= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+
+-SET &FT.&IND = IF &V1 EQ ' '  THEN &FT.&IND
+- ELSE &FT.&IND || ' ' | &V1;
+
+-SET &LINE = &FT.&IND;
+-IF &LINE.LENGTH LT 80 THEN GOTO HtlEnd5;
+-SET &IND = &IND + 1;
+
+-HtlEnd5
+-CLOSE VCODE
+
+-HTL_REF
+-**************************************************************************
+-* Get HTL_REF Code + Description 
+-* Check Reason table to see if the client uses the standard code or not
+-**************************************************************************
+-IF &INCL4 EQ 0 THEN GOTO WriteFooter;
+TABLE FILE HTL_REF
+PRINT *
+IF REFUSE_KEY CONTAINS '&ROLLUP.EVAL'
+IF RECORDLIMIT EQ 1
+ON TABLE SAVE
+END
+-RUN
+-SET &STANDARD = IF &LINES EQ 0 THEN 'Y' ELSE 'N';
+
+DEFINE FILE HTL_REF
+  REFUSE_CODE/A2 = EDIT(REFUSE_KEY, '$$$$$$$$99');
+  ROLLUP_CODE/A8 = EDIT(REFUSE_KEY, '99999999$$');
+  DESC/A45 = REFUSE_CODE | ' - ' | REFUSAL_DESC;
+  
+END
+TABLE FILE HTL_REF
+PRINT DESC
+BY REFUSE_KEY NOPRINT
+&Temp3
+-IF &STANDARD EQ 'Y' THEN GOTO HtlStandand;
+WHERE ROLLUP_CODE EQ '&ROLLUP.EVAL'
+-GOTO DONEHtl
+-HtlStandand
+WHERE ROLLUP_CODE EQ ' '
+-DONEHtl
+ON TABLE SAVE AS VCODE
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO WriteFooter;
+
+-SET &IND = 135;
+-SET &CNT = 1;
+
+-REPEAT HtlEnd6 &LINES TIMES
+-READ VCODE NOCLOSE &V0A.A45. 
+
+-SET &V1= IF &V0A EQ ' ' THEN ' ' ELSE '''' | &V0A || '''';
+
+-SET &FT.&IND = IF &V1 EQ ' '  THEN &FT.&IND
+- ELSE IF (&CNT/2 - &CNT/2*2) EQ 0 THEN &V1 ELSE &FT.&IND || ' ' | &V1;
+-*- ELSE IF IMOD(&CNT/2)      EQ 0 THEN &V1 ELSE &FT.&IND || ' ' | &V1;
+
+-SET &LINE = &FT.&IND;
+-IF &LINE.LENGTH LT 75 THEN GOTO IncHCnt6;
+-SET &IND = &IND + 1;
+
+-IncHCnt6
+-SET &CNT = &CNT + 1;
+-HtlEnd6
+-CLOSE VCODE
+
+-**********************************************************************
+-WriteFooter
+-**********************************************************************
+-WRITE SBFOOT "</5"
+-WRITE SBFOOT "** THIS REPORT IS BASED ON THE FOLLOWING SELECTION CRITERIA **"
+-WRITE SBFOOT "================================================================"
+-*-WRITE SBFOOT "** &K1 **"
+-*-WRITE SBFOOT " --------------------------------------------------------------"
+-*-WRITE SBFOOT "&K2"
+-*-SET &FOOTLINES=&FOOTLINES - 14;
+
+-*Write Hierarchy, client and category selections to the footer
+-WRITE SBFOOT "&FT200"
+-SET &FOOTLINES=&FOOTLINES - 11;
+-SET &CNT = 201;
+-REPEAT TOFOOT1 49 TIMES
+-IF &FT.&CNT EQ ' ' GOTO AddOne;
+-SET &LINE = &FT.&CNT;
+-SET &FIRSTTWO = SUBSTR(&LINE.LENGTH, &LINE, 1, 2, 2, 'A2');
+-IF &FIRSTTWO NE '**' THEN GOTO WRLINE1;
+-WRITE SBFOOT " "
+-WRLINE1
+-WRITE SBFOOT "&LINE"
+-SET &FOOTLINES=&FOOTLINES - 1;
+-AddOne
+-SET &CNT = &CNT + 1;
+-TOFOOT1
+-ENDREPEAT1
+
+-*The followings are from rpt_flds 
+-SET &CNT = 100;
+-REPEAT ContWrite 50 TIMES
+-SET &LINE = &FT.&CNT;
+-IF &FT.&CNT EQ  ' ' 
+- THEN GOTO IncCount;
+-SET &FIRSTTWO = SUBSTR(&LINE.LENGTH, &LINE, 1, 2, 2, 'A2');
+-IF &FIRSTTWO EQ '**' THEN GOTO SkipALine;
+-WRITE SBFOOT " &LINE"
+-SET &FOOTLINES=&FOOTLINES-1;
+-GOTO IncCount
+-SkipALine
+-*-WRITE SBFOOT "</1 "
+-WRITE SBFOOT " "
+-WRITE SBFOOT "&LINE"
+-WRITE SBFOOT " -----------------------------------------------------------"
+-SET &FOOTLINES=&FOOTLINES-3;
+-IncCount
+-SET &CNT = &CNT + 1;
+-ContWrite 
+
+-SET &FOOTLINES=&FOOTLINES+3;
+-WRITE SBFOOT "</&FOOTLINES.EVAL"
+-SET &SPOTNUM=IF &&USEPARM.EVAL EQ 'AVIW23' THEN 55 ELSE 65;
+-WRITE SBFOOT "eTTek Review &DATE AT <NOWTOD <&SPOTNUM.EVAL &&FOOTR"
+-WRITE SBFOOT "&&CRIGHT"
+-CLOSE SBFOOT

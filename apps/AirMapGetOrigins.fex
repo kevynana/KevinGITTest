@@ -1,0 +1,58 @@
+-**********************************************************************************************
+-* AirMapGetOrigins.fex
+-* get all origin airport codes - users may eitehr enter origin or destination airport
+-**********************************************************************************************
+-INCLUDE SETECHO
+-*-INCLUDE AirMapSetupReportData
+-*-RUN
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-*-DEFAULT &ORG = 'OMA';
+-*-DEFAULT &DST = 'FLL';
+-*-SET &WhatOrgApc = IF '&ORG.EVAL' EQ '' THEN '' ELSE 'WHERE ORG_APC EQ ''&ORG.EVAL'''; 
+-*-SET &WhatDstApc = IF '&DST.EVAL' EQ '' THEN '' ELSE 'WHERE FNL_DEST_AIRPORT EQ ''&DST.EVAL'''; 
+
+FILEDEF CAPCODE1 DISK CAPCODE1.FTM
+
+TABLEF FILE SR_50
+PRINT 
+
+  EMBARKX
+  ROUTEX
+ 
+  C_ITIN
+  ORG_APC
+  FNL_DEST_AIRPORT
+-*itinerary
+  BY TKT_SORT
+  BY SEG_NBR   
+
+&WhatOrgApc
+&WhatDstApc
+
+WHERE VOID_DATE EQ 0 
+WHERE EMBARK NE 'EX1' OR 'DT1' OR 'FP1' OR 'FP2' OR 'FP3'
+WHERE ROUTE NE 'EX1' OR 'DT1' OR 'FP1' OR 'FP2' OR 'FP3'
+
+ON TABLE HOLD AS CAPCODE1
+END
+-RUN
+
+TABLE FILE CAPCODE1
+BY EMBARKX
+WHERE EMBARKX CONTAINS ORG_APC
+ON TABLE HOLD 
+END
+-RUN
+
+FILEDEF FORGAPC DISK FORGAPC.ftm
+
+DEFINE FILE HOLD
+  AIRPORT_CODE/A6 = '''' | EMBARKX | '''';
+END
+TABLE FILE HOLD
+PRINT AIRPORT_CODE
+ON TABLE SAVE AS FORGAPC
+END
+-RUN

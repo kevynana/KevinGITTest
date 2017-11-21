@@ -1,0 +1,9 @@
+-DEFAULT &&GLO_CHK='N';
+
+-IF &&GLO_CHK NE 'Y' GOTO NOLOGOCHG1;
+
+-SET &&TNTPIC='OneCompanyGlobally.gif';
+-SET &&TNTSMPOS='5.25 .4';
+-SET &&TNTSMSIZ='5.00 .5';
+ 
+-NOLOGOCHG1

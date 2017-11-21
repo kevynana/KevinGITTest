@@ -1,0 +1,266 @@
+-******************************************************************************
+-* getRollup.fex
+-* This program is written to generate HTML file dynamicall based on the
+-* database Rollup.
+-*
+-* Author: Lusheng Si
+-* Date:   Jan 16, 2004
+-*  10/13/2016  REJ  S-25863 Updated to exclude DEMO-R.
+-* convert MAINTAIN CODE to TABLE FILE and Dialog Manager commands
+-* 11/16/2016 LSI S-21857
+
+-* APP MAP TEMP D:\IBI\APPS\LSI
+-* APP PREPENDPATH TEMP 
+-******************************************************************************
+-SET &ECHO = ALL;
+
+-*-SET &SERVERPATH = '\\omawfweb03\D$';
+-SET &SERVERPATH = &&WSSRV;
+-SET &HTMLPATH = '&SERVERPATH.EVAL' | '\TNT\TTRACKER\SYSTEM\ASP\';
+-SET &HTMLFILE = &HTMLPATH || 'Rollup.html';
+
+DOS DEL &HTMLFILE
+-RUN
+
+APP FI RollCode DISK &HTMLFILE (APPEND
+-RUN
+
+-WRITE RollCode <HTML lang='en'>
+-WRITE RollCode <HEAD>
+-WRITE RollCode <TITLE>Rollup Codes</TITLE>
+-WRITE RollCode <meta http-equiv='Content-Script-Type' content='text/javascript' />
+-WRITE RollCode <meta name='Author' content='Lusheng Si' />
+-WRITE RollCode <meta name='Date  ' content='JAN 16, 2004' />
+-WRITE RollCode <SCRIPT TYPE='text/javascript' LANGUAGE='JavaScript'>
+-WRITE RollCode <!--
+-WRITE RollCode var arraySize;
+-WRITE RollCode var codes;
+-WRITE RollCode
+-WRITE RollCode function loadCodes() {
+-WRITE RollCode
+
+-*******************************************************************************************************
+-* convert MAINTAIN CODE to TABLE FILE and Dialog Manager commands
+-* 11/16/2016 LSI S-21857
+-* codes = new Array(130);
+-*  codes[0] ="ALL-R    (ALLSTATE)";
+-*  codes[1] ="ALPHAS-R (ALPHA SOURCE)"; 
+-*******************************************************************************************************
+
+DEFINE FILE ROLLUP_SQL
+  PRINTLINE/A40 = '"' | ROLLUP_CODE || ' (' | ROLL_NAME || ')";';
+END
+TABLE FILE ROLLUP_SQL
+PRINT PRINTLINE
+BY ROLLUP_CODE NOPRINT
+    WHERE AGENCY EQ 1 AND ROLLUP_CODE NE 'TOTAL-R' AND ROLLUP_CODE NE 'ABCD-R' AND ROLLUP_CODE NE 'DEMO-R'
+      AND UPD_ENABLE EQ 'X' AND LOAD_GRP NE 'N';
+ON TABLE SAVE AS 'ACTROLLS'
+END
+-RUN
+
+-SET &COUNTS = &LINES;
+
+-WRITE RollCode codes = new Array(&COUNTS.EVAL);
+-SET &CNT = 0;
+
+-REPEAT ALLROLL1 &COUNTS TIMES
+-READ ACTROLLS NOCLOSE &ROLLDESC.40. ;
+-WRITE RollCode codes[&CNT.EVAL] = &ROLLDESC.EVAL
+-SET &CNT = &CNT + 1;
+-ALLROLL1
+-CLOSE ACTROLLS;
+
+-SET &nbsp = '&' || 'nbsp';
+
+-WRITE RollCode }
+-WRITE RollCode
+-WRITE RollCode function getCodes() {
+-WRITE RollCode   var output = '';
+-WRITE RollCode   var i = 0;
+-WRITE RollCode
+-WRITE RollCode   loadCodes();
+-WRITE RollCode   arraySize = codes.length;
+-WRITE RollCode   output += '<form NAME="code">';
+-WRITE RollCode   output += '<P><P>'
+-WRITE RollCode   output +="<SELECT NAME='selCode',size='7' color='#808080' multiple=1)>";
+-*-WRITE RollCode   output +='<OPTION value="  " selected>' + 'Please Select ROLLUP Codes below       </OPTION>';
+-WRITE RollCode   for (i=0; i<arraySize; i++) {
+-WRITE RollCode     if ((i % 2) != 0 ) {output += '<OPTION style="background-color:#dcdcdc;" value ="'+ codes[i] + '">' + codes[i] + ' </OPTION>'; }
+-WRITE RollCode     else { output += '<OPTION value ="'+ codes[i] + '">' + codes[i] + ' </OPTION>'; }
+-WRITE RollCode   }
+-WRITE RollCode   output +='</SELECT>';
+-WRITE RollCode
+-WRITE RollCode     output += '<font size="2" <br></br>';
+-WRITE RollCode     output +='<table border="0" width="50%">';
+-WRITE RollCode     output +='  <tr>';
+-WRITE RollCode     output +='    <td width="50%">';
+-WRITE RollCode     output +='        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+-WRITE RollCode     output +='        <input type="button" value="Select" name="B1" onclick="pasteCode();">';
+-WRITE RollCode     output +='    </td>';
+-WRITE RollCode     output +='    <td width="50%">';
+-WRITE RollCode     output +='        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
+-WRITE RollCode     output +='        <input type="button" value="Close" name="B2" onclick="winClose();">';
+-WRITE RollCode     output +='    </td>';
+-WRITE RollCode     output +='  </tr>';
+-WRITE RollCode     output +='</table>';
+-WRITE RollCode     output +='<font size="3">___________________________________________________________________</font><br>';
+-WRITE RollCode     output +='<font size="2" color="#800000">Enter Exact Code or Partial Name to Search      </font>';
+-WRITE RollCode     output +='<table border="0" width="90%">';
+-WRITE RollCode     output +='  <tr>';
+-WRITE RollCode     output +='    <td width="40%">';
+-WRITE RollCode     output +='Rollup Code:';
+-WRITE RollCode     output +='    </td>';
+-WRITE RollCode     output +='    <td width="40%">';
+-WRITE RollCode     output +='        <input type="text" name="MCODE" size="20" maxlength="20">';
+-WRITE RollCode     output +='    </td>';
+-WRITE RollCode     output +='    <td width="20%">';
+-WRITE RollCode     output +='        <input type="button" value="Find" name="GO" onclick="checkNum();">';
+-WRITE RollCode     output +='    </td>';
+-WRITE RollCode
+-WRITE RollCode     output +='  </tr>';
+-WRITE RollCode     output +='</table>';
+-WRITE RollCode
+-WRITE RollCode     output +='<table border="0" width="90%">';
+-WRITE RollCode   	output +='  <tr>';
+-WRITE RollCode   	output +='    <td width="40%">';
+-WRITE RollCode   	output +='Company Name:';
+-WRITE RollCode   	output +='    </td>';
+-WRITE RollCode   	output +='    <td width="40%">';
+-WRITE RollCode   	output +='        <input type="text" name="MemName" size="35" maxlength="60">';
+-WRITE RollCode   	output +='    </td>';
+-WRITE RollCode   	output +='    <td width="20%">';
+-WRITE RollCode   	output +='        <input type="button" value="Find" name="GO2" onclick="checkName();">';
+-WRITE RollCode   	output +='    </td>';
+-WRITE RollCode
+-WRITE RollCode   	output +='  </tr>';
+-WRITE RollCode 	output +='</table>';
+-WRITE RollCode
+-WRITE RollCode  output +='</FORM>';
+-WRITE RollCode   return output;
+-WRITE RollCode }
+-WRITE RollCode
+
+-WRITE RollCode function checkName() {
+-WRITE RollCode  if ((document.code.MemName.value == '') || (document.code.MemName.value == ' ')) {
+-WRITE RollCode    alert("Please Enter a Rollup Name");
+-WRITE RollCode    return false;
+-WRITE RollCode   }
+-WRITE RollCode   unSelectAll();
+-WRITE RollCode   searchMemberName();
+-WRITE RollCode }
+-WRITE RollCode
+-WRITE RollCode function searchMemberName() {
+-WRITE RollCode  var i;
+-WRITE RollCode  var val, len, name;
+-WRITE RollCode  var fund=false;
+-WRITE RollCode  for (i=1; i < document.code.selCode.length; i++) {
+-WRITE RollCode    val = document.code.selCode.options[i].text;
+-WRITE RollCode
+-WRITE RollCode    len = val.indexOf("(") + 1;
+-WRITE RollCode    name=val.substring(len, val.length-1);
+-WRITE RollCode    //get all members which contains that search string
+-WRITE RollCode    if (name.indexOf(document.code.MemName.value.toUpperCase()) != -1 ) {
+-WRITE RollCode      document.code.selCode.options[i].selected = true;
+-WRITE RollCode      if (!fund) { fund = true; }
+-WRITE RollCode    }
+-WRITE RollCode  }
+-WRITE RollCode  if (!fund) {
+-WRITE RollCode    alert("Company Name Not Found!!");
+-WRITE RollCode  }
+-WRITE RollCode }
+-WRITE RollCode
+-WRITE RollCode function unSelectAll() {
+-WRITE RollCode 	for (i=0; i < document.code.selCode.length; i++) {
+-WRITE RollCode 		document.code.selCode.options[i].selected = false;
+-WRITE RollCode 	}
+-WRITE RollCode }
+-WRITE RollCode
+-WRITE RollCode function checkNum() {
+-WRITE RollCode  if ((document.code.MCODE.value == '') || (document.code.MCODE.value == ' ')) {
+-WRITE RollCode    alert("Please Enter a Rollup Code");
+-WRITE RollCode    return false;
+-WRITE RollCode   }
+-WRITE RollCode   unSelectAll();
+-WRITE RollCode   searchMembers();
+-WRITE RollCode }
+-WRITE RollCode
+-WRITE RollCode function searchMembers() {
+-WRITE RollCode  var i;
+-WRITE RollCode  var val, len, mcode;
+-WRITE RollCode  var fund=false;
+-WRITE RollCode  for (i=1; i < document.code.selCode.length; i++) {
+-WRITE RollCode    val = document.code.selCode.options[i].text;
+-WRITE RollCode    len = val.indexOf("(") - 1 ;
+-WRITE RollCode    mcode=val.substring(0,len);
+-WRITE RollCode    if (mcode == document.code.MCODE.value.toUpperCase()) {
+-WRITE RollCode      document.code.selCode.options[i].selected = true;
+-WRITE RollCode      fund=true;
+-WRITE RollCode      break;
+-WRITE RollCode    }
+-WRITE RollCode  }
+-WRITE RollCode  if (!fund) {
+-WRITE RollCode    alert("Rollup Code Not Found!!");
+-WRITE RollCode  }
+-WRITE RollCode }
+-WRITE RollCode
+-WRITE RollCode function selectAll() {
+-WRITE RollCode   var size=codes.length;
+-WRITE RollCode   document.code.selCode.options[0].selected = false;
+-WRITE RollCode   for (i=1;i<=size;i++) {
+-WRITE RollCode     document.code.selCode.options[i].selected = true;
+-WRITE RollCode   }
+-WRITE RollCode   var wchfld = window.name.toString();
+-WRITE RollCode   opener.codeVal = 'ALL';
+-WRITE RollCode   opener.pasteIt(wchfld);
+-WRITE RollCode   location.href = '/Asp/Rollup.html';
+-WRITE RollCode   self.close();
+-WRITE RollCode }
+-WRITE RollCode
+
+-WRITE RollCode function pasteCode() {
+-WRITE RollCode   var wchfld = window.name.toString();
+-WRITE RollCode   var sel='', sel2='';
+-WRITE RollCode
+-WRITE RollCode   var j, k, i=0;
+-WRITE RollCode   k = document.code.selCode.length;
+-WRITE RollCode   for (j=0; j<k; j++) {
+-WRITE RollCode     if (document.code.selCode.options[j].selected && i<50) {
+-WRITE RollCode        if (opener.pasteRollup(document.code.selCode.options[j].text)) {
+-WRITE RollCode           i++; 
+-WRITE RollCode           if (i==50) {
+-WRITE RollCode              alert ("If you want all rollups, don’t select any.  The default is All selected.\nThe max number of rollups selectable is 50, and only the first 50 will be selected.");
+-WRITE RollCode              location.href = '/Asp/Rollup.html';
+-WRITE RollCode              winClose();
+-WRITE RollCode           }
+-WRITE RollCode        }
+-WRITE RollCode        else if (i==50) {j=k;}
+-WRITE RollCode      }
+-WRITE RollCode
+-WRITE RollCode   }
+-WRITE RollCode   
+-WRITE RollCode   //opener.pasteIt(wchfld);
+-WRITE RollCode   location.href = '/Asp/Rollup.html';
+-WRITE RollCode   winClose();
+-WRITE RollCode }
+
+-WRITE RollCode
+-WRITE RollCode function winClose() {
+-WRITE RollCode   self.close();
+-WRITE RollCode }
+
+-WRITE RollCode //--></SCRIPT></HEAD>
+-WRITE RollCode <BODY TOPMARGIN=2 LEFTMARGIN=5><P><CENTER>
+-WRITE RollCode <SCRIPT TYPE='text/javascript' LANGUAGE='JavaScript'>
+-WRITE RollCode <!--
+-WRITE RollCode document.write(getCodes());
+-WRITE RollCode //--></SCRIPT>
+-WRITE RollCode </CENTER>
+-WRITE RollCode </BODY>
+-WRITE RollCode </HTML>
+-CLOSE RollCode
+-RUN
+
+-*generate OF Accounts
+-INCLUDE GETOFROLLUP
+-RUN

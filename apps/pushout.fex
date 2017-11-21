@@ -1,0 +1,75 @@
+-* File MGMTCYC.FEX
+-****************************************************************************
+-* This program will automate the running of MONTHLY management cycle reports
+-* through Report Broker.
+-*
+-* DATE           NAME             DESCRIPTION
+-* 4/18/01        TANDT-SS         NEW PROGRAM
+-*
+-****************************************************************************
+-TYPE INSIDE SUBMIT01
+
+SET ASNAMES=ON
+SET YRTHRESH=30
+SET DEFCENT=19
+
+-* JOIN CLEAR *
+END
+-RUN
+
+-*----------------------------------------------
+-* Copy reports to run to RPT_QUE
+-*----------------------------------------------
+-TYPE READY COPY RPT_QUE
+TABLE FILE RPT_SET
+PRINT *
+WHERE RPT_SERVER EQ 'pattic' OR 'jeanineh' OR 'karenr' OR 'paulm' OR 'robinl'
+ON TABLE HOLD AS SET2
+END
+-RUN
+
+JOIN SET_KEY IN SET2 TO ALL RPT_INST.SET_KEY IN RPT_INST AS JOINSET2
+
+DEFINE FILE SET2
+ ROLL_SEQ/I6=0;
+ NEW_EXECUTE_FLAG/A1 = 'Y';
+END
+-RUN
+
+TABLE FILE SET2
+PRINT  INST_KEY
+ RPT_INST.ROLLUP_CODE
+ USER_NAME
+ SET_ID
+ INSTANCE_ID
+ NEW_EXECUTE_FLAG AS 'EX_FLAG'
+ SET_NAME
+ RPT_NAME
+ RPT_GROUP
+ RPT_TYPE
+ RPT_STREAM
+ GLOBAL_PARM
+ ROLL_SEQ
+ SET2.RUN_SEQ AS 'SET_SEQ'
+ RPT_INST.RUN_SEQ AS 'RPT_SEQ'
+ON TABLE HOLD AS INST3
+END
+-RUN
+-EXIT
+
+-*----------------------------
+-* Update RPT_QUE
+-*----------------------------
+-TYPE UPDATING RPT_QUE
+MODIFY FILE RPT_QUE
+FIXFORM FROM INST3
+MATCH INST_KEY
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON INST3
+END
+-RUN
+-EXIT
+
+
+

@@ -1,0 +1,7 @@
+-SET &UID='&2';
+-SET &ROL='&1';
+-SET &NDIR= '&&WEBSRV.EVAL' || '\TTWEB\' || &ROL.EVAL || '\' || &UID.EVAL;
+
+-DOS MKDIR &NDIR.EVAL
+-RUN
+

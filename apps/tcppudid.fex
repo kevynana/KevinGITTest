@@ -1,0 +1,135 @@
+-*01/16/17-S-29189-JEM-Creation of ROUTINE FOR PP- UDIDS 
+
+SET ASNAMES = ON 
+-RUN
+
+-INCLUDE SETECHO
+
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+
+DEFINE FILE SR_50
+
+  FARE_PAID/P15.2CS   = SEG_AMT + SEG_TAX;   
+  NET_TKT_CNT/P12CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+END
+
+TABLE FILE SR_50
+PRINT AIR_KEY	
+  FARE_PAID	
+  NET_TKT_CNT	
+  TKT_NUM
+  SEG_NBR
+-* -INCLUDE &AIRDATES
+WHERE TRN_DATE GE &&FROMDT.EVAL AND TRN_DATE LE &&TODT.EVAL
+WHERE VOID_DATE EQ 0
+WHERE DOC_TYPE NE '1'
+WHERE EMBARK NE 'DT2' OR 'FP2' OR 'FP3'
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS REPHOLD
+END
+-RUN
+
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+
+TABLE FILE REPHOLD
+PRINT FARE_PAID NET_TKT_CNT TKT_NUM SEG_NBR
+BY AIR_KEY
+ON TABLE HOLD AS TCSD3X FORMAT FOCUS INDEX AIR_KEY
+END
+-RUN
+
+-INCLUDE TCUDAUSE
+-RUN
+
+-* PP- UDID
+
+TABLE FILE UDAIR
+PRINT NUD_DATA AS 'PPV'
+BY AIR_KEY
+WHERE UDID EQ 'PP-'
+ON TABLE HOLD AS TCPPV
+END
+-RUN
+
+JOIN AIR_KEY IN TCSD3X TO AIR_KEY IN TCPPV AS JJ
+-RUN
+
+DEFINE FILE TCSD3X
+PP_AMT1/D12.2 =  PPV;
+PP_AMTA/D12.2 = IF FARE_PAID LT 0 THEN PP_AMT1 * (-1) ELSE PP_AMT1;
+PP_AMTA2/D12.2 = IF NET_TKT_CNT LT 0 THEN PP_AMTA ELSE 0;
+PP_AMTA3/D12.2 = IF NET_TKT_CNT GT 0  THEN PP_AMT1 ELSE 0;
+
+PP_AMT2/D12.2 = IF FARE_PAID LT 0 THEN PP_AMTA2 ELSE PP_AMTA3;
+PP_SAV/P12.2CSM =  PP_AMT2 - FARE_PAID ;
+
+ROLLCD/A8 = '&&ROLL';
+
+END
+TABLE FILE TCSD3X
+SUM FARE_PAID PP_AMT2 PP_SAV
+BY ROLLCD
+WHERE PPV NE 0
+ON TABLE HOLD AS TCSD4X
+END
+-RUN
+
+DEFINE FILE TCSD4X
+ NMB/I5 = NMB + 1;
+END
+TABLE FILE TCSD4X
+SUM PP_SAV
+BY ROLLCD
+BY NMB
+ON TABLE HOLD AS TCSD3
+END
+-RUN
+
+
+MODIFY FILE TC_VSV2
+FIXFORM FROM TCSD3
+MATCH ROLLCD NMB
+ON MATCH UPDATE PP_SAV
+ON NOMATCH INCLUDE
+DATA ON TCSD3
+END
+-RUN
+
+
+
+-NEXTONE
+
+ 
+
+

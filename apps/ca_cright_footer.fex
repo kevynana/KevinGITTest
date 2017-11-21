@@ -1,0 +1,12 @@
+-* File ca_cright_footer.fex
+-DEFAULT &&OUTFMT='PDF';
+
+-SET &CR = IF &&OUTFMT EQ 'PPT' THEN '(C)' ELSE CTRAN(1, ' ', 32, 169, 'A1');
+
+-SET &CD=EDIT(&MDYY,'99/99/9999');
+-SET &CY=EDIT(&YYMD,'9999');
+-SET &CT=HHMMSS('A10');
+ 
+-SET &M1='&&SETF.EVAL' | '   ' | &CD | ' at ' | &CT | '/' | '&&IKEY.EVAL';
+-SET &M2=&CR || (&CY | ' Travel and Transport, Inc.');
+-SET &M3='Personal and Confidential';

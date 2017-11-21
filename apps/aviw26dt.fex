@@ -1,0 +1,1096 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: AIRRPT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*6/2/98         JK                 INCLUDE AIRLEVM INSTEAD OF AIRLEVT
+-*7/31/00     IBISTL-KR             ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*5/31/01      TANDT-DB             ADDED PAPER FIELD 
+-*10/2/01       TANDT-JK             ADDED MTLEVEL1 MTLEVEL2 INT_CODE
+-*12/26/01     TANDT-DB             CARRIED THROUGH INTEXT
+-* 5/15/02     TANDT-DB             CARRIED THROUGH ONLINE_AMT
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*7/11/02      TANDT-DB             CARRIED THROUGH EMB_CTY_NM RTE_CTY_NM
+-*9/17/02      TANDT-DB             CARRIED THROUGH NEW_SEG_MILES
+-* 10/26/02    TANDT-JK             CARRIED THROUGH AUX_TYPE DEFINE
+-* 12/20/02    TANDT-JK             CARRIED THROUGH FOP DEFINE
+-* 6/26/03     DEB                  CARRIED THROUGH NET_TKT_CNT1 DEFINE 
+-*12/01/03     DEB                  ADDED AROLL_LEV5 AROLL_LEV6
+-*12/02/03     DEB                  CARRIED THROUGH FOP2
+-*12/9/03      Joy                  Carried Through Shuttle Define
+-*11/8/04      Joy                  Carried Through ID_Flg Define
+-*12/21/04     DEB                  ADDED DOD_TYPE 'J' TO BKD_ONLINE DEFINE
+-*08/02/05     DEB                  ADDED NRFLAG DEFINE
+-*10/11/05     DEB                  ADDED DOD_TYPE 'H' TO BKD_ONLINE DEFINE
+-*6/27/13      JOY                  ADDED ADDTL UDIDS TO METX REPORT
+-*1/16/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+-*5/22/14      DEB                  ADDED EX5 TO MILES DEFINE
+-* 2/2/15 - DEB - S-07181  ADDED AUX_TKTLS_NUM
+-*12/07/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-* 07/18/16   DLV  S-20630 - Carried through EMP_ID New Employee ID database field
+-* 08/02/2017 - JEM - S-37368 Updated LOW_AMT field to use SRT_DT instead of TKT_SORT
+
+-**************************************************************************
+
+-INCLUDE SETECHO
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM DISSAVINGS AS 'DTSAVE'
+    FARE_PAID AS 'TFARE'
+    SEG_LOWEST AS 'TLOW'
+    NET_TKT_CNT AS 'TTKT'
+    NET_TKT_CNT1 AS 'TTKT1'
+    NEW_SEG_MILES AS 'TMILE'
+    BASE_AMT AS 'TBAS'
+    TAX AS 'TTAX'
+    NVSV AS 'TNFV'
+    NEW_SEG_DISC AS 'TMKT'
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT ADV_BOOK
+      AIR_KEY	
+      AIRLINE
+      AROLL_LEV1
+      AROLL_LEV2
+      AROLL_LEV3
+      AROLL_LEV4
+      AROLL_LEV5
+      AROLL_LEV6
+      AROLL_LEV7
+      AROLL_LEV8
+      AROLL_LEV9
+      AROLL_LEV10
+      AROLL_LEV11 
+      AROLL_LEV12
+      AROLL_LEV13
+      AROLL_LEV14	
+      ARR_DAY
+      ARR_TIME 
+      AUX_TKTLS_NUM
+      AUX_TYPE
+      BOOK_DT	
+      BR_CL_IDX	
+      CC_NUM
+      C_ITIN
+      CLASS_CAT	
+      DISSAVINGS
+      DOC_NUMBER
+      DOC_TYPE
+      DOD_TYPE	
+      DPT_DAY
+      DPT_TIME
+      EMB_APT_CD
+      EMB_CTY_NM
+      EMP_ID
+      EXCEPTION
+      EXCH_AC
+      EXCHG_SALE
+      EXCH_NET_FARE
+      EXCH_NET_TAX	
+      FARE_BAS	
+      FARE_BASE_CODE
+      FARE_PAID	
+      FOP
+      FOP2
+      ID_FLG
+      INT_CODE
+      INTEXT
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      MTLEVEL1
+      MTLEVEL2
+      MTLEVEL3
+      MX_CL
+      MXCATT
+      NEW_SEG_MILES
+      NET_TKT_CNT1
+      NON_REF
+      NRFLAG
+      ONLINE_AMT
+      ONLINE_TRADITIONAL
+      PAPER	
+      PNR_LOCATOR	
+      REFUSAL_DESC	
+      REFUSE_CODE	
+      RTE_APT_CD
+      RTE_CTY_NM	
+      SEG_LOWEST
+      SHUTTLE	
+      TKT_NUM	
+      TKT_TYPE	
+      XARR_DT	
+      XDPT_DT	
+      XTRAN_DT	
+-**** fields added for Metlife
+  XFST_DPT
+  SEGMENT_DESIGNATOR      
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT ADV_BOOK
+      AIR_KEY	
+      AIRLINE
+      AROLL_LEV1
+      AROLL_LEV2
+      AROLL_LEV3
+      AROLL_LEV4
+      AROLL_LEV5
+      AROLL_LEV6
+      AROLL_LEV7
+      AROLL_LEV8
+      AROLL_LEV9
+      AROLL_LEV10
+      AROLL_LEV11 
+      AROLL_LEV12
+      AROLL_LEV13
+      AROLL_LEV14		
+      ARR_DAY
+      ARR_TIME
+      AUX_TKTLS_NUM
+      AUX_TYPE
+      BOOK_DT	
+      BR_CL_IDX	
+      CC_NUM
+      C_ITIN
+      CLASS_CAT	
+      DISSAVINGS
+      DOC_NUMBER	
+      DOC_TYPE
+      DOD_TYPE
+      DPT_DAY
+      DPT_TIME
+      EMB_APT_CD
+      EMB_CTY_NM
+      EMP_ID
+      EXCEPTION
+      EXCH_AC
+      EXCHG_SALE
+      EXCH_NET_FARE
+      EXCH_NET_TAX	
+      FARE_BAS
+      FARE_BASE_CODE
+      FARE_PAID
+      FOP
+      FOP2	
+      ID_FLG
+      INT_CODE
+      INTEXT
+      LEVEL1	
+      LEVEL2	
+      LEVEL3	
+      MX_CL
+      MXCATT
+      MTLEVEL1
+      MTLEVEL2
+      MTLEVEL3
+      NEW_SEG_MILES
+      NET_TKT_CNT1
+      NON_REF
+      NRFLAG
+      ONLINE_AMT
+      ONLINE_TRADITIONAL
+      PAPER
+      PNR_LOCATOR	
+      REFUSAL_DESC	
+      REFUSE_CODE	
+      RTE_APT_CD
+      RTE_CTY_NM	
+      SEG_LOWEST
+      SHUTTLE	
+      TKT_NUM	
+      TKT_TYPE	
+      XARR_DT	
+      XDPT_DT	
+      XTRAN_DT	
+-**** fields added for Metlife
+  XFST_DPT
+  SEGMENT_DESIGNATOR         
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT DTSAVE
+      TFARE
+      TLOW
+      TMILE
+      TTKT
+      TTKT1 
+      TBAS
+      TTAX
+      TNFV
+      TMKT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+
+-IF '&&SETF.EVAL' EQ 'AIRFILE' OR 'MXAIRFIL' THEN GOTO METX;
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT ADV_BOOK
+      AIR_KEY	
+      AIRLINE
+      AROLL_LEV1
+      AROLL_LEV2
+      AROLL_LEV3
+      AROLL_LEV4
+      AROLL_LEV5
+      AROLL_LEV6
+      AROLL_LEV7
+      AROLL_LEV8
+      AROLL_LEV9
+      AROLL_LEV10
+      AROLL_LEV11 
+      AROLL_LEV12
+      AROLL_LEV13
+      AROLL_LEV14		
+      ARR_DAY
+      ARR_TIME
+      AUX_TKTLS_NUM
+      AUX_TYPE
+      BOOK_DT	
+      BR_CL_IDX	
+      CC_NUM
+      C_ITIN
+      CLASS_CAT	
+      DISSAVINGS
+      DOC_NUMBER	
+      DOC_TYPE
+      DOD_TYPE
+      DPT_DAY
+      DPT_TIME	
+      DTSAVE
+      EMB_APT_CD
+      EMB_CTY_NM
+      EMP_ID
+      EXCEPTION
+      EXCH_AC
+      EXCHG_SALE
+      EXCH_NET_FARE
+      EXCH_NET_TAX	
+      FARE_BAS	
+      FARE_BASE_CODE
+      FARE_PAID	
+      FOP
+      FOP2
+      ID_FLG
+      INT_CODE
+      INTEXT
+      LEVEL_DESC
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      MTLEVEL1
+      MTLEVEL2	
+      MTLEVEL3
+      MX_CL
+      MXCATT
+      NEW_SEG_MILES
+      NET_TKT_CNT1
+      NRFLAG
+      ONLINE_AMT
+      ONLINE_TRADITIONAL
+      PAPER
+      PNR_LOCATOR
+      REFUSAL_DESC	
+      REFUSE_CODE	
+      RTE_APT_CD
+      RTE_CTY_NM	
+      SEG_LOWEST
+      SHUTTLE	
+      TFARE
+      TKT_NUM	
+      TKT_TYPE	
+      TLOW
+      TMILE
+      TRN_DATE
+      TTKT
+      TTKT1
+      TBAS
+      TTAX
+      XARR_DT	
+      XDPT_DT	
+      XPSNGR_NM
+      XTRAN_DT	
+-**** fields added for Metlife
+      TNFV
+      TMKT
+      XFST_DPT
+      SEGMENT_DESIGNATOR         
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+
+
+-IF '&&SETF.EVAL' EQ 'MXCCDTL' GOTO MXCC;
+
+
+DEFINE FILE AIRHOLD3
+-INCLUDE STDTIME
+BKD_ONLINE/A1 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'Y' ELSE 'N';
+LEV_1/A15 = IF TKT_NUM NE LAST TKT_NUM THEN LEVEL1 ELSE ' ';	
+LEV_2/A15 = IF TKT_NUM NE LAST TKT_NUM THEN LEVEL2 ELSE ' ';	
+LEV_3/A15 = IF TKT_NUM NE LAST TKT_NUM THEN LEVEL3 ELSE ' ';	
+	
+NET_TKT_CNT/D9S = IF SEG_NBR EQ '01' THEN TTKT ELSE 
+                  IF DOC_TYPE EQ '1' THEN  TTKT ELSE 0; 
+NET_TKT_CNT1/D9S =  IF (SEG_NBR EQ '01') THEN  TTKT1 ELSE 0;                     	
+PASNGR_NAME/A15 = IF TKT_NUM NE LAST TKT_NUM THEN XPSNGR_NM ELSE ' ';	
+REASON_CD/A2 =  IF TKT_NUM NE LAST TKT_NUM THEN REFUSE_CODE ELSE ' ';
+RREFUSE_CODE/A2 = IF TKT_SORT NE LAST TKT_SORT THEN REFUSE_CODE ELSE ' ';	
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+XBOOK_DT/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN BOOK_DT ELSE 0; 	
+XT_DTE/A8 = EDIT(TRN_DATE);	
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');	
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;	
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+BKD_ONL/A1    = IF TKT_SORT NE LAST TKT_SORT THEN BKD_ONLINE ELSE ' ';
+SRT_DT/A120 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+LOST_SAV_AMT/D9.2CS = IF SRT_DT NE LAST SRT_DT THEN DTSAVE ELSE 0;	
+LOW_AMT/D10.2CS = IF SRT_DT NE LAST SRT_DT THEN TLOW ELSE 0;
+MILES/D8CS = IF (EMB_APT_CD EQ 'FP2' OR 'EX1' OR 'RF1' OR 'EX5') THEN 0
+  ELSE IF (TKT_TYPE EQ 'P-RF' OR 'P-EX') THEN 0
+  ELSE IF (SEG_NBR EQ '00' OR ' ') THEN 0
+  ELSE IF (TKT_SORT NE LAST TKT_SORT) AND (FARE_AMT GT 0) THEN TMILE
+  ELSE IF (TKT_SORT NE LAST TKT_SORT) AND (FARE_AMT LT 0)
+  THEN TMILE * (-1) ELSE 0;
+TOTAL_MILES/D8CS = IF SRT_DT NE LAST SRT_DT THEN TMILE ELSE 0;	
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+DOC_NMBR/A10 = IF (DOC_NUMBER EQ '0000000000') THEN ' ' ELSE               
+               DOC_NUMBER;	
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*7/31/00     IBISTL-KR             ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);	
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD3';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+
+-IF '&&SETF.EVAL' EQ 'MXAFILE' GOTO METXCSV;
+
+TABLE FILE AIRHOLD3
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+
+-INCLUDE &&DTSTY 
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT;
+
+
+-METX;
+TABLE FILE AIRHOLD2
+PRINT ADV_BOOK
+      AIRLINE
+      AROLL_LEV5
+      AROLL_LEV6	
+      ARR_DAY
+      ARR_TIME
+      AUX_TKTLS_NUM
+      AUX_TYPE
+      BOOK_DT	
+      BR_CL_IDX	
+      CLASS_CAT	
+      DISSAVINGS
+      DOC_NUMBER	
+      DOC_TYPE
+      DOD_TYPE
+      DPT_DAY
+      DPT_TIME	
+      DTSAVE
+      EMB_APT_CD
+      EMB_CTY_NM
+      EXCEPTION
+      EXCH_AC
+      EXCHG_SALE
+      EXCH_NET_FARE
+      EXCH_NET_TAX	
+      FARE_BAS	
+      FARE_PAID	
+      FOP
+      FOP2
+      ID_FLG
+      INT_CODE
+      INTEXT
+      LEVEL_DESC
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      MTLEVEL1
+      MTLEVEL2	
+      MTLEVEL3
+      NEW_SEG_MILES
+      NON_REF
+      NRFLAG
+      ONLINE_AMT
+      ONLINE_TRADITIONAL
+      PAPER
+      PNR_LOCATOR
+      REFUSAL_DESC	
+      REFUSE_CODE	
+      RTE_APT_CD
+      RTE_CTY_NM	
+      SEG_LOWEST
+      SHUTTLE	
+      TFARE
+      TKT_NUM	
+      TKT_TYPE	
+      TLOW
+      TMILE
+      TRN_DATE
+      TTKT
+      TTKT1
+      XARR_DT	
+      XDPT_DT	
+      XPSNGR_NM
+      XTRAN_DT	
+      TKT_SORT
+      SEG_NBR
+BY AIR_KEY
+ON TABLE HOLD AS AIRHOLD3A FORMAT FOCUS INDEX AIR_KEY
+END
+-RUN
+
+TABLE FILE UAMETX
+PRINT AUD_DATA
+BY AIR_KEY
+WHERE UDID EQ 'RSN' 
+ON TABLE HOLD AS MXUDID FORMAT FOCUS INDEX AIR_KEY
+END
+-RUN
+
+
+TABLE FILE UAMETX
+PRINT AUD_DATA AS 'VTC'
+BY AIR_KEY
+WHERE UDID EQ 'VTC' 
+ON TABLE HOLD AS MXUDID1 FORMAT FOCUS INDEX AIR_KEY
+END
+-RUN
+
+TABLE FILE UAMETX
+PRINT AUD_DATA AS 'ROL'
+BY AIR_KEY
+WHERE UDID EQ 'ROL' 
+ON TABLE HOLD AS MXUDID2 FORMAT FOCUS INDEX AIR_KEY
+END
+-RUN
+
+TABLE FILE UAMETX
+PRINT AUD_DATA AS 'NUM'
+BY AIR_KEY
+WHERE UDID EQ 'NUM' 
+ON TABLE HOLD AS MXUDID3 FORMAT FOCUS INDEX AIR_KEY
+END
+-RUN
+
+JOIN AIR_KEY IN AIRHOLD3A TO AIR_KEY IN MXUDID AS J1
+JOIN AIR_KEY IN AIRHOLD3A TO AIR_KEY IN MXUDID1 AS J2
+JOIN AIR_KEY IN AIRHOLD3A TO AIR_KEY IN MXUDID2 AS J3
+JOIN AIR_KEY IN AIRHOLD3A TO AIR_KEY IN MXUDID3 AS J4
+
+-RUN
+
+
+TABLE FILE AIRHOLD3A
+PRINT ADV_BOOK
+      AIR_KEY	
+      AIRLINE
+      AROLL_LEV5
+      AROLL_LEV6	
+      ARR_DAY
+      ARR_TIME
+      AUD_DATA
+      AUX_TKTLS_NUM
+      AUX_TYPE
+      BOOK_DT	
+      BR_CL_IDX	
+      CLASS_CAT	
+      DISSAVINGS
+      DOC_NUMBER	
+      DOC_TYPE
+      DOD_TYPE
+      DPT_DAY
+      DPT_TIME	
+      DTSAVE
+      EMB_APT_CD
+      EMB_CTY_NM
+      EXCEPTION
+      EXCH_AC
+      EXCHG_SALE
+      EXCH_NET_FARE
+      EXCH_NET_TAX	
+      FARE_BAS	
+      FARE_PAID	
+      FOP
+      FOP2
+      ID_FLG
+      INT_CODE
+      INTEXT
+      LEVEL_DESC
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      MTLEVEL1
+      MTLEVEL2	
+      MTLEVEL3
+      NEW_SEG_MILES
+      NRFLAG
+      NON_REF
+      ONLINE_AMT
+      ONLINE_TRADITIONAL
+      PAPER
+      PNR_LOCATOR
+      REFUSAL_DESC	
+      REFUSE_CODE	
+      RTE_APT_CD
+      RTE_CTY_NM	
+      SEG_LOWEST
+      SHUTTLE	
+      TFARE
+      TKT_NUM	
+      TKT_TYPE	
+      TLOW
+      TMILE
+      TRN_DATE
+      TTKT
+      TTKT1
+      XARR_DT	
+      XDPT_DT	
+      XPSNGR_NM
+      XTRAN_DT	 
+      VTC
+      ROL
+      NUM
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+
+
+DEFINE FILE AIRHOLD3
+-INCLUDE STDTIME
+BKD_ONLINE/A1 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'Y' ELSE 'N';
+LEV_1/A15 = IF TKT_NUM NE LAST TKT_NUM THEN LEVEL1 ELSE ' ';	
+LEV_2/A15 = IF TKT_NUM NE LAST TKT_NUM THEN LEVEL2 ELSE ' ';	
+LEV_3/A15 = IF TKT_NUM NE LAST TKT_NUM THEN LEVEL3 ELSE ' ';	
+LOST_SAV_AMT/D9.2CS = IF TKT_SORT NE LAST TKT_SORT THEN DTSAVE ELSE 0;	
+LOW_AMT/D10.2CS = IF TKT_SORT NE LAST TKT_SORT THEN TLOW ELSE 0;	
+NET_TKT_CNT/D9S = IF SEG_NBR EQ '01' THEN TTKT ELSE 
+                  IF DOC_TYPE EQ '1' THEN  TTKT ELSE 0; 
+NET_TKT_CNT1/D9S =  IF (SEG_NBR EQ '01') THEN  TTKT1 ELSE 0;                     	
+PASNGR_NAME/A15 = IF TKT_NUM NE LAST TKT_NUM THEN XPSNGR_NM ELSE ' ';	
+REASON_CD/A2 =  IF TKT_NUM NE LAST TKT_NUM THEN REFUSE_CODE ELSE ' ';
+RREFUSE_CODE/A2 = IF TKT_SORT NE LAST TKT_SORT THEN REFUSE_CODE ELSE ' ';	
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+TOTAL_MILES/D8CS = IF TKT_SORT NE LAST TKT_SORT THEN TMILE ELSE 0;	
+XBOOK_DT/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN BOOK_DT ELSE 0; 	
+XT_DTE/A8 = EDIT(TRN_DATE);	
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');	
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;	
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+BKD_ONL/A1    = IF TKT_SORT NE LAST TKT_SORT THEN BKD_ONLINE ELSE ' ';
+SRT_DT/A120 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+MILES/D8CS = IF (EMB_APT_CD EQ 'FP2' OR 'EX1' OR 'RF1' OR 'EX5') THEN 0
+  ELSE IF (TKT_TYPE EQ 'P-RF' OR 'P-EX') THEN 0
+  ELSE IF (SEG_NBR EQ '00' OR ' ') THEN 0
+  ELSE IF (TKT_SORT NE LAST TKT_SORT) AND (FARE_AMT GT 0) THEN TMILE
+  ELSE IF (TKT_SORT NE LAST TKT_SORT) AND (FARE_AMT LT 0)
+  THEN TMILE * (-1) ELSE 0;
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+DOC_NMBR/A10 = IF (DOC_NUMBER EQ '0000000000') THEN ' ' ELSE               
+               DOC_NUMBER;	
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*7/31/00     IBISTL-KR             ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);	
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD3';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+
+
+
+TABLE FILE AIRHOLD3
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT;
+
+
+-MXCC;
+
+DEFINE FILE AIRHOLD3
+-INCLUDE STDTIME
+
+XT_DTE/A8 = EDIT(TRN_DATE);	
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');	
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A120 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+BA/P12.2CS = IF SRT_DT NE LAST SRT_DT THEN TBAS ELSE 0;
+TX/P12.2CS = IF SRT_DT NE LAST SRT_DT THEN TTAX ELSE 0;
+FP/P12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+LS/P12.2CS = IF SRT_DT NE LAST SRT_DT THEN DTSAVE ELSE 0;
+MF/P12.2CS = IF SRT_DT NE LAST SRT_DT THEN TMKT ELSE 0;
+VS/P12.2CS = IF SRT_DT NE LAST SRT_DT THEN TNFV ELSE 0;
+-* MILES/D8CS = IF (EMB_APT_CD EQ 'FP2' OR 'EX1' OR 'RF1') THEN 0
+-*   ELSE IF (TKT_TYPE EQ 'P-RF' OR 'P-EX') THEN 0
+-*   ELSE IF (SEG_NBR EQ '00' OR ' ') THEN 0
+-*   ELSE IF (TKT_SORT NE LAST TKT_SORT) AND (FARE_AMT GT 0) THEN TMILE
+-*   ELSE IF (TKT_SORT NE LAST TKT_SORT) AND (FARE_AMT LT 0)
+-*   THEN TMILE * (-1) ELSE 0;
+
+
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);	
+END
+
+
+TABLE FILE AIRHOLD3
+SUM XPSNGR_NM AS 'PAX'
+    LEVEL1 AS 'L1'
+    LEVEL3 AS 'L3'
+    TKT_NUM AS 'TNUM'
+    TKT_TYPE AS 'TTYP'
+    PNR_LOCATOR AS 'PNR'
+    MXCATT
+    C_ITIN
+    MX_CL
+    BA
+    TX
+    FP
+    CC_NUM AS 'CC'
+    REFUSE_CODE AS 'RSN'
+    LS
+    AIRLINE AS 'ALN'
+    MF 
+    NET_TKT_CNT1 AS 'TC'
+    SEGMENT_DESIGNATOR AS 'SGD'
+    VS 
+    XFST_DPT AS 'FDT'
+    XTRAN_DT AS 'TD' 
+    FARE_BASE_CODE
+    NOWTOD
+BY LEVEL_DESC   
+BY XPSNGR_NM 
+BY TKT_NUM 
+ON TABLE HOLD AS AIRHOLD4
+END
+
+    
+TABLE FILE AIRHOLD4
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+
+-INCLUDE &&DTSTY 
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT;
+
+-METXCSV;
+
+-* -INCLUDE FDEFRPTSP2P
+-* -RUN
+
+
+-SET &&OUTLINE2='FORMAT COMT';
+-RUN
+
+
+TABLE FILE AIRHOLD3
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+
+-INCLUDE &&DTSTY 
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT;
+
+
+
+
+-XXIT;

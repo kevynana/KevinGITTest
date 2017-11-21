@@ -1,0 +1,20 @@
+USE CLEAR *
+EX SUUSES
+-RUN
+-*============================================================================
+-* AUTO REBUILD FILE RPT_QUE.FOC LOCATED ON WEBFOCUS01 SYNC MACHINE (SUDATA)
+-*============================================================================
+REBUILD
+REORG
+DUMP
+RPT_QUE
+NO
+CREATE FILE RPT_QUE
+-RUN
+REBUILD
+REORG
+LOAD
+RPT_QUE
+YES
+-NOW
+

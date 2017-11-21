@@ -1,0 +1,341 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* JK Added Level2, Level3 9/16/04
+-* JK Changed Level2, Level3 to carry through instead of a sort prior to the
+-*    match
+-* DV ADDED CODE FOR GLOBAL CURRENCY - 1/5/05
+-* DV CARRIED THROUGH LEVEL1
+-* DV ADDED SORT BY LEVEL1 FOR CONG 4/7/08
+-* ADDED TRANTYPE INCLUDE - JK 12/30/14 STORY ID S-06492
+
+-* File TOPAIRPX.FEX
+-********************************************************************
+-********************************************************************
+-*
+-* This program extracts data for a frequent flyer report
+
+-********************************************************************
+-INCLUDE SETECHO
+-*SET TEMPERASE = OFF
+
+
+SET ASNAMES = ON
+-RUN
+
+-SET HOLDATTR = ON;
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+-SET &WHATDATE = IF '&&DATETYPE.EVAL' EQ 'I' THEN 'TRN_DATE' ELSE 'FST_DPT_DATE';
+
+DEFINE FILE &&EXTRACT
+  BZ_CAT/A1 = IF ADIR_ALL CONTAINS '*F' THEN 'F' ELSE IF ADIR_ALL CONTAINS '*B' THEN 'B' ELSE 
+           IF ADIR_ALL CONTAINS '*C' THEN 'C' ELSE 'D';
+           
+  COMM_SEG/D12.2S   = SEG_COM;
+  FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+  LEVEL_DESC/A60      = &&LDESC;
+  KILO/D9      = CITYPAIR.SEG_MILES * 1.60934 ; 
+  MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+  NET_COMM/D12.2S     = (SEG_AMT - SEG_COM);
+  NET_FARE/D12.2S  = IF (EX_FLAG EQ ' ') AND (RF_FLAG EQ ' ')
+                         THEN SEG_AMT ELSE 0;
+  NET_TKT_CNT/D8S    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NEW_SEG_LOWEST/D9 = SEG_LOWEST;
+  NEW_SEG_MILES/D9 = SEG_MILES;
+  NEW_STAY/D9 = STAY;
+  NEW_TRIP_LENGTH/D12 = TRIP_LENGTH;
+  REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID;  
+  TKT_AMOUNT/D12.2CS  = TICKET_AMT + TAX_AMT;
+  TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TOTAL_FARE/D12.2S = SEG_AMT + SEG_TAX;
+  TRAN_MONTH/MT = TRN_DATE;
+  VASAVINGS/D11.2CS = SEG_DISCOUNT - TOTAL_FARE;
+  XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XDPT_DT/MDYY         = DPT_DATE;
+  XTRAN_DT/MDYY        = TRN_DATE;
+ 
+  BZ_FLAG/A1 = IF FARE_BAS CONTAINS 'UP' THEN 'Y' ELSE 'N';
+  BZ_CAT2/A1 = IF BZ_FLAG NE 'Y' THEN BZ_CAT ELSE 'U';
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+  CPMILE/D12.2CS = IF ((SEG_MILES LT 1) AND (SEG_MILES GT (-1))) THEN 0 ELSE
+                      (FARE_PAID/SEG_MILES);
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+F_FARE/D12.2CS = IF BZ_CAT2 EQ 'F' THEN FARE_PAID ELSE 0;
+B_FARE/D12.2CS = IF BZ_CAT2 EQ 'B' THEN FARE_PAID ELSE 0;
+C_FARE/D12.2CS = IF BZ_CAT2 EQ 'C' THEN FARE_PAID ELSE 0;
+D_FARE/D12.2CS = IF BZ_CAT2 EQ 'D' THEN FARE_PAID ELSE 0;
+U_FARE/D12.2CS = IF BZ_CAT2 EQ 'U' THEN FARE_PAID ELSE 0;
+U_CNT/D9 = IF BZ_CAT2 EQ 'U' THEN NET_TKT_CNT ELSE 0;
+
+-INCLUDE TRANTYPE
+
+END
+-RUN
+
+ 
+
+TABLEF FILE &&EXTRACT
+PRINT   AIR_KEY
+        AIRLINE 
+        AIR_MAIN.INTL_DOM   
+        AR_BRANCH
+        BZ_CAT2
+   
+        BR_CL_IDX
+        BZ_FLAG
+      
+        CITYPAIR.EMBARK      AS 'EMB_APT_CD'    
+        CITYPAIR.ROUTE       AS 'RTE_APT_CD'    
+        CLASS
+        CLIENT_NUM  
+        COMM_SEG
+
+        EMB_CTY.COUNTRY_CODE AS 'EMB_CNTRY_CODE'
+        CPMILE  
+        DISSAVINGS
+        DPT_TIME
+        EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'    
+        EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'
+
+        FARE_BAS        
+        FARE_PAID
+        KILO
+        LEVEL_DESC  
+        LEVEL1  
+        LEVEL2  
+        LEVEL3
+        MRK_TKT_CNT
+        NET_COMM    
+        NET_FARE    
+        NET_TKT_CNT             
+        NEW_SEG_LOWEST
+        NEW_SEG_MILES
+        NEW_STAY
+        NEW_TRIP_LENGTH
+        PASSNGR_NAME
+        REFUSE_CODE
+        RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'
+        RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'    
+        SAVINGS 
+        SEG_AMT 
+        SEG_COUNT   
+        SEG_DISCOUNT    
+        SEG_LOWEST
+        SEG_NBR 
+        SEG_STANDARD    
+        SEG_TAX 
+        STAY
+        TICKET_BRANCH   
+        TKT_AMOUNT
+        TKT_DATE    
+        TKT_NUM 
+        TKT_PURCH
+        TKT_SORT
+        TKT_TYPE    
+        TOTAL_FARE  
+        TRN_DATE 
+
+        VAL_AIRLINE 
+        VASAVINGS
+        XDPT_DT 
+        XPSNGR_NM   
+        XTRAN_DT
+        F_FARE
+        B_FARE
+        C_FARE
+        D_FARE
+        U_FARE
+        U_CNT
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+-* &&WHERE7
+-* &&WHERE8
+-* &&WHERE9
+-* &&WHERE10
+ 
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS TOPAIRH  
+
+END
+-RUN
+
+
+
+TABLE FILE TOPAIRH 
+PRINT NET_TKT_CNT 
+    FARE_PAID
+    KILO/D9 
+    NEW_SEG_MILES
+    DISSAVINGS
+    CPMILE
+    LEVEL1
+    LEVEL2
+    LEVEL3
+    BZ_CAT2
+    F_FARE
+    B_FARE
+    C_FARE
+    D_FARE
+    U_FARE
+    U_CNT
+BY PASSNGR_NAME
+-*BY TKT_NUM
+ON TABLE HOLD AS TPAIRBZ
+END
+-RUN
+
+
+TABLE FILE TPAIRBZ
+SUM BZ_CAT2 
+   NET_TKT_CNT 
+    FARE_PAID
+    KILO/D9 
+    NEW_SEG_MILES
+    DISSAVINGS
+    CPMILE
+    LEVEL1
+    LEVEL2
+    LEVEL3
+    BZ_CAT2
+    F_FARE
+    B_FARE
+    C_FARE
+    D_FARE
+    U_FARE
+    U_CNT
+BY PASSNGR_NAME
+ON TABLE COLUMN-TOTAL
+-*ON TABLE HOLD 
+END
+-RUN
+-QUIT
+
+DEFINE FILE HOLD
+BZCAT/A1 = IF F_FARE EQ 0 THEN BZ_CAT2 ELSE 'F';
+   CAT/A8 = DECODE BZCAT ('F' 'FIRST'     'C' 'COACH'   
+                              'D' 'DISCOUNT'  'B' 'BUSINESS'
+                              'U' 'UP');  
+  F_CNT/D8CS = IF CAT EQ 'FIRST' THEN NET_TKT_CNT ELSE 0;
+  F_FARE2/D12.2CS = IF CAT EQ 'FIRST' THEN FARE_PAID ELSE 0;
+  F_LSAV/D11.2CS = IF CAT EQ 'FIRST' THEN DISSAVINGS ELSE 0;                       
+  F_MIL/D9S = IF CAT EQ 'FIRST' THEN NEW_SEG_MILES ELSE 0;
+  F_CPMILE/D12.2CS = IF CAT EQ 'FIRST' THEN CPMILE ELSE 0;
+  
+  B_CNT/D8CS = IF CAT EQ 'BUSINESS' THEN NET_TKT_CNT ELSE 0;
+  B_FARE2/D12.2CS = IF CAT EQ 'BUSINESS' THEN FARE_PAID ELSE 0;
+  B_LSAV/D11.2CS = IF CAT EQ 'BUSINESS' THEN DISSAVINGS ELSE 0;                       
+  B_MIL/D9S = IF CAT EQ 'BUSINESS' THEN NEW_SEG_MILES ELSE 0;
+  B_CPMILE/D12.2CS = IF CAT EQ 'BUSINESS' THEN CPMILE ELSE 0;
+
+  C_CNT/D8CS = IF CAT EQ 'COACH' THEN NET_TKT_CNT ELSE 0;
+  C_FARE2/D12.2CS = IF CAT EQ 'COACH' THEN FARE_PAID ELSE 0;
+  C_LSAV/D11.2CS = IF CAT EQ 'COACH' THEN DISSAVINGS ELSE 0;                       
+  C_MIL/D9S = IF CAT EQ 'COACH' THEN NEW_SEG_MILES ELSE 0;
+  C_CPMILE/D12.2CS = IF CAT EQ 'COACH' THEN CPMILE ELSE 0;
+  
+  D_CNT/D8CS = IF CAT EQ 'DISCOUNT' THEN NET_TKT_CNT ELSE 0;
+  D_FARE2/D12.2CS = IF CAT EQ 'DISCOUNT' THEN FARE_PAID ELSE 0;
+  D_LSAV/D11.2CS = IF CAT EQ 'DISCOUNT' THEN DISSAVINGS ELSE 0;                       
+  D_MIL/D9S = IF CAT EQ 'DISCOUNT' THEN NEW_SEG_MILES ELSE 0;
+  D_CPMILE/D12.2CS = IF CAT EQ 'DISCOUNT' THEN CPMILE ELSE 0;    
+  U_CNT/D8CS = IF CAT EQ 'UP' THEN NET_TKT_CNT ELSE 0;
+  U_FARE2/D12.2CS = IF CAT EQ 'UP' THEN FARE_PAID ELSE 0;
+  U_LSAV/D11.2CS = IF CAT EQ 'UP' THEN DISSAVINGS ELSE 0;                       
+  U_MIL/D9S = IF CAT EQ 'UP' THEN NEW_SEG_MILES ELSE 0;
+  U_CPMILE/D12.2CS = IF CAT EQ 'UP' THEN CPMILE ELSE 0;  
+END
+TABLE FILE HOLD
+SUM  
+   NET_TKT_CNT 
+    FARE_PAID
+    KILO/D9 
+    NEW_SEG_MILES
+    DISSAVINGS
+    LEVEL1
+    LEVEL2
+    LEVEL3
+    BZ_CAT2
+    B_CNT
+    B_FARE2
+    B_LSAV
+    B_MIL
+    B_CPMILE 
+    C_CNT
+    C_FARE2
+    C_LSAV
+    C_MIL
+    C_CPMILE  
+    D_CNT
+    D_FARE2
+    D_LSAV
+    D_MIL
+    D_CPMILE   
+    F_CNT
+    F_FARE2
+    F_LSAV
+    F_MIL
+    F_CPMILE             
+    U_CNT
+    U_FARE2
+    U_LSAV
+    U_MIL
+    U_CPMIL
+    BZCAT
+BY PASSNGR_NAME
+IF BZCAT EQ 'U'
+ON TABLE COLUMN-TOTAL
+END
+-RUN
+-QUIT
+

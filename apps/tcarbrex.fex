@@ -1,0 +1,118 @@
+-*2/22/05        JK                 ADDED TNT_COMPANY WHERE STATEMENT
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+DEFINE FILE &&EXTRACT
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+TKT_PURCH/D8.2CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+
+END
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  FARE_PAID
+  NET_TKT_CNT
+  REF_EXCH_CNT
+  TKT_PURCH  
+  VAL_AIRLINE
+  AR_BRANCH
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TCABR 
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACTED DATA FROM ABOVE
+-*========================================================================
+DEFINE FILE TCABR
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TCABR
+SUM FARE_PAID/D14.2CS
+    NET_TKT_CNT    
+    REF_EXCH_CNT
+    TKT_PURCH 
+BY ROLLCD
+BY AR_BRANCH
+BY VAL_AIRLINE
+ON TABLE HOLD AS TCBR
+END
+-RUN
+
+
+DEFINE FILE TCBR
+ NMB/I5 = NMB + 1;
+END
+
+TABLE FILE TCBR
+PRINT FARE_PAID
+      NET_TKT_CNT
+      REF_EXCH_CNT
+      TKT_PURCH
+      VAL_AIRLINE
+      AR_BRANCH
+BY ROLLCD
+BY NMB
+ON TABLE HOLD AS TCBR1
+END
+-RUN
+
+
+MODIFY FILE TC_ABR
+FIXFORM FROM TCBR1
+MATCH ROLLCD NMB
+ON NOMATCH INCLUDE
+ON MATCH REJECT
+DATA ON TCBR1
+END
+-RUN
+
+
+
+
+
+-NEXTONE

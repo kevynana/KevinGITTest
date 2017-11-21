@@ -1,0 +1,763 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File APSMRY.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS
+-*                                  USED IN FOOTERSM
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR
+-*                                  DRILLABLE REPORTS.
+-*1/22/02      TANDT-DB             CARRIED THROUGH VAL_AIRLINE
+-*6/17/02      STEVE                ADDED TTLBDAYS - ADVANCE BOOKING DAYS
+-*6/19/02      STEVE                ADDED REC_CNT TO CORRECT AVERAGE
+-*                                  BOOKING DAYS AND PURCHASE DAYS
+-*6/25/02      STEVE                REC_CNT DOES NOT INCLUDE REFUNDS/EXCHANGES
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*07/31/02     DEB                  CARRIED THROUGH IFLAG
+-*4/16/04    Joy                Carried Through KW_ADV_PURCH Define
+-*8/18/04    Joy                Carried through trip_purpose
+-*1/12/2006  Steve              CSV format for JHADVMP only
+-*1/24/07    DEB                CARRIED THROUGH NON_REF
+-*6/25/13    joy                CARRIED THROUGH SPACER DEFINE
+-*5/14/14    joy                CARRIED THROUGH KO_DPT DEFINE
+-*6/24/14    Casey 		ADDED LOADVPCA TO ABADVPUR ROUTINE
+-*10/23/14   Deb                CHANGED FOR TESTING PURPOSES ONLY
+-*02/17/16 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-*07/11/16         RSB              S-20630 - New Employee ID database field
+-*                                  Added EMP_ID
+-*02/24/17   DLV        S-22486 CHANGED ettek Review to Post-trip Reporting
+-* 04/14/2017 - RSB - S-32536 Code report style sheet for Position to be variable instead of hard coded
+-*                     Set position for &&FTR_DATEPOS containing text, date/time stamp and procedures.
+-*                     '3.75 8.35' is for landscape and '3.10 10.625 is for portrait orientation. 
+-* 08/30/2017 CA S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                       Backed out changes for S-32536 
+-* 
+-**********************************************************************
+-*
+SET ASNAMES = ON
+-INCLUDE SETECHO
+ 
+TABLE FILE &&RPT_HOLD
+SUM DISSAVINGS AS 'DISSAV'
+    FARE_PAID/D12.2CS AS 'TFARE'
+    NET_TKT_CNT AS 'NTTKT'
+    REF_EXCH_CNT AS 'TRFEX'
+    SAVINGS AS 'TSAVE'
+    TKT_PURCH AS 'TTKT'
+    TKT_PUR_NEX AS 'TPNEX'
+ 
+-INCLUDE BYHIERARCHY
+ BY LEVEL_DESC
+ 
+ON TABLE HOLD AS HOLDONE
+END
+-RUN
+
+
+
+
+TABLE FILE &&RPT_HOLD
+PRINT AIRLINE
+  AIRLINE_FEE
+  AP_ADV_PUR
+  AROLL_DSC3
+  AROLL_DSC4
+  AROLL_DSC5
+  AROLL_DSC7
+  BB_06
+  BKD_ONLINE
+  CLIENT_NAME
+  CLASS_CAT
+  DISSAVINGS
+  FARE_PAID
+  FARE1
+  FARE2
+  FARE3
+  FLAG
+  IFLAG
+  EMP_ID
+  LEVEL1
+  LEVEL2
+  LEVEL3
+  LEVEL_DESC
+  KM_DAYS
+  KM_ADV_PUR
+  KW_ADV_PUR
+  KO_DPT
+  GRP_ADV_PUR1
+  MC_ADV_BOOK
+  MRK_TKT_CNT
+  MX_ADV_PUR
+  MC_DAYS
+  MX_DAYS
+  NET_TKT_CNT
+  NETT1
+  NETT2
+  NETT3
+  NEW_ADV_PURCH1 AS 'ADV_PURCH'
+  NONREF_FLAG
+  NON_REF
+  NORG_APT
+  NDST_APT
+  REF_EXCH_CNT
+  RTE_APT_NM
+  SEG_AMT
+  SAVINGS
+  SPACER
+  TKT_PURCH
+  TKT_PUR_EX
+  TKT_PUR_NEX
+  TRIP_PURPOSE
+  UP_ADV_PUR
+  UP_DAYS
+  VAL_AIRLINE
+  XPSNGR_NM
+  RF_FLAG
+  EX_FLAG
+  
+-INCLUDE BYHIERARCHY
+BY LEVEL_DESC
+-*BY KM_ADV_PUR 
+BY NEW_ADV_PURCH
+BY GRP_ADV_PUR
+BY NEW_ADV_BOOK
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+
+DEFINE FILE XTWO
+AROLL_DSC3_CENTERED/A60 = CTRFLD(AROLL_DSC3, 60, 'A60');
+AROLL_DSC4_CENTERED/A60 = CTRFLD(AROLL_DSC4, 60, 'A60');
+AROLL_DSC5_CENTERED/A60 = CTRFLD(AROLL_DSC5, 60, 'A60');
+AROLL_DSC7_CENTERED/A60 = CTRFLD(AROLL_DSC7, 60, 'A60');
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT ADV_PURCH
+  AP_ADV_PUR
+  AIRLINE
+  AIRLINE_FEE
+  AROLL_DSC3
+  AROLL_DSC3_CENTERED
+  AROLL_DSC4
+  AROLL_DSC4_CENTERED
+  AROLL_DSC5
+  AROLL_DSC5_CENTERED
+  AROLL_DSC7
+  AROLL_DSC7_CENTERED
+  BB_06
+  BKD_ONLINE
+  CLIENT_NAME
+  CLASS_CAT
+  DISSAVINGS
+  FARE_PAID
+  FARE1
+  FARE2
+  FARE3
+  FLAG
+  GRP_ADV_PUR
+  GRP_ADV_PUR1
+  IFLAG
+  KM_DAYS
+  KM_ADV_PUR
+  KW_ADV_PUR
+  KO_DPT
+  EMP_ID
+  LEVEL1
+  LEVEL2
+  LEVEL3
+  LEVEL_DESC
+  NONREF_FLAG
+  NORG_APT
+  NDST_APT
+  MC_ADV_BOOK
+  MRK_TKT_CNT
+  MX_ADV_PUR
+  MC_DAYS
+  MX_DAYS
+  NET_TKT_CNT
+  NETT1
+  NETT2
+  NETT3
+  NEW_ADV_BOOK
+  NEW_ADV_PURCH
+  NON_REF
+  REF_EXCH_CNT
+  RTE_APT_NM
+  SAVINGS
+  SEG_AMT
+  SPACER
+  TKT_PURCH
+  TKT_PUR_EX
+  TKT_PUR_NEX
+  TRIP_PURPOSE
+  UP_ADV_PUR
+  UP_DAYS
+  VAL_AIRLINE
+  XPSNGR_NM
+  RF_FLAG
+  EX_FLAG
+ 
+-INCLUDE BYHIERARCHY
+ BY LEVEL_DESC
+
+ 
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM TTKT
+    TRFEX
+    NTTKT
+    DISSAV
+    TSAVE
+    TFARE
+    TPNEX
+-INCLUDE BYHIERARCHY
+ BY LEVEL_DESC
+ 
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW
+END
+-RUN
+
+ 
+-IF &&SETF EQ 'ABADVPUR' OR 'IRAPUR'  OR 'BBADVPUR' OR 'KBADVPRD' OR 'HRADVPUR' OR 
+-             'APADVPUR' OR 'HRADVSP' OR 'CGADVPRT' OR 'KOAPDPT'  OR 'LOADVPCA'  THEN GOTO ABC ELSE
+-IF &&SETF EQ 'BZADV' GOTO BZVZN ELSE GOTO :NEXT;
+-* -GOTO :NEXT;
+ 
+-SET &&RPT_TTL2=IF &&SETF EQ 'NYAPUR'  THEN '<AROLL_DSC5_CENTERED' ELSE
+-               IF &&SETF EQ 'NYAPUR3' THEN '<AROLL_DSC3_CENTERED' ELSE
+-               IF &&SETF EQ 'NYAPUR7' THEN '<AROLL_DSC7_CENTERED' ELSE
+-               IF &&SETF EQ 'NYAPUR4' THEN '<AROLL_DSC4_CENTERED' ELSE &&RPT_TTL2;
+
+-***** 
+-ABC;
+-***** 
+-GOTO :JOY;
+DEFINE FILE XTHREE
+  PCTDSAVE/D8.1 = IF ((DISSAV LT 1) AND (DISSAV GT (-1))) THEN 0
+                  ELSE ((DISSAVINGS/DISSAV)*100);
+  PCTFARE/D8.1S = IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0
+                  ELSE ((FARE_PAID/TFARE)*100);
+  PCTNETTKT/D8.1S = IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0
+                  ELSE ((NET_TKT_CNT/NTTKT)*100);
+  PCTRFEX/D8.1S = IF ((TRFEX LT 1) AND (TRFEX GT (-1))) THEN 0
+                  ELSE ((REF_EXCH_CNT/TRFEX)*100);
+  PCTSAVE/D8.1 = IF ((TSAVE LT 1) AND (TSAVE GT (-1))) THEN 0
+                  ELSE ((SAVINGS/TSAVE)*100);
+  PCTTKT/D8.1S = IF ((TTKT LT 1) AND (TTKT GT (-1))) THEN 0
+                 ELSE ((TKT_PURCH/TTKT)*100);
+END
+-RUN
+ 
+TABLE FILE XTHREE
+SUM TKT_PURCH REF_EXCH_CNT FARE_PAID DISSAVINGS NET_TKT_CNT NEW_ADV_PURCH NEW_ADV_BOOK
+COMPUTE PCTTKT/D8.1S = IF ((TTKT LT 1) AND (TTKT GT (-1))) THEN 0 ELSE
+                          ((TKT_PURCH/TTKT)*100);
+        PCTDSAVE/D8.1 = IF ((DISSAV LT 1) AND (DISSAV GT (-1))) THEN 0 ELSE
+                           ((DISSAVINGS/DISSAV)*100);
+        PCTFARE/D8.1S = IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0 ELSE
+                           ((FARE_PAID/TFARE)*100);
+        PCTNETTKT/D8.1S = IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0 ELSE
+                             ((NET_TKT_CNT/NTTKT)*100);
+        PCTRFEX/D8.1S = IF ((TRFEX LT 1) AND (TRFEX GT (-1))) THEN 0 ELSE
+                           ((REF_EXCH_CNT/TRFEX)*100);
+        PCTSAVE/D8.1 = IF ((TSAVE LT 1) AND (TSAVE GT (-1))) THEN 0 ELSE
+                          ((SAVINGS/TSAVE)*100);
+-* -INCLUDE BYHIERARCHY
+BY LEVEL_DESC
+BY MX_ADV_PUR
+BY MX_DAYS
+ON TABLE HOLD AS XFOUR
+END
+-RUN
+-*
+-******
+-:JOY;
+-****** 
+SET SUMMARYLINES=EXPLICIT
+ 
+DEFINE FILE XTHREE
+   PCTDSAVE/D8.1 = IF ((DISSAV LT 1) AND (DISSAV GT (-1))) THEN 0
+                    ELSE ((DISSAVINGS/DISSAV)*100);
+    PCTFARE/D8.1S = IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0
+                    ELSE ((FARE_PAID/TFARE)*100);
+    PCTNETTKT/D8.1S = IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0
+                    ELSE ((NET_TKT_CNT/NTTKT)*100);
+    PCTRFEX/D8.1S = IF ((TRFEX LT 1) AND (TRFEX GT (-1))) THEN 0
+                    ELSE ((REF_EXCH_CNT/TRFEX)*100);
+    PCTSAVE/D8.1 = IF ((TSAVE LT 1) AND (TSAVE GT (-1))) THEN 0
+                    ELSE ((SAVINGS/TSAVE)*100);
+    PCTTKT/D8.1S = IF ((TTKT LT 1) AND (TTKT GT (-1))) THEN 0
+                 ELSE ((TKT_PURCH/TTKT)*100);
+-*   REC_CNT/D8CS = IF NET_TKT_CNT EQ 1 THEN 1 ELSE 0;
+-*   REC_CNT/D8CS = IF TNET EQ 1 THEN 1 ELSE 0;
+  NEW_ADV_PURCH1/D9 = IF RF_FLAG EQ ' ' THEN ADV_PURCH ELSE
+                      IF EX_FLAG EQ ' ' THEN ADV_PURCH ELSE (ADV_PURCH * (-1));
+  TTLDAYS/D8 = NEW_ADV_PURCH1*NET_TKT_CNT;
+  TTLBDAYS/D8 = NEW_ADV_BOOK*NET_TKT_CNT;
+ 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+-INCLUDE DefineSubtotalFields
+  TICKETS/P8 = NET_TKT_CNT;
+END
+-RUN
+-*
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' THEN 'HEADER' ELSE 'HDREXLS';
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' THEN 'SMEXL'  ELSE &&SMSTY;
+-RUN
+-* 
+ 
+-* rej test test test
+-*TABLE FILE XTHREE
+-*-INCLUDE &&PAHDR
+-*"&&SUBHEAD"
+-*-IF &&PAHDR EQ 'HDREXLS' GOTO XNOSPC;
+-*"</2"
+-*-XNOSPC;
+-*    &&S_SUBJ1
+-*    &&S_SUBJ2
+-*    &&S_SUBJ3
+-*    &&S_SUBJ4
+-*    &&S_SUBJ5
+-*    &&S_SUBJ6
+-*    &&S_SUBJ7
+-*    &&S_SUBJ8
+-*    &&S_SUBJ9
+-*    &&S_SUBJ10
+-*
+-*-*BY
+-*-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :XNOMULTBREAK;
+-*-INCLUDE LevelNOPRINT
+-*-:XNOMULTBREAK
+-*   &&S_TARG1
+-*   &&S_TARG2
+-*   &&S_TARG3
+-*   &&S_TARG4
+-*   &&S_TARG5
+-*   &&S_TARG6
+-*   &&S_TARG7
+-*   &&S_TARG8
+-*   &&S_TARG9
+-*   &&S_TARG10
+-*
+-*-*ON
+-*-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :XNOMULTOTAL;
+-*-INCLUDE TOTALBYHIERARCHY
+-*-:XNOMULTOTAL
+-*-*&&BREAKOPTION
+-*   &&SUMM_ON1
+-*   &&SUMM_ON2
+-*-IF &&MULTIBREAK EQ 'Y' AND &&SETFILE EQ 'ABADVPUR' OR 'BBADVPUR' THEN GOTO :XNO_SUMM_ON3;
+-*   &&SUMM_ON3
+-*-:XNO_SUMM_ON3
+-*   &&SUMM_ON4
+-*   &&SUMM_ON5
+-*   &&SUMM_ON6
+-*   &&SUMM_ON7
+-*   &&SUMM_ON8
+-*   &&SUMM_ON9
+-*   &&SUMM_ON10
+-*ON TABLE SET ASNAMES OFF
+-*ON TABLE SET HOLDATTR ON
+-*ON TABLE HOLD AS HTEST001
+-*END
+-*-RUN
+-*
+-* rej test test test
+ 
+ 
+TABLE FILE XTHREE
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+ 
+-* TTLDAYS NEW_ADV_PURCH1 AS 'ADV1' NET_TKT_CNT AS 'NET';
+-*BY
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :NOMULTBREAK;
+-INCLUDE LevelNOPRINT
+-:NOMULTBREAK
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+ 
+-*ON
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :NOMULTOTAL;
+-INCLUDE TOTALBYHIERARCHY
+-:NOMULTOTAL
+-*&&BREAKOPTION
+   &&SUMM_ON1
+   &&SUMM_ON2
+-IF &&MULTIBREAK EQ 'Y' AND &&SETFILE EQ 'ABADVPUR' OR 'BBADVPUR' THEN GOTO :NO_SUMM_ON3;
+   &&SUMM_ON3
+-:NO_SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+ 
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYS
+ 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+ 
+-INCLUDE &&DSTY
+ 
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+
+-RUN
+ 
+-GOTO DONE;
+ 
+ 
+-****** 
+-:NEXT;
+-****** 
+ 
+ 
+DEFINE FILE XTHREE
+  PCTDSAVE/D8.1 = IF ((DISSAV LT 1) AND (DISSAV GT (-1))) THEN 0
+                  ELSE ((DISSAVINGS/DISSAV)*100);
+  PCTFARE/D8.1S = IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0
+                  ELSE ((FARE_PAID/TFARE)*100);
+  PCTNETTKT/D8.1S = IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0
+                  ELSE ((NET_TKT_CNT/NTTKT)*100);
+  PCTRFEX/D8.1S = IF ((TRFEX LT 1) AND (TRFEX GT (-1))) THEN 0
+                  ELSE ((REF_EXCH_CNT/TRFEX)*100);
+  PCTSAVE/D8.1 = IF ((TSAVE LT 1) AND (TSAVE GT (-1))) THEN 0
+                  ELSE ((SAVINGS/TSAVE)*100);
+  PCTTKT/D8.1S = IF ((TTKT LT 1) AND (TTKT GT (-1))) THEN 0
+                 ELSE ((TKT_PURCH/TTKT)*100);
+-*   REC_CNT/D8CS = IF NET_TKT_CNT NE 0 THEN 1 ELSE 0;
+  REC_CNT/D8CS = IF NET_TKT_CNT EQ 1 THEN 1 ELSE 0;
+  TTLDAYS/D8 = NEW_ADV_PURCH*REC_CNT;
+  TTLBDAYS/D8 = NEW_ADV_BOOK*REC_CNT;
+ 
+-*   TICKETS/P8 = NET_TKT_CNT;
+ 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+ 
+END
+
+ 
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS';
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+ 
+TABLE FILE XTHREE
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC1;
+"</2"
+-NOSPC1;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+ 
+-*BY
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y'  THEN GOTO :NOMULTBREAK;
+-INCLUDE LevelNOPRINT
+-:NOMULTBREAK
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+ 
+-*ON
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :NOMULTOTAL;
+-INCLUDE TOTALBYHIERARCHY
+-:NOMULTOTAL
+-*&&BREAKOPTION
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+
+-IF &&SETF EQ 'JHADVMP' OR 'JHADVMPR' AND '&&OUTTO.EVAL' EQ 'T' THEN GOTO COMMA;
+-IF &&SETF EQ 'PGADVPBT' GOTO PGFOOT; 
+-* 
+-GOTO NOATPFOOT;
+-*******
+-PGFOOT;
+-*******
+-SET &FTR_AddlLines = 6;
+FOOTING BOTTOM
+"</4"
+"ATP is calculated based upon Net Tickets (Tickets Purchased - Refunds/Exchanges)"
+-*
+-**********
+-NOATPFOOT; 
+-**********
+-INCLUDE FOOTERSM
+-*
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYS
+ 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' OR &&SETF EQ 'NYADVP' OR 'NYAPUR1' GOTO SKIP_DRILL;
+ 
+-INCLUDE &&DSTY
+-********** 
+-SKIP_DRILL
+-**********
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+ 
+-RUN
+ 
+-GOTO DONE;
+ 
+ 
+-BZVZN;
+ 
+DEFINE FILE XTHREE
+  PCTDSAVE/D8.1 = IF ((DISSAV LT 1) AND (DISSAV GT (-1))) THEN 0
+                  ELSE ((DISSAVINGS/DISSAV)*100);
+  PCTFARE/D8.1S = IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0
+                  ELSE ((FARE_PAID/TFARE)*100);
+  PCTNETTKT/D8.1S = IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0
+                  ELSE ((NET_TKT_CNT/NTTKT)*100);
+  PCTRFEX/D8.1S = IF ((TRFEX LT 1) AND (TRFEX GT (-1))) THEN 0
+                  ELSE ((REF_EXCH_CNT/TRFEX)*100);
+  PCTSAVE/D8.1 = IF ((TSAVE LT 1) AND (TSAVE GT (-1))) THEN 0
+                  ELSE ((SAVINGS/TSAVE)*100);
+  PCTTKT/D8.1S = IF ((TTKT LT 1) AND (TTKT GT (-1))) THEN 0
+                 ELSE ((TKT_PURCH/TTKT)*100);
+  PCTTNE/D8.1S = IF ((TPNEX LT 1) AND (TPNEX GT (-1))) THEN 0
+                 ELSE ((TKT_PUR_NEX/TPNEX)*100);
+-*   REC_CNT/D8CS = IF NET_TKT_CNT NE 0 THEN 1 ELSE 0;
+  REC_CNT/D8CS = IF NET_TKT_CNT EQ 1 THEN 1 ELSE 0;
+  TTLDAYS/D8 = NEW_ADV_PURCH*REC_CNT;
+  TTLBDAYS/D8 = NEW_ADV_BOOK*REC_CNT;
+-INCLUDE DefineSubtotalFields
+  TICKETS/P8CS = NET_TKT_CNT;
+ 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+ 
+END
+ 
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS';
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+ 
+TABLE FILE XTHREE
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC2;
+"</2"
+-NOSPC2;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    &&S_SUBJ11
+    &&S_SUBJ12
+    &&S_SUBJ13
+    &&S_SUBJ14
+    &&S_SUBJ15
+    &&S_SUBJ16
+    &&S_SUBJ17
+    &&S_SUBJ18
+    &&S_SUBJ19
+    &&S_SUBJ20
+ 
+-*BY
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y'  THEN GOTO NOMULBA;
+-INCLUDE LevelNOPRINT
+-NOMULBA;
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+ 
+ 
+-*ON
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :NOMULTOTALA;
+-INCLUDE TOTALBYHIERARCHY
+-:NOMULTOTALA
+-*&&BREAKOPTION
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+ 
+ 
+-INCLUDE FOOTERSM
+ 
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYS
+ 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' OR &&SETF EQ 'NYADVP' OR 'NYAPUR1' GOTO SKIP_DRILL;
+ 
+-INCLUDE &&DSTY
+ 
+-***********
+-SKIP_DRILL
+-*********** 
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+ 
+-RUN
+ 
+-GOTO DONE;
+ 
+ 
+-******* 
+-COMMA
+-*******
+-SET &INTDT = EDIT('&&ITIME.EVAL','99999999');
+-SET &INTM = EDIT('&&ITIME.EVAL', '$$$$$$$$$$99999999');
+-SET &TOY2=EDIT(&&TODT,'$$$99');
+-IF &&SETF EQ 'JHADVMPR' THEN GOTO PATH2;
+ 
+-SET &&PATH = &&WEBPATH || 'JHA' || &TOM || &TOY2 || '_' || &INTDT || '_' || &INTM || .CSV;
+-GOTO Saveit;
+-PATH2
+-SET &&PATH = &&WEBPATH || 'JHA' || &TOM || &TOY2 || 'Refundable' || '_' || &INTDT || '_' || &INTM || .CSV;
+-Saveit
+ON TABLE SAVE FILENAME '&&PATH' FORMAT COMMA
+END
+-RUN
+ 
+ 
+-DONE
+ 
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+ 
+EX REPORT_3
+ 
+-SKIP_R3

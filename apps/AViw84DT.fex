@@ -1,0 +1,341 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* This was created for Conagra's Adv Purchase reports that only
+-* show the dpt_dt and airline from the first segment
+-* JK 10/30/02
+-* 3/17/03   DEB    CARRIED THROUGH PNR_LOCATOR
+-* 05/04/05  DEB    ADDED CODE FOR GLOBAL CURRENCY
+-**************************************************************************
+-INCLUDE SETECHO
+
+SET ASNAMES=ON
+-RUN
+
+
+TABLE FILE RPTHOLD2
+SUM 
+  COMM_SEG AS 'TCOMM'	
+  FARE_PAID AS 'TFARE'	
+  NET_FARE AS 'NFARE'	
+  NET_TKT_CNT AS 'TTKT'	
+  NEW_SEG_DISC AS 'TMKT'	
+  TAX AS 'TTAX'	
+  VASAVINGS AS 'TVASAV'
+  NFVSV AS 'TNFVSV'  
+  PAID_FARE1/D16.2CS AS 'GTFARE'
+  NEWSEG_DISC1/D16.2CS AS 'GTMKT'
+  VASAVE1/D16.2CS AS 'GTVASAV'
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+TABLE FILE RPTHOLD2
+PRINT 
+  AIRLINE	
+  AIRLINE_NAME	
+  ARR_TIME
+  BR_CL_IDX 
+  COMM_SEG	
+  DPT_TIME	
+  EMB_APT_CD	
+  EMB_APT_NM	
+  EMB_CTY_NM	
+  FARE_PAID
+  NAMEC
+  NET_FARE	
+  NEW_SEG_DISC
+  NFVSV
+  NEWSEG_DISC1/D16.2CS
+  PAID_FARE1/D16.2CS
+  PNR_LOCATOR	
+  SEG_DESIG
+  REFUSE_CODE	
+  RTE_APT_CD	
+  RTE_APT_NM	
+  RTE_CTY_NM	
+  TAX	
+  TKT
+  TKT_NUM
+  TKT_PURCH	
+  TKT_TYPE
+  TRAN_FEE
+  TOUR_CODE
+  VASAVE1/D16.2CS
+  VASAVINGS	
+  VAL_AIRLINE
+  XDPT_DT	
+  XTRAN_DT	
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT 
+  AIRLINE	
+  AIRLINE_NAME
+  ARR_TIME
+  BR_CL_IDX 
+  COMM_SEG	
+  DPT_TIME	
+  EMB_APT_CD	
+  EMB_APT_NM	
+  EMB_CTY_NM	
+  FARE_PAID
+  NAMEC
+  NFVSV
+  NET_FARE	
+  NEW_SEG_DISC
+  NEWSEG_DISC1
+  PAID_FARE1
+  PNR_LOCATOR	
+  SEG_DESIG
+  REFUSE_CODE	
+  RTE_APT_CD	
+  RTE_APT_NM	
+  RTE_CTY_NM	
+  TAX	
+  TKT
+  TKT_NUM
+  TKT_PURCH	
+  TKT_TYPE	
+  TOUR_CODE
+  TRAN_FEE
+  VAL_AIRLINE
+  VASAVINGS	
+  VASAVE1
+  XDPT_DT	
+  XTRAN_DT	
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT GTFARE
+  GTMKT
+  GTVASAV
+  NFARE	
+  TCOMM 	
+  TFARE	
+  TMKT	
+  TTAX	
+  TTKT	
+  TVASAV
+  TNFVSV
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT 
+  AIRLINE	
+  AIRLINE_NAME	
+  ARR_TIME
+  BR_CL_IDX 
+  COMM_SEG	
+  DPT_TIME	
+  EMB_APT_CD	
+  EMB_APT_NM	
+  EMB_CTY_NM
+  FARE_PAID
+  GTFARE
+  GTMKT
+  GTVASAV
+  LEVEL_DESC
+  NAMAEC
+  NET_FARE	
+  NEW_SEG_DISC	
+  NEWSEG_DISC1
+  NFARE	
+  NFVSV
+  PNR_LOCATOR
+  PAID_FARE1
+  SEG_DESIG
+  REFUSE_CODE	
+  RTE_APT_CD	
+  RTE_APT_NM	
+  RTE_CTY_NM
+  TAX	
+  TKT
+  TCOMM	
+  TFARE	
+  TKT_NUM
+  TKT_PURCH	
+  TKT_TYPE	
+  TMKT
+  TNFVSV
+  TOUR_CODE
+  TRAN_FEE
+  TRN_DATE	
+  TTAX	
+  TTKT	
+  TVASAV
+  VAL_AIRLINE
+  VASAVINGS	
+  VASAVE1
+  XDPT_DT	
+  XPSNGR_NM	
+  XTRAN_DT	
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+
+DEFINE FILE AIRHOLD3
+-INCLUDE STDTIME
+  CR/A3 = IF TKT_NUM NE LAST TKT_NUM THEN AIRLINE ELSE ' ';
+  DPT_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XDPT_DT ELSE ' ';
+  PASNGR_NAME/A15 = IF TKT_NUM NE LAST TKT_NUM THEN XPSNGR_NM ELSE ' ';
+  RREFUSE_CODE/A2 = IF TKT_NUM NE LAST TKT_NUM THEN REFUSE_CODE ELSE '';
+  TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE '';
+  TKTN/A13 = IF TKT_NUM NE LAST TKT_NUM THEN TKT ELSE ' ';
+  TKT_DESIG/A6 = IF TKT_NUM NE LAST TKT_NUM THEN SEG_DESIG ELSE ' ';
+  TOUR_CD/A15 = IF TKT_NUM NE LAST TKT_NUM THEN TOUR_CODE ELSE ' ';
+  TRN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE ' ';
+  XT_DTEX/A8YYMD=TRN_DATE;
+  XT_DTE/A8=XT_DTEX;
+  XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');
+  XTKT_TYPE/A4 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_TYPE ELSE ' ';
+  
+-* ****DEFINES ON PREVIOUS DEFINES****
+  SRT_DT/A100 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+  NET_TKT_CNT/D12CS = IF SRT_DT NE LAST SRT_DT THEN TTKT ELSE 0;
+  MARKET_FARE/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TMKT ELSE 0;
+  COMM_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TCOMM ELSE 0;
+  FARE_PAID/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+  GFARE_PAID/D16.2CS = IF SRT_DT NE LAST SRT_DT THEN GTFARE ELSE 0;
+  NET_COMM/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN NFARE ELSE 0;
+  T_VASAVINGS/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TVASAV ELSE 0;
+  TNF_VASAV/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN NFVSV ELSE 0;
+  TAX/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TTAX ELSE 0;
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION
+-*11/10/00      KASSOC-DK            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+  NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+  XTS_FLAG/A1 = IF XTKT_SRT NE LAST XTKT_SRT THEN 'Y' ELSE 'N';
+
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD3';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE AIRHOLD3
+HEADING
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+BY XTS_FLAG NOPRINT
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN

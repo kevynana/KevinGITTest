@@ -1,0 +1,24 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File SETECHO.FEX
+-*
+-* This program sets ECHO on or off depending on the value of &&RCRUN.  ECHO
+-* should not be used for jobs that run through ReportCaster.  This program
+-* will act as a switch to turn ECHO on or off for various executions
+-* depending on whether or not it is executed through ReportCaster.  It
+-* should be included at the beginning of any Focexec that you want to ECHO.
+-*
+-* EDASPROF.PRF issues the following command "-SET &&RCRUN='N'"
+-* RCRUN.FEX    issues the following command "-SET &&RCRUN='Y'"  This fex
+-*  should be set up as a pre-execution job for any ReportCaster job.
+-********************************************************************
+-*-SET &ECO=IF &&RCRUN EQ 'Y' THEN '-SET &' | 'ECHO=OFF;' ELSE
+-*- '-SET &' | 'ECHO=ALL;';
+-*
+-*&ECO.EVAL
+-IF &&RCRUN EQ 'Y' GOTO :RCRUNY;
+-SET &ECHO=ALL;
+-* -SET &ECHO=OFF;
+-GOTO :RCRUNX;
+-:RCRUNY
+-SET &ECHO=OFF;
+-:RCRUNX

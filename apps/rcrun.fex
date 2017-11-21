@@ -1,0 +1,33 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File RCRUN.FEX
+-*
+-* This program is used to set the &&RCRUN variable to 'Y'.  It should be used
+-* as a pre-execution job for any ReportCaster job.
+-********************************************************************
+-DEFAULT &SCHED_ID='XXXXX';
+ 
+-SET &&RCRUN='Y';
+SET MESSAGE = OFF
+-*SET WARNING = OFF
+ 
+-IF &SCHED_ID EQ 'XXXXX' GOTO :XXIT;
+ 
+-* Clear entries from PUSH_LINKS.  This can happen on a rerun of a ReportCaster
+-* schedule if the original job did not complete correctly.
+TABLE FILE PUSH_LINKS
+BY SCHEDULE_ID
+BY RPT_NUMBER
+WHERE SCHEDULE_ID EQ '&SCHED_ID'
+ON TABLE HOLD AS HPLINKS
+END
+-RUN
+MODIFY FILE PUSH_LINKS
+FIXFORM FROM HPLINKS
+MATCH SCHEDULE_ID RPT_NUMBER
+ ON MATCH DELETE
+ ON NOMATCH REJECT
+DATA ON HPLINKS
+END
+-RUN
+ 
+-:XXIT

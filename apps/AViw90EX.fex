@@ -1,0 +1,615 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* This View was Created for the Booking type Summary
+-* Needed extra summsubj lines for division by zero errors JK 6/11/03
+-* This will utilize the Bkg_sum stream
+* 10/30/03    DEB      ADDED ABOOK_DSAVE AND IBOOK_DSAVE DEFINE
+-*                      ADDED SEG_LOWEST
+-*5/11/04    JK        Commented out where void_date eq 0.  Screen
+-*                     selection was not working properly with this in there
+-*09/01/04   DV        ADDED CTRY_FLAG DEFINE
+-*12/21/04   DV      CHANGED BOOKING TYPE DEFINES TO INCLUDE ADDTL DOD_TYPE
+-*01/04/05   DV      ADDED CODE FOR GLOBAL CURRENCY
+-*4/15/05    DV      ADDED DISSAVINGS AND REFUSE_CODE 
+-*10/11/05   DEB     CHANGED BOOKING TYPE DEFINES TO INCLUDE DOD_TYPE 'H'
+-*12/13/05   DV      ADDED CTRY_FLAG2 CTRY_FLAG3 DEFINE
+-*02/01/06   DV      ADDED GEO1 GEO2 ETC AND GEO_FLAG DEFINE
+-*9/22/06    DV      ADDED SAVINGS ABOOK_SAV DEFINE IBOOK_SAV DEFINE
+-*5/7/07     DV      CHANGED DEFINES TO SHOW 'H' OR 'I' OR 'J' AS ONLINE
+-*                   AND ALL ELSE AS TRADITIONAL 
+-*9/17/13    JK      Added KWLEV Define to correct drilldown error in excel when level_desc contains '&'
+-*1/27/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+-*11/14/14 UPDATED THE IBOOK DEFINE TO USE ONLINE_TRADTIONAL - jk
+-*02/29/16 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-*10/24/16- DLV S-26029 - Added EMP_ID
+-********************************************************************
+-INCLUDE SETECHO 
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+
+-SET &&IDLEVELBREAK = '';
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+
+DEFINE FILE &&EXTRACT
+ CTRY1/A2 =  EDIT(CTRY_COD, 
+'99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY2/A2 =  EDIT(CTRY_COD, 
+'$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY3/A2 =  EDIT(CTRY_COD, 
+'$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY4/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY5/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY6/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY7/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY8/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY9/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY10/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY11/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY12/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY13/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY14/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY15/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY16/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$');
+CTRY17/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$');
+CTRY18/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$');
+CTRY19/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$');
+CTRY20/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$');
+CTRY21/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$');
+CTRY22/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$');
+CTRY23/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99');
+
+
+GEO1/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO2/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO3/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO4/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO5/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO6/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO7/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO8/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO9/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO10/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO11/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO12/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$');
+GEO13/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$');
+GEO14/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$');
+GEO15/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$');
+GEO16/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$');
+GEO17/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$');
+
+
+-* CLASS_CAT/A8 = DECODE CL_CAT ('F' 'FIRST'     'C' 'COACH'   
+-*                               'D' 'DISCOUNT'  'B' 'BUSINESS');
+
+CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+			        'D' 'DEFAULT'   'B' 'BUSINESS'
+			        'E' 'ECONOMY'   'U'  'UPGRADE' 
+                                ' ' 'DEFAULT'); 
+
+
+
+
+
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+FLAG/A1 = 'A';
+IBOOK/A33 = ONLINE_TRADITIONAL;
+
+KX_LVL/A2 = EDIT(LEVEL1, '99');
+PL_LVL/A2 = IF LEVEL2 EQ 'BILLABLE' THEN 'BB' ELSE
+            IF LEVEL2 EQ 'NONBILLABLE' THEN 'NB' ELSE 'XX';        
+KX_TYP/A12 = IF KX_LVL EQ 'BB' THEN 'BILLABLE' ELSE 
+             IF KX_LVL EQ 'NB' THEN 'NON BILLABLE' ELSE 'ALL OTHER';
+PL_TYP/A12 = IF PL_LVL EQ 'BB' THEN 'BILLABLE' ELSE 
+             IF PL_LVL EQ 'NB' THEN 'NON BILLABLE' ELSE 'ALL OTHER';
+LEVEL_DESC1/A80 = &&LDESC;
+NET_TKT_CNT/D12      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+
+
+SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID; 
+
+  
+TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+TRAN_MY/MTYY = TRN_DATE;
+XARR_DT/MDYY         = ARR_DATE;
+XDPT_DT/MDYY         = DPT_DATE;
+XDPT_DATE/MDY        = DPT_DATE;
+XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+XTRAN_DT/MDYY        = TRN_DATE;
+
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+ABOOK_CNT/D8CS = IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' THEN NET_TKT_CNT ELSE 0;
+ABOOK_FARE/D12.2CS = IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' THEN FARE_PAID ELSE 0;
+ABOOK_SAV/D11.2CS = IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' THEN SAVINGS ELSE 0;                       
+
+
+IBOOK_CNT/D8CS = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN NET_TKT_CNT ELSE 0;
+IBOOK_FARE/D12.2CS = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN FARE_PAID ELSE 0;
+IBOOK_SAV/D11.2CS = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN SAVINGS ELSE 0;   
+BB_CNT/D8CS = IF (KX_LVL EQ 'BB') OR (PL_LVL EQ 'BB') THEN NET_TKT_CNT ELSE 0;
+BB_FARE/D12.2CS = IF (KX_LVL EQ 'BB') OR (PL_LVL EQ 'BB') THEN FARE_PAID ELSE 0;
+NB_CNT/D8CS = IF (KX_LVL EQ 'NB') OR (PL_LVL EQ 'NB') THEN NET_TKT_CNT ELSE 0;
+NB_FARE/D12.2CS = IF (KX_LVL EQ 'NB') OR (PL_LVL EQ 'NB') THEN FARE_PAID ELSE 0;
+EXC_CNT/D8CS = IF (KX_LVL NE 'BB' OR 'NB') THEN NET_TKT_CNT ELSE 0;
+EXC_FARE/D12.2CS = IF (KX_LVL NE 'BB' OR 'NB') THEN FARE_PAID ELSE 0;
+OA_CNT/D8CS = IF PL_LVL EQ 'XX' THEN NET_TKT_CNT ELSE 0;
+OA_FARE/D12.2CS = IF PL_LVL EQ 'XX' THEN FARE_PAID ELSE 0;
+
+WBOOK_CNT/D8CS = IF IBOOK CONTAINS 'WEB' THEN NET_TKT_CNT ELSE 0;
+WBOOK_FARE/D12.2CS = IF IBOOK CONTAINS 'WEB' THEN FARE_PAID ELSE 0;
+ABOOK_CNT2/D8CS = IF DOD_TYPE NE 'H' OR 'I' OR 'J' OR 'L' OR 'N' OR 'S' THEN NET_TKT_CNT ELSE 0;
+ABOOK_FARE2/D12.2CS = IF DOD_TYPE NE 'H' OR 'I' OR 'J' OR 'L' OR 'N' OR 'S' THEN FARE_PAID ELSE 0;
+
+CTRY_FLAG/A1 = IF (CTRY1 EQ 'US' OR 'CA') AND 
+  (CTRY2 EQ 'US' OR 'CA' OR ' ') AND 
+  (CTRY3 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY4 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY5 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY6 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY7 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY8 EQ 'US' OR 'CA' OR ' ') AND 
+  (CTRY9 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY10 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY11 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY12 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY13 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY14 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY15 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY16 EQ 'US' OR 'CA' OR ' ') AND 
+  (CTRY17 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY18 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY19 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY20 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY21 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY22 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY23 EQ 'US' OR 'CA' OR ' ') THEN 'Y' ELSE 'N';
+
+
+CTRY_FLAG2/A1 = IF 
+  (CTRY2 CONTAINS 'DE' ) OR 
+  (CTRY3 CONTAINS 'DE') OR
+  (CTRY4 CONTAINS 'DE') OR
+  (CTRY5 CONTAINS 'DE') OR
+  (CTRY6 CONTAINS 'DE') OR
+  (CTRY7 CONTAINS 'DE') OR
+  (CTRY8 CONTAINS 'DE') OR 
+  (CTRY9 CONTAINS 'DE') OR
+  (CTRY10 CONTAINS 'DE') OR
+  (CTRY11 CONTAINS 'DE') OR
+  (CTRY12 CONTAINS 'DE') OR
+  (CTRY13 CONTAINS 'DE') OR
+  (CTRY14 CONTAINS 'DE') OR
+  (CTRY15 CONTAINS 'DE') OR
+  (CTRY16 CONTAINS 'DE') OR 
+  (CTRY17 CONTAINS 'DE') OR
+  (CTRY18 CONTAINS 'DE') OR
+  (CTRY19 CONTAINS 'DE') OR
+  (CTRY20 CONTAINS 'DE') OR
+  (CTRY21 CONTAINS 'DE') OR
+  (CTRY22 CONTAINS 'DE') OR
+  (CTRY23 CONTAINS 'DE') THEN 'Y' ELSE 'N';
+  
+CTRY_FLAG3/A1 = IF CTRY1 EQ 'US' THEN 'Y' ELSE 'N';
+GEO_FLAG/A1 = IF 
+    (GEO2 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO3 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO4 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO5 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO6 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO7 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO8 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO9 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO10 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO11 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO12 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO13 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO14 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO15 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO16 CONTAINS 'EUR' OR 'ASA') OR
+    (GEO17 CONTAINS 'EUR' OR 'ASA') THEN 'Y' ELSE 'N';
+GEO_FLG2/A1 = IF GEO1 EQ 'CAN' AND GEO2 EQ 'CAN' AND GEO3 EQ 'CAN' THEN 'Y' ELSE 'N';
+GEO_FLG3/A1 = IF 
+    (GEO4 EQ 'CAN') OR
+    (GEO5 EQ 'CAN') OR
+    (GEO6 EQ 'CAN') OR
+    (GEO7 EQ 'CAN') OR
+    (GEO8 EQ 'CAN') OR
+    (GEO9 EQ 'CAN') OR
+    (GEO10 EQ 'CAN') OR
+    (GEO11 EQ 'CAN') OR
+    (GEO12 EQ 'CAN') OR
+    (GEO13 EQ 'CAN') OR
+    (GEO14 EQ 'CAN') OR
+    (GEO15 EQ 'CAN') OR
+    (GEO16 EQ 'CAN') OR
+    (GEO17 EQ 'CAN') THEN 'Y' ELSE 'N';
+
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                        FARE_PAID - SEG_LOWEST;
+
+ABOOK_DSAVE/D11.2CS= IF EMBARK EQ 'DT1' THEN 0 ELSE 
+   IF DOD_TYPE NE 'H' OR 'I' OR 'J' THEN FARE_PAID - SEG_LOWEST ELSE 0;
+
+
+IBOOK_DSAVE/D11.2CS= IF EMBARK EQ 'DT1' THEN 0 ELSE
+                            IF DOD_TYPE EQ 'H' OR 'I' OR 'J' THEN
+                            FARE_PAID - SEG_LOWEST ELSE 0;
+
+KWLEV/A60 = CTRAN(60, LEVEL_DESC, 38, 95, KWLEV);                             
+  
+-INCLUDE TRANTYPE  
+-INCLUDE IDLEVDEFINE 
+               
+END
+-RUN
+
+
+TABLEF FILE &&EXTRACT
+PRINT
+  ABOOK_CNT
+  ABOOK_DSAVE
+  ABOOK_FARE
+  ABOOK_SAV
+  ABOOK_CNT2
+  ABOOK_FARE2
+-*  AIBOOK_CNT
+  AIR_KEY
+  AIR_MAIN.INTL_DOM AS 'INTL_DOM'	
+  AIRLINE	
+  ARR_TIME
+  AROLL_LEV2
+  BB_CNT
+  BB_FARE
+  CLASS_CAT
+  CTRY_FLAG
+  CTRY_FLAG2
+  CTRY_FLAG3
+  DISSAVINGS
+  DPT_TIME	
+  EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'	
+  EMP_ID
+  EXC_CNT
+  EXC_FARE
+  FARE_PAID
+  FLAG
+  IBOOK
+  IBOOK_CNT
+  IBOOK_DSAVE
+  IBOOK_FARE
+  IBOOK_SAV
+ -* IEBOOK_CNT
+ -* IEBOOK_FARE
+  KX_LVL
+  KX_TYP
+  KWLEV
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  NB_CNT
+  NB_FARE
+  NET_TKT_CNT
+  OA_CNT
+  OA_FARE
+  PL_LVL
+  PL_TYP
+  REFUSE_CODE
+  RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'
+  SAVINGS
+  SEG_COUNT
+  SEG_LOWEST	
+  SEG_NBR	
+-*  SIBOOK_CNT
+  TKT_NUM	
+  TKT_SORT	
+  TKT_TYPE	
+  TRAN_MY
+  TRN_DATE
+  TKT_DATE
+  WBOOK_CNT
+  WBOOK_FARE
+  XARR_DT	
+  XDPT_DT	
+  XDPT_DATE
+  XPSNGR_NM
+  XTRAN_DT	
+  CTRY1
+  CTRY2
+  CTRY3
+  CTRY4
+  CTRY5
+  CTRY6
+  CTRY7
+  CTRY8
+  CTRY9
+  CTRY10
+  CTRY11
+  CTRY12
+  GEO_FLAG
+ 
+-INCLUDE &AIRDATES
+
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS BKGSUM
+
+END
+-RUN
+
+
+
+-NOKWTST;
+TABLE FILE BKGSUM
+PRINT ABOOK_CNT
+  ABOOK_DSAVE
+  ABOOK_FARE
+  ABOOK_SAV
+  ABOOK_CNT2
+  ABOOK_FARE2
+-*  AIBOOK_CNT
+  AIR_KEY
+  INTL_DOM	
+  AIRLINE	
+  ARR_TIME
+  AROLL_LEV2
+  BB_CNT
+  BB_FARE
+  CLASS_CAT
+  CTRY_FLAG
+  CTRY_FLAG2
+  CTRY_FLAG3
+  DISSAVINGS
+  DPT_TIME	
+  EMB_CTY_NM
+  EMP_ID
+  EXC_CNT
+  EXC_FARE
+  FARE_PAID
+  FLAG
+  GEO_FLAG
+  IBOOK
+  IBOOK_CNT
+  IBOOK_DSAVE
+  IBOOK_FARE
+  IBOOK_SAV
+-*  IEBOOK_CNT
+-*  IEBOOK_FARE
+  KX_LVL
+  KX_TYP
+  KWLEV
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  NB_CNT
+  NB_FARE
+  NET_TKT_CNT
+  OA_CNT
+  OA_FARE
+  PL_LVL
+  PL_TYP
+  REFUSE_CODE
+  RTE_CTY_NM
+  SAVINGS
+  SEG_COUNT
+  SEG_LOWEST	
+  SEG_NBR	
+ -* SIBOOK_CNT
+  TKT_NUM	
+  TKT_SORT	
+  TKT_TYPE	
+  TRAN_MY
+  TRN_DATE
+  WBOOK_CNT
+  WBOOK_FARE
+  XARR_DT	
+  XDPT_DT	
+  XDPT_DATE
+  XPSNGR_NM
+  XTRAN_DT
+BY TKT_DATE
+ON TABLE HOLD AS BKGSUM1 FORMAT FOCUS INDEX TKT_DATE
+END
+-RUN
+
+-* Global Reporting JOIN
+JOIN BKGSUM1.TKT_DATE IN BKGSUM1 TO GLOBAL.DATE IN GLOBAL AS J1
+END
+
+DEFINE FILE BKGSUM1
+NAMEC/A30 = CNAME;
+
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+CURR1X/D20.6 = 1 / USDPU ;
+
+-* DEFINES ON PREVIOUS DEFINES	
+
+PAID_FAREX/D20.6 = FARE_PAID * CURR1X;
+FARE_ABOOKX/D20.6 = ABOOK_FARE * CURR1X;
+FARE_IBOOKX/D20.6 = IBOOK_FARE * CURR1X;
+-*FARE_IEBOOKX/D20.6 = IEBOOK_FARE * CURR1X;
+DSAV_ABOOKX/D20.6 = ABOOK_DSAVE * CURR1X;
+DSAV_IBOOKX/D20.6 = IBOOK_DSAVE * CURR1X;
+END
+
+TABLE FILE BKGSUM1
+
+PRINT ABOOK_CNT
+  ABOOK_DSAVE
+  ABOOK_FARE
+  ABOOK_SAV
+  ABOOK_CNT2
+  ABOOK_FARE2
+-*  AIBOOK_CNT
+  AIR_KEY
+  INTL_DOM	
+  AIRLINE	
+  ARR_TIME
+  AROLL_LEV2
+  BB_CNT
+  BB_FARE
+  CLASS_CAT
+  CTRY_FLAG
+  CTRY_FLAG2
+  CTRY_FLAG3
+  DISSAVINGS
+  DPT_TIME	
+  EMB_CTY_NM	
+  EMP_ID
+  EXC_CNT
+  EXC_FARE
+  FARE_PAID
+  FLAG
+  GEO_FLAG
+  IBOOK
+  IBOOK_CNT
+  IBOOK_DSAVE
+  IBOOK_FARE
+  IBOOK_SAV
+-*  IEBOOK_CNT
+-*  IEBOOK_FARE
+  KX_LVL
+  KX_TYP
+  KWLEV
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  NB_CNT
+  NB_FARE
+  NET_TKT_CNT
+  OA_CNT
+  OA_FARE
+  PL_LVL
+  PL_TYP
+  REFUSE_CODE
+  RTE_CTY_NM
+  SAVINGS
+  SEG_COUNT
+  SEG_LOWEST	
+  SEG_NBR	
+-*  SIBOOK_CNT
+  TKT_DATE
+  TKT_NUM	
+  TKT_SORT	
+  TKT_TYPE	
+  TRAN_MY
+  TRN_DATE
+  WBOOK_CNT
+  WBOOK_FARE 
+  XARR_DT	
+  XDPT_DT	
+  XDPT_DATE
+  XPSNGR_NM
+  XTRAN_DT
+  NAMEC
+  PAID_FAREX/D16.2CS
+  FARE_ABOOKX/D16.2CS
+  FARE_IBOOKX/D16.2CS
+-*  FARE_IEBOOKX/D16.2CS
+  DSAV_IBOOKX/D16.2CS
+  DSAV_ABOOKX/D16.2CS
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS BOOKSUM
+END
+-RUN
+
+
+-IF &&SETF NE 'NYINTER' THEN GOTO XXIT;
+
+TABLEF FILE &&EXTRACT
+PRINT ABOOK_CNT
+      IBOOK_CNT
+      NET_TKT_CNT
+      AROLL_LEV2
+      FLAG
+WHERE TRN_DATE GE &&FROMDT.EVAL AND TRN_DATE LE &&TODT.EVAL
+WHERE AROLL_LEV2 EQ 'NYLB'
+WHERE VOID_DATE EQ 0
+WHERE CATEGORY NE 'GLOBAL'
+
+ON TABLE HOLD AS BOOKSUM1
+END
+-RUN
+
+
+-XXIT

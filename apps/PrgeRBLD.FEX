@@ -1,0 +1,238 @@
+-*  This program will purge Air, Car, and Hotel records from all
+-*    associated databases, based on a purge date and trigger file
+-*    of target rollup environments
+-* 04/05/2002 - CHANGED TO PURGE AL, CL AND HL - STEVE CORDS
+-* 04/05/2002 - TOOK OUT PURGE OF AH, CH AND HH - STEVE CORDS
+-* 06/20/2002 - ADDED THE PURGE FOR T_XXXX (TKT_MAIN) - STEVE CORDS
+-* 09/20/2002 - TOOK OUT PURGE TO AL, CL AND HL - STEVE CORDS
+
+-GOTO NOTQTR;
+
+-TYPE BEGINNING QUARTERED UPDATE
+
+-* -SET &&DBUSE = &&DATPATH || &&PRGAL || '.FOC';
+-* USE
+-* &&DBUSE
+-* END
+-* -RUN
+
+-* REBUILD
+-* REBUILD
+-* &&PRGAL
+-* N
+-* -RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGSEG || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+CREATE FILE &&PRGSEG
+-RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGMKT || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+CREATE FILE &&PRGMKT
+-RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGDST || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+CREATE FILE &&PRGDST
+-RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGAIR || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+CREATE FILE &&PRGAIR
+-RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGTKT || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+CREATE FILE &&PRGTKT
+-RUN
+
+-* -SET &&DBUSE = &&DATPATH || &&PRGCL || '.FOC';
+-* USE
+-* &&DBUSE
+-* END
+-* -RUN
+
+-* REBUILD
+-* REBUILD
+-* &&PRGCL
+-* N
+-* -RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGCAR || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+CREATE FILE &&PRGCAR
+-RUN
+
+-* -SET &&DBUSE = &&DATPATH || &&PRGHL || '.FOC';
+-* USE
+-* &&DBUSE
+-* END
+-* -RUN
+
+-* REBUILD
+-* REBUILD
+-* &&PRGHL
+-* N
+-* -RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGHTL || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+CREATE FILE &&PRGHTL
+-RUN
+
+-GOTO XFER
+
+-NOTQTR
+-TYPE BEGINNING NOT QUARTERED UPDATE
+
+-SET &&DBUSE = &&DATPATH || &&PRGSEG || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+REBUILD
+REBUILD
+&&PRGSEG
+N
+-RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGMKT || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+REBUILD
+REBUILD
+&&PRGMKT
+N
+-RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGDST || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+REBUILD
+REBUILD
+&&PRGDST
+N
+-RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGAIR || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+REBUILD
+REBUILD
+&&PRGAIR
+N
+-RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGTKT || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+REBUILD
+REBUILD
+&&PRGTKT
+N
+-RUN
+
+-* -SET &&DBUSE = &&DATPATH || &&PRGAL || '.FOC';
+-* USE
+-* &&DBUSE
+-* END
+-* -RUN
+
+-* REBUILD
+-* REBUILD
+-* &&PRGAL
+-* N
+-* -RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGCAR || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+REBUILD
+REBUILD
+&&PRGCAR
+N
+-RUN
+
+-* -SET &&DBUSE = &&DATPATH || &&PRGCL || '.FOC';
+-* USE
+-* &&DBUSE
+-* END
+-* -RUN
+
+-* REBUILD
+-* REBUILD
+-* &&PRGCL
+-* N
+-* -RUN
+
+-SET &&DBUSE = &&DATPATH || &&PRGHTL || '.FOC';
+USE
+&&DBUSE
+END
+-RUN
+
+REBUILD
+REBUILD
+&&PRGHTL
+N
+-RUN
+
+-* -SET &&DBUSE = &&DATPATH || &&PRGHL || '.FOC';
+-* USE
+-* &&DBUSE
+-* END
+-* -RUN
+
+-* REBUILD
+-* REBUILD
+-* &&PRGHL
+-* N
+-* -RUN
+
+-XFER
+-TYPE EXITING

@@ -1,0 +1,140 @@
+-***************************************************************************
+-* REPORT NAME: TOP NON DIRECTIONAL MARKET PAIR SUMMARY
+-* TOTAL COMPANY REPORTING
+-* JK added code to select only tnt_company eq 1 or 2 2/21/05
+-*09/26/2017 - DLV - S-37268 - UPDATED defines for ND_CP_CD ND_APT_CDO ND_APT_CDD
+
+-***************************************************************************
+-INCLUDE SETECHO
+
+
+SET ASNAMES = ON
+
+-SET &&ORGDST = 'DIR_CP_NM';
+
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED IN STEP7
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT
+DEMB_APT/A21=EDIT(EMB_APT.AIRPORT_NAME,'999999999999999999999$$$$');
+DIR_CITY_CD/A50 = EMB_CTY.EMB_CITY || '-' || RTE_CTY.RTE_CITY;
+DIR_CITY_NM/A50 = EMB_CTY.CITY_NAME | RTE_CTY.CITY_NAME; 
+DIR_CP_CD/A50 = CITYPAIR.EMBARK || '-' || CITYPAIR.ROUTE;
+DIR_CP_NM/A50 = EMB_APT.AIRPORT_NAME | RTE_APT.AIRPORT_NAME;
+DPT/A2 = EDIT (DPT_TIME, '99$$');
+DRTE_APT/A21=EDIT(RTE_APT.AIRPORT_NAME,'999999999999999999999$$$$');
+EMB_APT/A21=EDIT(NDO_APT.AIRPORT_NAME,'999999999999999999999$$$$');
+FARE_PAID/D12.2S  = SEG_AMT;
+ND_CITY_CD/A50 = NDO_CTY.NDO_CITY || '-' || NDD_CTY.NDD_CITY;
+ND_CITY_NM/A50 = NDO_CTY.CITY_NAME | NDD_CTY.CITY_NAME;
+-*ND_CP_CD/A50  = NDO_APT.ND_ORG || '-' || NDD_APT.ND_DST;
+ND_CP_CD/A50  = ND_ORG || '-' || ND_DST;
+
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+RTE_APT/A21=EDIT(NDD_APT.AIRPORT_NAME,'999999999999999999999$$$$');
+XDPT_DOW/W           = DPT_DATE;
+TM_RANGE/A15 = IF (DPT_TIME GE '0600') AND (DPT_TIME LE '0800') THEN 
+         '6AM - 8AM' ELSE
+      IF (DPT_TIME GE '0801') AND (DPT_TIME LE '1000') THEN '8AM - 10AM' ELSE
+      IF (DPT_TIME GE '1001') AND (DPT_TIME LE '1200') THEN '10AM - 12PM' ELSE
+      IF (DPT_TIME GE '1201') AND (DPT_TIME LE '1400') THEN '12PM - 2PM' ELSE
+      IF (DPT_TIME GE '1401') AND (DPT_TIME LE '1600') THEN '2PM - 4PM' ELSE
+      IF (DPT_TIME GE '1601') AND (DPT_TIME LE '1800') THEN '4PM - 6PM' ELSE
+      IF (DPT_TIME GE '1801') AND (DPT_TIME LE '2000') THEN '6PM - 8PM' ELSE
+      IF (DPT_TIME GE '2001') AND (DPT_TIME LE '2200') THEN '8PM - 10PM' ELSE
+      '10PM - 12AM';
+    
+
+
+-* Defines on Previous Defines
+DPT_DAY/A3           = DECODE XDPT_DOW (1 'MON' 2 'TUE' 3 'WED'
+                                 4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+
+ND_CP_NM/A55 = EMB_APT|'        '|RTE_APT;
+-* ORGDST/A55 = &&ORGDST;
+ORGDST/A50 = DIR_CP_NM;
+END
+
+
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  CITYPAIR.SEG_MILES/D9C AS 'MILES'
+  DPT_DAY	
+  FARE_PAID  AS 'CP_FARE_PD'
+  ND_CP_NM
+-*  DIR_CP_NM
+  NET_TKT_CNT
+  ORGDST
+  TM_RANGE
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TC_MRK2
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM STEP4 - HOLD TO FOCUS DATABASE TCRANK        
+-*========================================================================
+DEFINE FILE TC_MRK2
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TC_MRK2
+SUM CP_FARE_PD AS 'FARE'
+    MILES	
+    NET_TKT_CNT	
+BY ROLLCD
+BY ORGDST
+BY DPT_DAY
+BY TM_RANGE
+ON TABLE HOLD AS HOLD2 
+END
+-RUN
+
+
+DEFINE FILE HOLD2
+NMB/I5    = NMB + 1;
+END
+
+TABLE FILE HOLD2
+SUM NET_TKT_CNT
+    FARE
+    MILES
+BY ROLLCD
+BY NMB
+BY ORGDST
+BY DPT_DAY
+BY TM_RANGE
+ON TABLE HOLD AS TCM1
+END
+-RUN
+
+
+MODIFY FILE TCMARK2
+FIXFORM FROM TCM1
+DATA ON TCM1
+END
+-RUN
+-NEXTONE

@@ -1,0 +1,75 @@
+-*****************************************************************************
+-* File: chkQtrJob.fex
+-* this job is created to check Quarterly Review jobs in the report queue as 
+-* we have an issue with ReportCaster to run RUN_QTR.  This is a temp solution.
+-* Lusheng Si
+-* 08/14/2007 LS - change back to .zip file
+-******************************************************************************
+-INCLUDE SETECHO
+
+TABLE FILE RPT_QUE
+PRINT SET_KEY ROLLUP_CODE USER_NAME 
+BY INTIME 
+BY INST_KEY
+WHERE RPT_SEQ EQ 888 AND EX_FLAG NE 'M'
+ON TABLE SAVE AS SAVE1
+END
+-RUN
+-IF &LINES EQ 0 THEN GOTO FinishQTR;
+
+-*create a file
+-SET &FNAME='QRTJobsToBeExecuted';
+-SET &TEMPPATH = 'D:\TE\anEMAIL\'; 
+-DOS MKDIR &TEMPPATH
+
+-SET &QTRFILE = &TEMPPATH || &FNAME | '.PDF';
+-DOS STATE &QTRFILE
+-IF &RETCODE NE 0 GOTO ENDDEFFILE;
+-DOS DEL &QTRFILE
+-ENDDEFFILE
+
+FILEDEF SAVREP DISK &QTRFILE
+
+TABLE FILE RPT_QUE
+PRINT INTIME EX_FLAG
+BY ROLLUP_CODE
+BY USER_NAME
+BY INST_KEY
+WHERE RPT_SEQ EQ 888 AND EX_FLAG NE 'M'
+ON TABLE SAVE AS SAVREP FORMAT PDF
+END
+-RUN 
+
+-SET &ZIPFILE = &TEMPPATH || &FNAME || '.ZIP';
+-SET &SRCFILE = &TEMPPATH || &FNAME || '.PDF';
+-*-SET &TNTFILE = &TEMPPATH || &FNAME || '.TNT';
+
+-* ZIP REPORTS INTO &ZIPFILES
+-DOS PKZIP25 -add &ZIPFILE &SRCFILE
+-RUN
+
+-SET &WEB_PATH=TEMPPATH(50,'A50');
+-* send an eMail to eTTekReviewHelp 
+-SET &EMAILBAT = &WEB_PATH || 'EMAILFIL.BAT';
+FI EMAILBAT DISK &EMAILBAT
+-RUN
+
+-SET &EADDR='eTTekReviewHelp@tandt.com';
+
+-SET &ETEMP = 'sendEmail ' | '&EADDR.EVAL' 
+- || ' &ZIPFILE.EVAL';
+-*- || ' &TNTFILE.EVAL';
+-*-WRITE EMAILBAT COPY &ZIPFILE &TNTFILE
+-WRITE EMAILBAT cd d:\ibi\webfocus76\javamail
+-WRITE EMAILBAT &ETEMP
+-CLOSE EMAILBAT
+
+DOS &EMAILBAT
+-RUN
+
+-* DELETE THE REPORTS THAT WERE EMAILED
+-SET &ALL3 = &TEMPPATH || &FNAME || '.*';
+-DOS DEL /Q &ALL3
+-RUN
+
+-FinishQTR

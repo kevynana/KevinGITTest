@@ -1,0 +1,51 @@
+-*5/23/14    - DEB   ADDED EX5 TO EX_RF_FLAG
+-******************************************************************************
+
+
+
+SET ASNAMES = ON
+
+JOIN AIR_KEY IN SYNBAS TO AIR_KEY IN AYNBAS AS J1
+DEFINE FILE SYNBAS
+FULL_EXCH/D8 = IF (VOID_DATE EQ 0) AND (EX_FLAG EQ 'F')
+                 AND (SEG_COUNT EQ -1) AND (SEG_NBR EQ '01') THEN 1 ELSE 0;
+EX_RF_FLAG/A1 = IF VOID_DATE NE 0 
+  THEN ' '
+  ELSE IF (((RF_FLAG EQ 'F' OR 'P') AND
+    (EMBARK NE 'EX1' OR 'FP2' OR 'EX5') AND (SEG_COUNT LE 0)) OR (EMBARK EQ 'RF1'))
+  THEN 'R'
+  ELSE IF (((EXSALE NE ' ') AND (SEG_COUNT GE 0)) OR
+       ((EX_FLAG EQ 'F' OR 'P') AND
+    (SEG_COUNT LE 0) AND (RF_FLAG EQ ' ')))
+  THEN 'E'
+  ELSE ' ';       
+TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                            (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                          IF (SEG_COUNT LE 0) AND 
+                            (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                          IF (SEG_COUNT LE 0) AND 
+                            (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                          IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+EX_CNT/D8CS = IF TKT_NUM NE LAST TKT_NUM AND TKT_TYPE EQ 'F-EX' OR 'P-FEX'
+               AND EX_RF_FLAG EQ 'E'  THEN 1 ELSE 0;   
+END               
+TABLE FILE SYNBAS
+PRINT EX_CNT FULL_EXCH
+BY AROLL_LEV2
+BY EX_RF_FLAG 
+BY EX_FLAG
+BY TKT_NUM
+WHERE (((EXSALE NE ' ') AND (SEG_COUNT GE 0)) OR
+((EX_FLAG EQ 'F' OR 'P') AND (SEG_COUNT LE 0)))
+
+WHERE EMBARK NE 'RF1'
+WHERE VOID_DATE EQ 0
+
+WHERE FULL_EXCH NE 0
+ 
+ON TABLE COLUMN-TOTAL
+
+END
+-RUN
+-QUIT

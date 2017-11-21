@@ -1,0 +1,26 @@
+-INCLUDE SETECHO
+-* File cright_footer.fex
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+-*
+-* 10/09/2017 JEM S-40828 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-* 10/20/2017 JEM S-41221 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets updated
+
+-DEFAULT &&OUTFMT='PDF';
+-DEFAULT &&SETF = ' ';
+-DEFAULT &&INSTID = ' ';
+
+
+-SET &NOWTOD = HHMMSS('A8');
+-SET &&FOOTR=&&SETF | '/' | &&INSTID;
+
+
+-SET &CR = IF &&OUTFMT EQ 'PPT' THEN '(C)' ELSE CTRAN(1, ' ', 32, 169, 'A1');
+
+-SET &CD=EDIT(&MDYY,'99/99/9999');
+-SET &CY=EDIT(&YYMD,'9999');
+-SET &CT=HHMMSS('A10');
+ 
+-*-SET &M1='Post-trip Reporting ' | &CD | ' at ' | &CT;
+-SET &M1='Post-trip Reporting ' | &CD | ' at ' | &NOWTOD | &&FOOTR;
+-SET &M2=&CR || &CY | ' Travel and Transport, Inc.';
+-SET &M3='Personal and Confidential';

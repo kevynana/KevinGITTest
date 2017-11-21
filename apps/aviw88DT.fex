@@ -1,0 +1,227 @@
+
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*Created for Metlife Passenger audit JK 2/27/03
+-**************************************************************************
+
+
+SET ASNAMES=ON
+-RUN
+
+
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID AS 'TFARE'
+    NET_TKT_CNT AS 'TTKT'
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT AIRLINE	
+  ARR_TIME
+  DPT_TIME	
+  EMB_CTY_NM
+  FARE_PAID	
+  FLIGHT	
+  LEVEL_DESC	
+  NET_TKT_CNT	
+  RTE_CTY_NM
+  SEG_COUNT	
+  SEG_NBR	
+  TKT_NUM	
+  TKT_SORT	
+  TRN_DATE	
+  XARR_DT	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT AIRLINE	
+  ARR_TIME
+  DPT_TIME	
+  EMB_CTY_NM
+  FARE_PAID	
+  FLIGHT	
+  LEVEL_DESC	
+  NET_TKT_CNT	
+  RTE_CTY_NM
+  SEG_COUNT	
+  SEG_NBR	
+  TKT_NUM	
+  TKT_SORT	
+  TRN_DATE	
+  XARR_DT	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT TFARE
+      TTKT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT AIRLINE	
+  ARR_TIME
+  DPT_TIME	
+  EMB_CTY_NM
+  FARE_PAID	
+  FLIGHT	
+  LEVEL_DESC	
+  NET_TKT_CNT	
+  RTE_CTY_NM
+  SEG_COUNT	
+  SEG_NBR
+  TFARE	
+  TKT_NUM	
+  TKT_SORT	
+  TRN_DATE	
+  TTKT
+  XARR_DT	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+ 
+DEFINE FILE AIRHOLD3
+-INCLUDE STDTIME
+NET_TKT_CNT/D9S = IF (SEG_NBR EQ '01') THEN  TTKT ELSE 0;
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+XT_DTE/A8 = EDIT(TRN_DATE);
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A100 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD3';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+TABLE FILE AIRHOLD3
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+
+

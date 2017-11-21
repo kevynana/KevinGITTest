@@ -1,0 +1,281 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-********************************************************************
+-* Modifications:
+-*12/17/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-* 06/27/2017 - RSB - S-35418 Report view to be updated with standard footer (part 1)
+-* 09/12/2017 - RSB - S-39791 Footer changes to be backed out of story S-35418
+-*
+-********************************************************************
+-* ? &&
+-* ? &&
+-*
+-* -INCLUDE SETECHO
+
+SET ASNAMES = ON
+-RUN
+
+-IF &&SETF EQ 'GCLSAVE' AND &&CURRENCY NE 'USD' THEN GOTO LSAVE  
+-ELSE GOTO CHECK2;
+
+
+-LSAVE;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &FPAID_CUR = 'FARE PAID, (' | &&CURRENCY || ')';
+-SET &GDISV_CUR= 'LOST,SAVINGS, (' | &&CURRENCY || ')';
+-SET &GSAV_CUR= 'SAVINGS, (' | &&CURRENCY || ')';
+-SET &&S_SUBJ4='PAID_FARE1/D16.2CS AS ' | '''&FPAID_CUR.EVAL''' ;
+-SET &&S_SUBJ5='DISSAVE1/D16.2S AS ' | '''&GDISV_CUR.EVAL''';
+-SET &&S_SUBJ6='PCTGDSAVE AS ''% OF,LOST SVGS''';
+-SET &&S_SUBJ7='SAVINGS1/D16.2S AS ' | '''&GSAV_CUR.EVAL''';
+-SET &&S_SUBJ8='PCTGSAVE AS '' % OF,SAVINGS''';
+
+-CHECK2;
+
+
+-IF &&SETF EQ 'GCLSV' AND &&CURRENCY NE 'USD' THEN GOTO LSV  
+-ELSE GOTO CHECK3;
+
+-LSV;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &FPAID_CUR = 'FARE PAID, (' | &&CURRENCY || ')';
+-SET &GDISV_CUR= 'LOST,SAVINGS, (' | &&CURRENCY || ')';
+-SET &GSAV_CUR= 'SAVINGS, (' | &&CURRENCY || ')';
+-SET &&S_SUBJ4='PAID_FARE1/D16.2CS AS ' | '''&FPAID_CUR.EVAL''' ;
+-SET &&S_SUBJ5='DISSAVE1/D16.2S AS ' | '''&GDISV_CUR.EVAL''';
+-SET &&S_SUBJ6='PCT.DISSAVE1/P9.1 AS ''% OF,LOST SVGS''';
+-SET &&S_SUBJ7='SAVINGS1/D16.2S AS ' | '''&GSAV_CUR.EVAL''';
+-SET &&S_SUBJ8='PCT.SAVINGS1/P9.1 AS '' % OF,SAVINGS''';
+
+
+
+-CHECK3;
+
+-IF &&SETF EQ 'GCTRPPRP' AND &&CURRENCY NE 'USD' THEN GOTO TRIPPRP  
+-ELSE GOTO NEXT;
+
+-TRIPPRP;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &FPAID_CUR = 'FARE PAID, (' | &&CURRENCY || ')';
+-SET &&S_SUBJ2='PAID_FARE1/D16.2CS AS ' | '''&FPAID_CUR.EVAL''' ;
+
+-NEXT;
+
+
+
+TABLE FILE GCAIRHLD
+SUM FARE_PAID/D12.2CS AS 'TFARE'	
+    MRK_TKT_CNT/D8CS AS 'TMKT'
+    NET_COMM/D12.2CS AS 'NCOMM'
+    SEG_AMT/D12.CS AS 'TBASE'
+    PAID_FARE1/D16.2CS AS 'GFARE'
+    DISSAVINGS/D12.2CS AS 'TLOSS'
+    DISSAVE1/D16.2CS AS 'GTLOSS'
+    SAVINGS/D12.2CS AS 'TSVGS'
+    SAVINGS1/D16.2CS AS 'GTSVGS'
+BY LEVEL_DESC    
+ON TABLE HOLD AS HOLDONE
+END
+-RUN
+
+TABLE FILE GCAIRHLD
+PRINT
+  AIRLINE 	
+  AIRLINE_NAME
+  BR_CL_IDX
+  CLASS	
+  CLASS_CAT
+  CC_NUM
+  DECLINE_AMT
+  DISSAVINGS
+  DISSAVE1
+  EMB_APT_NM
+  FARE_BAS	
+  FARE_PAID
+  LEVEL1
+  LEVEL2
+  LEVEL3	
+  MRK_TKT_CNT
+  NAMEC
+  NET_COMM
+  NET_TKT_CNT
+  NEW_ADV_PUR
+  NHR_DESC
+  NOHTL_KEY
+  PASSNGR_NAME
+  PAID_FARE1
+  REFUSE_CODE
+  REFUSAL_DESC
+  REF_EXCH_CNT
+  RTE_APT_NM
+  SAVINGS
+  SAVINGS1
+  SEG_AMT
+  SEG_COUNT
+  SEG_MILES
+  TKT_PURCH
+  TRP_DESC
+  TRIP_RSN
+  TRIPRSN	
+BY LEVEL_DESC
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+JOIN CLEAR *
+-RUN
+
+MATCH FILE XTWO
+PRINT
+  AIRLINE 	
+  AIRLINE_NAME
+  BR_CL_IDX
+  CLASS	
+  CLASS_CAT
+  CC_NUM
+  DECLINE_AMT
+  DISSAVINGS
+  DISSAVE1
+  EMB_APT_NM
+  FARE_BAS	
+  FARE_PAID
+  LEVEL1
+  LEVEL2
+  LEVEL3	
+  MRK_TKT_CNT
+  NAMEC
+  NEW_ADV_PUR
+  NET_COMM
+  NET_TKT_CNT
+  NHR_DESC
+  NOHTL_KEY
+  PASSNGR_NAME
+  PAID_FARE1
+  REFUSE_CODE
+  REFUSAL_DESC
+  REF_EXCH_CNT
+  RTE_APT_NM
+  SAVINGS
+  SAVINGS1
+  SEG_AMT
+  SEG_COUNT
+  SEG_MILES
+  TKT_PURCH
+  TRP_DESC
+  TRIP_RSN
+  TRIPRSN	
+BY LEVEL_DESC
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM TBASE
+    TFARE
+    TMKT
+    NCOMM
+    GFARE
+    TLOSS
+    GTLOSS
+    TSVGS
+    GTSVGS
+BY LEVEL_DESC
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW 
+END
+-RUN
+
+DEFINE FILE XTHREE
+  PCTSAVE/D8.1S=IF ((TSVGS LT 1) AND (TSVGS GT (-1))) THEN 0
+                ELSE ((SAVINGS/TSVGS)*100);
+  PCTDSAVE/D8.1S=IF ((TLOSS LT 1) AND (TLOSS GT (-1))) THEN 0
+                 ELSE ((DISSAVINGS/TLOSS)*100);
+  PCTGSAVE/D8.1S=IF ((GTSVGS LT 1) AND (GTSVGS GT (-1))) THEN 0
+                ELSE ((SAVINGS1/GTSVGS)*100);
+  PCTGDSAVE/D8.1S=IF ((GTLOSS LT 1) AND (GTLOSS GT (-1))) THEN 0
+                 ELSE ((DISSAVE1/GTLOSS)*100);	
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************	
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+
+
+
+
+TABLE FILE XTHREE
+-INCLUDE HEADER
+"&&SUBHEAD"
+"</2"
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+-INCLUDE &&SMSTY
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3

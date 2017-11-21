@@ -1,0 +1,50 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File HEADAIR.FEX
+-********************************************************************
+-* MODIFICATIONS:
+-* 5/22/1998 ADDED THE FOLLOWING SET FILES - LP
+-* 8/28/1998 CHANGED BRANCH INFO TO ROLLUP INFO - LP
+-*2/06/17-JEM-S-29460-Adding code for ER5 to use &&ROLLEMAIL in heading when GT ' '
+
+-********************************************************************
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+-SET &&SP = '|';
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLP = IF &&RCNCT.EVAL GE 15 OR &&CSL.EVAL GE 10 THEN 68 ELSE 75;
+
+ -IF &&ROLLEMAIL GT ' ' THEN GOTO EMLHDR;
+
+
+
+"</6"
+"&&DTDESC &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  <&&CSLP &&ROLLNME <+0> &&SP <+0> &&ROLLCS <+0> &&SP3 <+0> &&ROLLCNCT <+0> &&SP4 <+0> &&ROLLPHN"
+-* <75 &&ROLLNME <+0> &&SP <+0> &&ROLLCS <+0> &&SP <+0> &&ROLLCNCT <+0> &&SP <+0> &&ROLLPHN"
+"Page:<TABPAGENO"
+" "
+"<35 &&RPT_TTL1"
+"<35 &&RPT_TTL2"
+
+
+-GOTO HDRXXIT; 
+
+-EMLHDR;
+
+"</6"
+"&&DTDESC &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  <&&CSLP &&ROLLNME <+0> &&SP <+0> &&ROLLCS <+0> &&SP3 <+0> &&ROLLCNCT <+0> &&SP4 <+0> &&ROLLEMAIL"
+-* <75 &&ROLLNME <+0> &&SP <+0> &&ROLLCS <+0> &&SP <+0> &&ROLLCNCT <+0> &&SP <+0> &&ROLLPHN"
+"Page:<TABPAGENO"
+" "
+"<35 &&RPT_TTL1"
+"<35 &&RPT_TTL2"
+
+
+-HDRXXIT;

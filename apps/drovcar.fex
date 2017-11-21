@@ -1,0 +1,362 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File DRCARSM.FEX
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*----           ----                 ---------------------
+-*8/31/00        SAC                   Initial Creation
+-*****************************************************************  
+
+-*************************************************************************
+-*DATE         NAME             DESCRIPTION
+-*09/27/00    IBISTL-SB         ADDED SET STATEMENTS TO GET THE VALUE
+-*                              INTO THIS DRILLED FEX
+-*09/27/00     IBISTL-SB        ADDED THE LOGIC FOR LOCATING THE SET FILE
+-*                              IN THE WEBPATH AND THEN EXECUTING THE SET
+-*                              FILE
+-*09/27/00    IBISTL-SB         REMOVED THE ';' FROM THE SET ASNAMES 
+-*                              STATEMENT
+-*10/05/00    IBISTL-SB         CHANGED THE PARAMETER OF &&CPFLAG TO 'C1'
+-*                              'P1', ''C2', 'P2'
+-* 4/30/01    TANDT-SS          ADDED CODE TO CALCULATIONS TO KEEP NEGATIVE
+-*                              NUMBER IN PLACE FOR BACK-OUT OF CANCELLATIONS
+-*                              AND DUPLICATES
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*7/26/04    JOY                Added/Changed Norecords logic
+-*2/5/14 Updated the bookings define to use num_days instead of daily_rate - JK
+-* 07/12/2017 - RSB - S-29908 - Webfocus Upgrade - Reports that do not run in ER5 Sandbox
+
+-*************************************************************************
+-DEFAULT &&CPFLAG = 'XX';
+-DEFAULT &&CARC   = 'XX';
+-DEFAULT &&VALUERANK   = 'XXXXXX';
+
+-SET &&CPFLAG = &FLAGPARM;
+-SET &&CARC   = &ROW_LABEL;
+-SET &&VALUERANK = &VALUERANK;
+
+
+-**********************************************************************
+-* CHECK FOR NON DRILLABLE FIELDS
+-**********************************************************************
+
+-IF &&CARC EQ 'All Other' THEN SKIPTHIS ELSE SKIPTHAT;
+-SKIPTHAT
+
+-**********************************************************************
+-* EX RPTRESET TO RESET PARAMS
+-**********************************************************************
+-SET &&ROLLUP = &ROLUP;
+-* -SET &&UNAME = &UID;
+-SET &&UNAME = &user;
+-**** the following two lines added 11/03/2003 ****
+-DEFAULT &FPARM = ' ';
+-SET &&FIPARM = &FPARM;
+-SET &&DRILLED_RUN = 'Y';
+
+EX RPTRESET
+-RUN
+-*
+EX RESET
+-RUN
+
+-**********************************************************************
+-* CHECK FOR PRESENCE OF ORIGINAL SET FILE
+-*********************************************************************
+-*****  USE VALUE PASSED AS &SETFNM TO DETERMINE FILE NAME
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-SET &&LOCPATH = '&&DATASRV.EVAL' || '\TT\ '|| &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&LOCPATH || &SETFNM || '.FTM';
+-GOTO CHKFILE;
+
+-SETWEB
+-SET &&WEBPATH = '&&WEBSRV.EVAL' || '\TTWEB\ ' || &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&WEBPATH || &SETFNM || '.FTM';
+
+-CHKFILE
+STATE &FILEXIST
+-RUN
+-IF &RETCODE NE 0 GOTO NOFILE;
+-GOTO CONT;
+
+
+-*
+-*
+-**********************************************************************
+-*
+-**********************************************************************
+-CONT
+
+-SET &TMPDRIL = &&WEB_PATH || 'TEMPDRIL.FEX' ;
+COPY &FILEXIST &TMPDRIL
+-SET &&SETF='TEMPDRIL';
+-RUN
+
+EX OVSETDB SETFILE=&&SETF
+-RUN
+EX CNTLUPD
+-RUN
+-INCLUDE OTHPARMS
+
+-SET &&OUTLINE1 = 'ON TABLE SET ONLINE-FMT';
+-SET &&OUTLINE2 = IF &&OUTLINE2 CONTAINS 'PDF' THEN 'PDF' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXCEL' THEN 'EXCEL' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXL2K' THEN 'EXL2K' ELSE 'PDF';   
+
+
+-****
+-* &&CPFLAG WILL EQUAL ONE OF THE FOLLOWING: 
+-* CY (CURRENT YEAR),  PY (PRIOR YEAR)
+
+-****
+-* &&FIELD WILL EQUAL ONE OF THE FIELD NAMES WITHIN THE REPORT
+-****
+
+-IF &&CPFLAG EQ 'CY' THEN GOTO CURYEAR
+-  ELSE IF &&CPFLAG EQ 'PY' THEN GOTO PRYEAR
+-  ELSE GOTO CURYEAR; 
+
+-CURYEAR
+-SET &&DCHK='WHERE INV_DT GE '&&FROMDT.EVAL' AND INV_DT LE '&&TODT.EVAL'';
+-SET &&FROMDT = &&FROMDT;
+-SET &&TODT = &&TODT;
+-GOTO ENDDATE
+
+-PRYEAR
+-SET &&DCHK='WHERE INV_DT GE '&&FXDATE.EVAL' AND INV_DT LE '&&TXDATE.EVAL'';
+-SET &&FROMDT = &&FXDATE;
+-SET &&TODT = &&TXDATE;
+-GOTO ENDDATE
+
+-ENDDATE
+-SET &&RPT_TTL1 = '                 CAR SUMMARY DETAIL REPORT ';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-SET &&RPTTYP = ' ';
+-SET &&SMD = 'S';
+EX TS_JAMM2
+-RUN
+-INCLUDE SELCATQT
+-RUN
+
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+
+-*EX TSAIRUSE
+EX CARUSE
+-RUN
+
+-TYPE Before Extract
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE &&EXTRACT
+
+BOOKINGS/D8 = IF NUM_DAYS GT 0 THEN 1 ELSE IF NUM_DAYS LT 0 THEN (-1) ELSE 0;
+
+DROP_OFF_DT/MDYY = DROP_DATE;  
+PICK_UP_DT/MDYY = PICKUP_DATE;
+
+NBR_DAYS/D10 = IF (NUM_DAYS LT 0) AND
+                  (NUM_CAR LT 0) THEN      
+                  (NUM_DAYS * NUM_CAR) * (-1) ELSE
+                  (NUM_DAYS * NUM_CAR);   
+    
+INV_DT/YYMD = INVOICE_DATE;
+VNDR/A12 = LCWORD(12, VENDOR_NAME, VNDR);
+  
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  BOOKINGS
+  CAR_KEY     
+  CAR_TYPE    
+  DAILY_RATE  
+  DROP_CTY.CITY_NAME AS 'DROP_CTY_NAME'       
+  DROP_OFF_DT 
+  INVOICE_DATE  
+  NBR_DAYS    
+  PASSNGR_NAME        
+  PICK_CTY.CITY_NAME AS 'PICK_CTY_NAME'	
+  PICK_UP_DT   
+  REFUSE_KEY  
+  RENTAL_AMT	
+  VENDOR_NAME
+-***************************************************************
+-* Where statements to select data specified in user profile
+-***************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+
+WHERE VNDR EQ '&&CARC'
+&&DCHK
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RPTHOLD
+END
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-RUN
+
+-TYPE After Extract
+DEFINE FILE RPTHOLD
+  NOWTOD/A8 WITH NBR_DAYS = HHMMSS (NOWTOD);
+END
+-RUN
+-TYPE Before Report
+
+TABLE FILE RPTHOLD
+-INCLUDE HEADAIR
+"</2"
+-*
+-*******************************************************************
+-* Sum statement with fields passed from the user profile database
+-*******************************************************************
+-*
+SUM 
+NBR_DAYS AS 'DAYS'
+BOOKINGS AS 'BOOKINGS'
+RENTAL_AMT AS 'RENTAL,AMOUNT'
+COMPUTE AVGDR/D12.2CS = IF RENTAL_AMT LT 0 AND NBR_DAYS LT 0 
+ THEN ((RENTAL_AMT/NBR_DAYS) * (-1)) 
+ ELSE RENTAL_AMT/NBR_DAYS; AS 'AVERAGE,DAILY,RATE'
+
+-*
+-******************************************************************
+-* By statements (one per field)
+-******************************************************************
+-*
+BY PASSNGR_NAME AS 'PASSENGER NAME'
+BY VENDOR_NAME AS 'VENDOR'
+BY CAR_TYPE AS 'CAR'
+BY PICK_UP_DT AS 'PICKUP,DATE'
+BY PICK_CTY_NAME AS 'PICKUP,CITY'
+BY DROP_OFF_DT AS 'DROP,DATE'
+BY DROP_CTY_NAME AS 'DROP,CITY'
+-*
+-******************************************************************
+-* On Table statements for code appropriate to On Table commands
+-******************************************************************
+-*
+ON TABLE COLUMN-TOTAL
+ON PASSNGR_NAME SKIP-LINE
+ON PASSNGR_NAME SUMMARIZE AS 'TOTAL FOR'
+-*
+-******************************************************************
+-* Report specific footer(s)
+-******************************************************************
+-*
+FOOTING BOTTOM
+"&&FOOTER"
+"eTTek Review &DATE AT <NOWTOD <90 &&FOOTR"
+
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+
+
+END
+-RUN
+-*
+-TYPE After Report
+-GOTO XXIT;
+
+-SKIPTHIS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+
+-NORECORDS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>NO RECORDS FOUND FOR THIS SELECTION!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+
+
+-SKIPTHIS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+
+-XXIT
+

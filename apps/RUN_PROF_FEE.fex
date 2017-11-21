@@ -1,0 +1,15 @@
+-* 07/27/15 - DEB - S-10299 COMMENTED OUT SET &ECHO=ALL
+-*RUN_PROF_FEE.FEX
+-*-SET &ECHO=ALL;
+
+APP MAP PROFEE  D:\Lusheng
+APP PREPENDPATH PROFEE
+-RUN
+
+-*? PATH
+-*-RUN
+
+-*EX RebuildProfee
+-*-INCLUDE UpdHistoricalPFee
+-INCLUDE UpdHistoricalPFeeX
+-RUN

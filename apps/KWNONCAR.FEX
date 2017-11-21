@@ -1,0 +1,48 @@
+-* Kiewit Non Compliance Analysis
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+-SET &CARDATES = &&WEB_PATH || 'CARDATES.fex';
+
+DEFINE FILE &&EXTRACT
+  LEVEL_DESC/A60  = &&LDESC;
+  NBR_DAYS/D8CS=NUM_DAYS;
+  NEW_RENTAL_AMT/D12CS = RENTAL_AMT;
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT LEVEL_DESC
+      NBR_DAYS
+      NEW_RENTAL_AMT
+      CAR_CAT
+-INCLUDE &CARDATES    
+WHERE CAR_CAT NE 'ECONOMY' OR 'COMPACT' OR 'MIDSIZE' OR 'FULL SIZE' OR 'INTERMEDIATE'
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS CHOLD
+END
+-RUN
+
+TABLE FILE CHOLD
+SUM  NEW_RENTAL_AMT
+     NBR_DAYS
+BY LEVEL_DESC
+BY CAR_CAT
+ON TABLE HOLD AS KWCNONH
+END
+-RUN

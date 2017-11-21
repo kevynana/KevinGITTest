@@ -1,0 +1,120 @@
+-* JK added code to select only tnt_company eq 1 or 2 2/21/05
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED IN STEP3
+-*=======================================================================
+
+-SET &&EXTRACT = 'HR_50';
+
+
+DEFINE FILE &&EXTRACT
+  BOOKINGS/D8 = IF TOTAL_AMT GE 0 THEN 1 ELSE (-1);
+  CHAIN/A35 = CHAIN_CODE||(' '| CHAIN_NAME);
+  NBR_DAYS/D12 =  NUM_DAYS; 
+  NNROOMS/D12 = IF (NBR_DAYS LT 0) AND (NUM_ROOMS LT 0)
+                THEN ((NBR_DAYS*NUM_ROOMS)*(-1))
+                ELSE NBR_DAYS*NUM_ROOMS;
+  PERIOD/A1 = IF (INVOICE_DATE GE &&FROMDT.EVAL) AND (INVOICE_DATE LE &&TODT.EVAL) THEN 'Y' ELSE 'N';              
+                
+END
+
+TABLEF FILE &&EXTRACT
+PRINT BOOKINGS
+  CHAIN
+  CHAIN_CODE
+  NBR_DAYS
+  NNROOMS
+  PERIOD
+  ROOM_RATE 	
+  TOTAL_AMT 
+  CHAIN_GROUP
+  CHAIN_NAME
+WHERE (INVOICE_DATE GE &&FROMDT.EVAL) AND (INVOICE_DATE LE &&TODT.EVAL) OR
+      (INVOICE_DATE GE &&FXDATE.EVAL) AND (INVOICE_DATE LE &&TXDATE.EVAL)
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS TC_HOLD1A 
+
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+
+
+
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM STEP4 - HOLD TO FOCUS DATABASE TCTRNK       
+-*========================================================================
+
+DEFINE FILE TC_HOLD1A
+CBOOK/D8 = IF PERIOD EQ 'Y' THEN BOOKINGS ELSE 0;
+PBOOK/D8 = IF PERIOD EQ 'N' THEN BOOKINGS ELSE 0;
+CDAYS/D12 = IF PERIOD EQ 'Y' THEN NNROOMS ELSE 0;
+PDAYS/D12 = IF PERIOD EQ 'N' THEN NNROOMS ELSE 0;
+CAMT/D12.2CS = IF PERIOD EQ 'Y' THEN TOTAL_AMT ELSE 0;
+PAMT/D12.2CS = IF PERIOD EQ 'N' THEN TOTAL_AMT ELSE 0;
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TC_HOLD1A
+SUM CBOOK
+    PBOOK
+    CDAYS
+    PDAYS
+    CAMT
+    PAMT
+    CHAIN_GROUP
+    CHAIN_CODE
+    CHAIN_NAME
+BY ROLLCD
+BY CHAIN
+ON TABLE HOLD AS TCH1 
+END
+-RUN
+
+
+
+DEFINE FILE TCH1
+NMB/I5    = NMB + 1;
+END
+TABLE FILE TCH1
+SUM CBOOK
+    PBOOK
+    CDAYS
+    PDAYS
+    CAMT
+    PAMT
+    CHAIN_GROUP
+    CHAIN_CODE
+    CHAIN_NAME
+BY ROLLCD
+BY NMB
+BY CHAIN
+ON TABLE HOLD AS TCH2
+END
+-RUN
+
+
+
+MODIFY FILE TCHCHN
+FIXFORM FROM TCH2
+DATA ON TCH2
+END
+-RUN
+
+-NEXTONE

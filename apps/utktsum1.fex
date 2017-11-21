@@ -1,0 +1,242 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File TKTSUM.FEX
+-* 5/18/04 - DEB - ADDED AIRLINE_FEE COLUMN PER MONICA COLLIGAN
+-*10/08/04 - DV - CHANGED PROGRAM SO SETFILE WOULD PRODUCE REPORT
+-*                ADDED LEVEL1 LEVEL2 LEVEL3
+-*01/04/05 - DV - ADDED CODE FOR GLOBAL CURRENCY
+-*10/10/05 - DV - ADDED GEO_ZONE
+-**********************************************************************
+
+-**********************************************************************
+
+SET ASNAMES=ON
+
+
+-SET &&RPTSUF = 'DTL';
+-INCLUDE FDEFRPTS
+-RUN
+
+-SET &HLDPATH=TEMPPATH(50,'A50');
+-SET &HNKA=&HLDPATH || 'HOLDA.FOC';
+-SET &HNKC=&HLDPATH || 'HOLDC.FOC';
+-SET &HNKB=&HLDPATH || 'HOLDH.FOC';
+-RUN
+
+-SET &FILENAME = IF '&&AIRREC' EQ 'Y' THEN 'HOLDA' 
+-           ELSE IF '&&CARREC' EQ 'Y' THEN 'HOLDC'
+-           ELSE IF '&&HTLREC' EQ 'Y' THEN 'HOLDH' ELSE 'HOLDA';
+
+
+-DOS STATE &HNKA
+-SET &HOLDFILEA = IF &RETCODE.EVAL EQ 0 THEN &HNKA | ' AS ' | &FILENAME ELSE ' ';
+
+-DOS STATE &HNKC
+-SET &HOLDFILEC = IF &RETCODE.EVAL EQ 0 THEN &HNKC | ' AS ' | &FILENAME ELSE ' ';
+
+-DOS STATE &HNKB
+-SET &HOLDFILEH = IF &RETCODE.EVAL EQ 0 THEN &HNKB | ' AS ' | &FILENAME ELSE ' ';
+
+ 
+
+USE ADD 
+&HOLDFILEA
+&HOLDFILEC
+&HOLDFILEH
+END
+
+ 
+
+TABLE FILE HOLDA
+PRINT
+  AMOUNT
+  GAMOUNT
+  TTL_COUNT
+  FEE
+  FEEX
+  GEO_ZONE
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY PNR_LOCATOR
+BY TRAN_DATE
+BY TKT_NUM
+BY TSORT
+BY SEG
+BY TYPE
+BY NAME 
+BY DATE
+BY AIRT
+BY CITY1
+BY CITY2
+BY FLAG
+BY LEVEL1
+BY LEVEL2
+BY LEVEL3
+BY NAMEC
+BY TRIP_PURPOSE
+BY EXP_DEP1
+BY EXP_DEP2
+BY EXP_DEP3
+BY EXP_DEP4
+ON TABLE HOLD AS HOLDE 
+END
+-RUN
+
+
+-**************************************************************************
+DEFINE FILE HOLDE
+COUNT1/D12CS = IF (FLAG EQ 'A') THEN TTL_COUNT ELSE 0;
+COUNT2/D12CS = IF (FLAG EQ 'C') THEN TTL_COUNT ELSE 0;
+COUNT3/D12CS = IF (FLAG EQ 'H') THEN TTL_COUNT ELSE 0;
+AMT1/D12.2CS = IF (FLAG EQ 'A') THEN AMOUNT ELSE 0;
+AMT2/D12.2CS = IF (FLAG EQ 'C') THEN AMOUNT ELSE 0;
+AMT3/D12.2CS = IF (FLAG EQ 'H') THEN AMOUNT ELSE 0;
+FLAGA/A5 = DECODE FLAG ('A' 'AIR'   'C' 'CAR'  'H' 'HOTEL');                         
+XPSNGR_NM/A15        = 
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+TICKET_NMBR/A10 = IF (TKT_NUM EQ '0000000000') THEN ' ' ELSE
+                  TKT_NUM;
+ CUR_DESC/A95 = LEVEL_DESC||'-'||NAMEC;
+                 
+-*DEFINES ON PREVIOUS DEFINES 
+PASNGR_NAME/A15 = IF TKT_NUM NE LAST TKT_NUM THEN XPSNGR_NM ELSE ' ';
+LVL1/A15 = IF TKT_NUM NE LAST TKT_NUM THEN LEVEL1 ELSE ' ';
+TRAN_MYA/I6MTYY = TRAN_DATE;
+NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+END
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLDE';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+-SET &&SUBHEAD = <CUR_DESC;
+-SET &GFAR_CUR = 'AMOUNT, (' | &&CURRENCY || ')';
+-SET &GFEE_CUR = 'ARLN, FEE, (' | &&CURRENCY || ')';
+-SET &&PRINT3='CITY1/A20 AS ''ORG'' CITY2/A18 AS ''DST'' ';
+-SET &&PRINT4='GAMOUNT/D16.2CS AS ' | '''&GFAR_CUR.EVAL''';
+-SET &&PRINT5='FEEX/D16.2CS AS ' | '''&GFEE_CUR.EVAL''';
+-SET &&PRINT7='COUNT2 AS ''CAR,DAY'' ';
+
+-NEXT;
+
+ 
+
+
+TABLE FILE HOLDE
+-INCLUDE HEADACH
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+
+ 
+
+
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+  
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+
+-IF &&CURRENCY EQ 'TRL' THEN GOTO SMALLER;
+-INCLUDE &&DTSTY 
+-GOTO FINFONT;
+-SMALLER
+-INCLUDE DT7
+-FINFONT
+
+
+-* -INCLUDE &&DTSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+

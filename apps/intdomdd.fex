@@ -1,0 +1,199 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+SET ASNAMES=ON 
+SET ALL=OFF 
+-* File INTL_DOM.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS
+-*                                  USED IN FOOTERSM
+-*1/15/01      TANDT-SS             ADDED ADDITIONAL HOLD FILES TO ALLOW
+-*                                  RANKING TO WORK PROPERTY (HOLD4R, HOLD4,
+-*                                  HOLD4S and HOLD4S2)
+-*5/21/01      TANDT-SS               ADDED DEFINE TO NORECORDS SO MESSAGE
+-*                                    "NO RECORDS FOUNDS FOR THIS SELECTION"
+-*                                    WILL APPEAR IN EXCEL 97
+-*10/26/01     TANDT-DB             ADDED DEFINE TO SORT BY CP_EMB AND CP_RTE
+-*4/30/02      TANDT-JK             COMMENTED OUT THE USE OF CPCOVPG
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*6/7/04     DEB                ADDED CODE FOR MULTIPLE AIRLINE SELECTIONS
+-*8/30/04    DEB                ADDED CODE FOR AMERICA WEST KOHPMS MKT SHARE
+-*10/5/04    DEB                CHANGED CODE FOR KOHPMS FTP
+-*3/15/05    DEB                ADDED CODE FOR DUAL DATE MKT SHR BY DPT DATE
+-*4/21/05    DEB                NN TO REMOVE CODE THAT SETS &&CTYPR AFTER
+-*                              RPT_FLDS DATABASE IS EXPANDED
+-*5/9/13     jk                 Changed the header to include travel date
+-*2/13/14    DEB             CHANGED DEFINES IN HOLD1 DUE TO REPORT ERRING OUT
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*  01/25/2016  REJ  S-13210 ER5 changes so the selection criteria would show on the subfoot page.
+-*03/13/17 - DLV - S-22486 - updated ettek Review to Post-trip Reporting
+-*4/24/2017-JEM-S-33318-updated logic for no records report
+-* 06/23/2017 - DLV - S-35283 PRISM reports - make drillable to details
+-**********************************************************************
+
+-INCLUDE SETECHO
+ 
+-DEFAULT &FPARM = ' ';
+-DEFAULT &&OVERDRILL=' ';
+
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+-RUN
+ 
+-IF &&DRILLED_RUN EQ 'Y' GOTO SkipSaveBDBs;
+-INCLUDE SETPARMTIME
+-RUN
+-INCLUDE SetBDBsForDrill
+-RUN
+-SkipSaveBDBs
+ 
+-IF '&&DRILLED_RUN.EVAL' EQ 'N' GOTO SKIP_OLINE1;
+ 
+-SET &&OUTLINE1 = 'ON TABLE SET ONLINE-FMT';
+-SET &&OUTLINE2 = IF '&&OUTLINE2.EVAL' CONTAINS 'PDF' THEN 'PDF' ELSE
+-          IF '&&OUTLINE2.EVAL' CONTAINS 'EXCEL' THEN 'EXCEL' ELSE
+-          IF '&&OUTLINE2.EVAL' CONTAINS 'EXL2K' THEN 'EXL2K' ELSE 'PDF';
+-SKIP_OLINE1
+ 
+
+ 
+-TYPE &&OUTPUTDEST
+-IF &&OUTLINE2 EQ 'OFFLINE' THEN GOTO XOFFLINE ELSE GOTO XONLINE;
+ 
+-XONLINE
+-TYPE Before ONLINE
+ONLINE
+-TYPE After ONLINE
+-RUN
+-GOTO CONT
+ 
+-XOFFLINE
+-SET &&OUTLINE2 = '';
+-TYPE Before OFFLINE
+OFFLINE
+-TYPE After OFFLINE
+-RUN
+-GOTO CONT
+ 
+-CONT
+-SET &&RPT_HOLD = 'RPTHOLD';
+
+-SET &&DRILLSTREAM = 'Y';
+ 
+-SET &&DRILLABLE = IF (&&SUMFLAG EQ 'Y') AND
+- (&&OUTLINE2 CONTAINS 'PDF' OR 'EXL2K')
+- THEN 'Y' ELSE 'N';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-INCLUDE SELCATQT
+-RUN
+ 
+EX &&CATQTRPR
+-RUN
+ 
+-*-INCLUDE SETPARMTIME
+-*-RUN
+ 
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+ 
+ 
+EX AIRUSE
+-RUN
+
+-*********** ?????????????????? 
+-*EX SELDESC2
+-*-RUN
+-*-*********** ?????????????????? 
+
+ 
+
+EX &&EXPARM
+-RUN
+ 
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW=&&EXPARM;
+-INCLUDE ERRORCHK
+-IF &&RET GT 1 GOTO XXIT;
+-* REJ ADDED TO TRAP ERRORS
+ 
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+ 
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF0;
+-*-INCLUDE OTHPARMS
+-INCLUDE AVRP_SUBFOOT
+-:AVSF0
+ 
+ 
+
+
+-IF &&DRILLABLE EQ 'Y' AND &&DRILLED_RUN EQ 'N' GOTO EX_DRILLRPT;
+-IF &&DRILLABLE EQ 'Y' AND &&DRILLED_RUN EQ 'Y' GOTO EX_DRILRPT2;
+ 
+-TYPE Before Report2
+
+EX REPORT_2
+-RUN
+ 
+-TYPE After Report2
+ 
+-GOTO XXIT
+ 
+-EX_DRILLRPT
+ 
+-TYPE Before Drill Report
+EX DRILLRPT
+-RUN
+
+ 
+-TYPE DRILLRPT
+ 
+-EX_DRILRPT2
+ 
+-TYPE Before Drill Report2
+ 
+EX DRILRPT2
+-RUN
+
+
+ 
+
+-TYPE DRILLRPT2
+ 
+-TYPE After Drill Report2
+  
+-GOTO XXIT
+ 
+-NORECORDS
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF2;
+-INCLUDE OTHPARMS
+-INCLUDE AVRP_SUBFOOT
+-:AVSF2
+
+-INCLUDE NORECRPT
+-RUN
+
+ 
+-XXIT

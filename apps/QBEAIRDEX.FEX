@@ -1,0 +1,258 @@
+
+-INCLUDE SETECHO
+
+-*06/06/2017-JEM-S-34232-Creation for new report QBECBCFP
+
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+
+DEFINE FILE &&EXTRACT
+
+AIR_VOL/D12.2 = SEG_AMT + SEG_TAX ;
+
+
+
+
+CLS_CAT1/A1 = IF TKT_CL_CAT EQ 'F' THEN 'F' ELSE
+             IF TKT_CL_CAT EQ 'U' THEN 'U' ELSE
+             IF TKT_CL_CAT EQ 'B' THEN 'B' ELSE
+             IF TKT_CL_CAT EQ 'P' THEN 'P' ELSE 'E';
+             
+CLS_CAT/A1 = IF CLS_CAT1 EQ 'U' AND FARE_BASE_CODE CONTAINS 'F' THEN 'F' ELSE
+             IF CLS_CAT1 EQ 'U' AND FARE_BASE_CODE CONTAINS 'B' THEN 'B' ELSE
+             IF CLS_CAT1 EQ 'U' AND FARE_BASE_CODE CONTAINS 'P' THEN 'P' ELSE 
+             IF CLS_CAT1 EQ 'U' THEN 'E' ELSE CLS_CAT1;
+             
+             
+-*             IF TKT_CL_CAT EQ 'E' THEN 'E' ELSE 'D';
+-* FARE_BAS1/A1 = EDIT(FARE_BAS, '9');
+
+-* FLAG/A10 = IF AT_FLAG EQ 'A' THEN 'Air' ELSE 'Train';
+
+IDOM/A15 = IF AIR_MAIN.INTL_DOM EQ 'D' THEN 'Domestic' ELSE 'International';
+
+LEVEL_DESC/A60 = &&LDESC;
+
+NET_TKTS/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (AIR_VOL GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+                            
+SEG_MILES1/D12 = IF MILES LT 0 THEN MILES * -1 ELSE MILES;
+TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                       IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                       IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                       IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';                          
+XDPT_DT/MDYY         = DPT_DATE;
+XTRAN_DT/MDYY        = TRN_DATE;
+
+                          
+                          
+-* DEFINES ON PREVIOUS DEFINES
+
+CLASS_CAT/A15 = DECODE CLS_CAT ('F' 'First'     'P' 'Premium Economy'   
+			        'B' 'Business'
+			        'E' 'Economy');
+			        
+HAUL_DESC/A15 = IF (SEG_MILES EQ 0) THEN ' ' ELSE
+                IF (SEG_MILES1 GT 0) AND (SEG_MILES1 LE 999) THEN 'Short Haul' ELSE 'Long Haul';
+
+MILES/D12S = SEG_MILES;
+SEGS/D12S = SEG_COUNT;
+
+
+
+
+-* Defines on Previous                           
+
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT AIRLINE
+      AIR_VOL
+      ARR_TIME
+      CLASS_CAT  
+      CITYPAIR.EMBARK      AS 'EMB_APT_CD' 
+      DPT_TIME
+      EMP_ID      
+      EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'
+      FARE_BASE_CODE
+      FLIGHT
+      HAUL_DESC
+      IDOM
+      MILES
+      LEVEL_DESC
+      NET_TKTS
+      PASSNGR_NAME
+      CITYPAIR.ROUTE       AS 'RTE_APT_CD'      
+      RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'   
+      SEGS
+      TKT_NUM
+      TKT_SORT
+      TKT_TYPE
+      TRN_DATE
+      SEG_NBR
+      XDPT_DT
+      XTRAN_DT  
+ WHERE VOID_DATE EQ 0
+-INCLUDE &AIRDATES
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RHOLD
+END
+-RUN
+
+
+TABLE FILE RHOLD
+SUM AIR_VOL AS 'TFARE'
+    MILES AS 'TMILE'
+    NET_TKTS AS 'TTKT'
+    SEGS AS 'TSEG'
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS RHOLDT
+END
+-RUN
+
+TABLE FILE RHOLD
+PRINT AIRLINE
+      AIR_VOL
+      ARR_TIME
+      CLASS_CAT
+      DPT_TIME
+      EMP_ID
+      EMB_APT_CD
+      EMB_APT_NM
+      FARE_BASE_CODE
+      FLIGHT
+      HAUL_DESC
+      IDOM
+      MILES
+      NET_TKTS
+      PASSNGR_NAME
+      RTE_APT_CD
+      RTE_APT_NM
+      SEGS
+      SEG_NBR
+      TKT_NUM
+      TKT_TYPE
+      TRN_DATE
+      XDPT_DT
+      XTRAN_DT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS RHOLD1
+END
+-RUN
+
+
+
+MATCH FILE RHOLD1
+PRINT AIRLINE
+      AIR_VOL
+      ARR_TIME
+      CLASS_CAT
+      DPT_TIME
+      EMP_ID
+      EMB_APT_CD
+      EMB_APT_NM
+      FLIGHT
+      HAUL_DESC
+      IDOM
+      MILES
+      NET_TKTS
+      PASSNGR_NAME
+      RTE_APT_CD
+      RTE_APT_NM
+      SEGS
+      SEG_NBR
+      TKT_NUM
+      TKT_TYPE
+      TRN_DATE
+      XDPT_DT
+      XTRAN_DT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD 
+RUN
+FILE RHOLDT
+SUM TFARE
+      TMILE
+      TSEG
+      TTKT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS RHOLD2 OLD-OR-NEW
+END
+-RUN
+
+
+
+TABLE FILE RHOLD2
+PRINT AIRLINE
+      AIR_VOL
+      ARR_TIME
+      CLASS_CAT
+      DPT_TIME
+      EMP_ID
+      EMB_APT_CD
+      EMB_APT_NM
+      FLIGHT
+      HAUL_DESC
+      IDOM
+      LEVEL_DESC
+      MILES
+      NET_TKTS
+      PASSNGR_NAME
+      RTE_APT_CD
+      RTE_APT_NM
+      SEGS
+      SEG_NBR
+      TFARE
+      TMILE
+      TKT_NUM
+      TKT_TYPE
+      TMILE
+      TRN_DATE
+      TSEG
+      TTKT
+      XDPT_DT
+      XTRAN_DT
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS RHOLD3
+END
+-RUN
+
+
+
+
+
+
+
+

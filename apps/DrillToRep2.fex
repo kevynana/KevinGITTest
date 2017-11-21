@@ -1,0 +1,50 @@
+-* File DrillToRep.fex
+SET ASNAMES=ON
+-*SET TEMPERASE = OFF
+JOIN AIR_KEY IN AYMETX TO ALL AIR_KEY IN SYMETX AS J1
+END
+DEFINE FILE AYMETX
+FARE_PAID/D12.2 = SEG_AMT + SEG_TAX;
+TYPE/A12 = IF DOD_TYPE EQ 'I' THEN 'ONLINE' 
+           ELSE 'TRADITIONAL';
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+END
+
+TABLE FILE AYMETX
+SUM REFUSE_CODE AS 'REASON,CODE' FARE_PAID AS 'FARE PAID'
+NET_TKT_CNT AS 'TICKETS'
+BY TYPE
+BY REFUSE_CODE NOPRINT
+WHERE TYPE EQ '&TYPE';
+ON TABLE COLUMN-TOTAL
+ON TABLE PCHOLD FORMAT PDF
+ON TABLE SET STYLE *
+     UNITS=IN,
+     PAGESIZE='Letter',
+     LEFTMARGIN=0.250000,
+     RIGHTMARGIN=0.250000,
+     TOPMARGIN=0.250000,
+     BOTTOMMARGIN=0.250000,
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+$
+TYPE=DATA,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+     COLOR='BLACK',
+     BACKCOLOR='NONE',
+     STYLE=NORMAL,
+$
+ENDSTYLE
+END

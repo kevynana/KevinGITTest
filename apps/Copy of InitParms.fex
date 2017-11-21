@@ -1,0 +1,57 @@
+-****************************************************************
+-* These global variables are used to set screening conditions
+-* which are entered from the GUI by the user.
+-*
+-* from 500 to 512, reserved for id-levels
+-* from 513 to 519, reserved for radio buttons and check boxes
+-* from 520 to 529, reserved for passenger names 
+-* from 530 to 539, reserved for ticket numbers 
+-* also for rental rate of car reports
+-* from 540 to 546, reserved for other codes
+-*610-634:CLIENT/CAT 635-659:HIERARCHY/ROLLUP 670-679:BRANCH/REGION
+-* from 300 to 399, reserved for UDID
+-* 700 reserved for DOD_TYPE
+-* FROM 701 to 710, reserved for Region(701,702), Country(703-706)
+-* and State(707-710).
+-* 706: original airport; 707: destination airport
+-****************************************************************
+-SET &&RANK_METH = ' ';
+
+-SET &CNT = 0;
+-REPEAT InitEnd1 10 TIMES
+-SET &WHERE50.&CNT = '';
+-SET &CNT = &CNT + 1;
+-InitEnd1
+
+-SET &CNT = 10;
+-REPEAT InitEnd2 40 TIMES
+-SET &WHERE5.&CNT = '';
+-SET &CNT = &CNT + 1;
+-InitEnd2
+
+-SET &WHERE540A = '';
+-SET &WHERE541A = '';
+-SET &WHERE542A = '';
+-SET &WHERE543A = '';
+-SET &WHERE544A = '';
+-SET &WHERE545A = '';
+-SET &WHERE546A = '';
+-SET &WHERE547A = '';
+
+-SET &CNT = 10;
+-REPEAT InitEnd3 70 TIMES
+-SET &WHERE6.&CNT = '';
+-SET &CNT = &CNT + 1;
+-InitEnd3
+
+-SET &CNT = 600;
+-REPEAT InitEnd4 99 TIMES
+-SET &WHERE.&CNT = '';
+-SET &CNT = &CNT + 1;
+-InitEnd4
+
+-SET &CNT = 700;
+-REPEAT InitEnd5 12 TIMES
+-SET &WHERE.&CNT = '';
+-SET &CNT = &CNT + 1;
+-InitEnd5

@@ -1,0 +1,24 @@
+-* 08/01/2017 RSB S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*
+-*
+-* FTR_DateTimePosit sets the position of the Post-trip date/time stamp text within the footer image.
+-* The default line number (&FTR_DateTimeLine) in the FOOTING for the date/time stamp text is: 4.
+-INCLUDE FTR_DateTimePosit
+-*
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.100000, RIGHTMARGIN=0.030000, 
+    TOPMARGIN=0.300000, BOTTOMMARGIN=0.050000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT='ARIAL', SIZE=8, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=HEADING, SIZE=8, FONT='ARIAL',STYLE=BOLD, COLOR=RGB(0 0 0), $
+
+TYPE=DATA,BACKCOLOR=RGB(216 232 255), WHEN=REMAINDER NE 0,$
+
+TYPE=FOOTING, SIZE=7, FONT='ARIAL', COLOR=RGB(70 136 177), $
+TYPE=TABFOOTING, SIZE=7, FONT='ARIAL', COLOR=RGB(70 136 177),$
+TYPE=TITLE, STYLE=BOLD, $
+TYPE=SUBFOOT, SIZE=8, STYLE=BOLD, $
+TYPE=SUBTOTAL, SIZE=8, STYLE=BOLD, $
+TYPE=GRANDTOTAL, SIZE=8, STYLE=BOLD, $
+-*
+TYPE=FOOTING, LINE=&FTR_DateTimeLine, STYLE=BOLD,POSITION=(&FTR_DatePosit),$ 
+-*

@@ -1,0 +1,922 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Created for the new quarterly review - JK 8/2/05
+
+-***************************-*1/29/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+***************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+-SET &POS0=0;
+-SET &INC = 69;
+-SET &INC1 = 11;
+-SET &POS1T = &POS0 + 1 * &INC;
+-SET &POS1T1 = &POS0 + 1 * &INC1;
+
+-SET &POS1 = &POS1T + 0;
+-SET &POS2 = &POS1T + 6;
+-SET &POS3 = &POS1T + 12;
+-SET &POS4 = &POS1T + 18;
+-SET &POS5 = &POS1T + 24;
+-SET &POS6 = &POS1T + 30;
+-SET &POS7 = &POS1T + 36;
+-SET &POS8 = &POS1T + 42;
+
+-SET &POS1A = &POS1 - 1;
+-SET &POS2A = &POS2 - 1;
+-SET &POS3A = &POS3 - 1;
+-SET &POS4A = &POS4 - 1;
+-SET &POS5A = &POS5 - 1;
+-SET &POS6A = &POS6 - 1;
+-SET &POS7A = &POS7 - 1;
+-SET &POS8A = &POS8 - 1;
+
+-SET &POSA1 = &POS1T1 + 0;
+-SET &POSA2 = &POS1T1 + 6;
+-SET &POSA3 = &POS1T1 + 12;
+-SET &POSA4 = &POS1T1 + 18;
+-SET &POSA5 = &POS1T1 + 24;
+-SET &POSA6 = &POS1T1 + 30;
+-SET &POSA7 = &POS1T1 + 36;
+-SET &POSA8 = &POS1T1 + 42;
+-SET &POSA9 = &POS1T1 + 48;
+
+-SET &POS1AA = &POSA1 - 1;
+-SET &POS2AA = &POSA2 - 1;
+-SET &POS3AA = &POSA3 - 1;
+-SET &POS4AA = &POSA4 - 1;
+-SET &POS5AA = &POSA5 - 1;
+-SET &POS6AA = &POSA6 - 1;
+-SET &POS7AA = &POSA7 - 1;
+-SET &POS8AA = &POSA8 - 1;
+-SET &POS9AA = &POSA9 - 1;
+
+-***************************************************
+-* generate include file for database allocation
+-***************************************************
+DEFINE FILE SR_50
+  FARE_PAID/D12 = SEG_AMT + SEG_TAX;
+  NET_TKT_CNT/D12  =   IF (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) THEN 1 ELSE 
+                        IF (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') AND (SEG_COUNT EQ -1)
+			   THEN (-1) ELSE 
+                        IF (DOC_TYPE NE '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') AND
+			   (SEG_COUNT EQ -1)
+			   THEN (-1) ELSE 0;
+TKT_PURCH/D8CS      =   IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+
+-INCLUDE QRFTRANA
+-* Defines on Previous Defines
+  DISSAVINGS/D12 = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+ ONL_T/D12 = IF (ONLINE_TRADITIONAL EQ 'ONLINE') THEN NET_TKT_CNT ELSE 0;
+ ADV_T/D12 = IF ADV_PURCH LE 13 THEN NET_TKT_CNT ELSE 0;
+  VASAVINGS/D12 = SEG_DISCOUNT - FARE_PAID;
+-* Defines on Previously Defined Defines
+ 
+END
+-RUN
+
+TABLEF FILE SR_50
+PRINT ADV_T
+  AIR_MAIN.INTL_DOM AS 'INTL_DOM'
+  DISSAVINGS
+  DOC_TYPE	
+  DOD_TYPE
+  DPT_DATE	
+  EMBARK	
+  EX_FLAG	
+  EXCHG_SALE
+  FARE_PAID	
+  NET_TKT_CNT
+  NONREF_FLAG
+  ONL_T
+  REFUSE_CODE
+  ROLLUP_CODE
+  RF_FLAG
+  SEG_AMT	
+  SEG_COM	
+  SEG_COUNT
+  SEG_NBR 	
+  SEG_TAX 
+  TKT_NUM
+  TKT_PURCH	
+  TRN_DATE
+  VASAVINGS
+  VOID_DATE 	
+  VOID_STATUS 
+  YEAR	
+  TRAN
+
+WHERE (TRN_DATE GE '&&FROMDT.EVAL') AND (TRN_DATE LE '&&TODT.EVAL') OR
+      (TRN_DATE GE '&&FXDATE.EVAL') AND (TRN_DATE LE '&&TXDATE.EVAL')
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RPTH
+END
+-RUN
+
+
+DEFINE FILE RPTH
+DOMNT/D12 = IF INTL_DOM EQ 'D' THEN NET_TKT_CNT ELSE 0;
+DOMFP/D12 = IF INTL_DOM EQ 'D' THEN FARE_PAID ELSE 0;
+ONL_TKTS/D12 = IF INTL_DOM EQ 'D' THEN ONL_T ELSE 0;
+NR_TKTS/D12 = IF NONREF_FLAG EQ 'N' THEN NET_TKT_CNT ELSE 0; 
+END
+
+-* Report Data
+TABLE FILE RPTH
+SUM ADV_T
+    DOMFP
+    DOMNT
+    FARE_PAID
+    NET_TKT_CNT
+    NR_TKTS
+    ONL_TKTS   
+BY YEAR
+BY TRAN
+ON TABLE HOLD AS RPTH1
+END
+-RUN
+
+TABLE FILE RPTH1
+SUM 
+COMPUTE DATP/D6M = IF ((DOMNT LT 1) AND (DOMNT GT (-1))) THEN 0 ELSE
+                     (DOMFP/DOMNT);
+        TATP/D6M = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                     (FARE_PAID/NET_TKT_CNT);
+        ONLP/D6 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                  IF ((ONL_TKTS LT 1) AND (ONL_TKTS GT (-1))) THEN 0 ELSE
+                  IF (ONL_TKT LE 0) THEN 0 ELSE
+                     ((ONL_TKTS/NET_TKT_CNT)*100);
+        NRP/D6 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                     ((NR_TKTS/NET_TKT_CNT)*100);
+        APP/D6 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                    ((ADV_T/NET_TKT_CNT)*100);
+BY TRAN
+ON TABLE HOLD AS RPTH2
+END
+-RUN
+
+TABLE FILE RPTH2
+PRINT DATP
+      TATP
+      ONLP
+      NRP
+      APP
+BY TRAN
+ON TABLE SAVE AS ATP FORMAT ALPHA
+END
+-RUN
+
+
+-IF &&SKIPGRAPH EQ 'Y' THEN GOTO AROUNDG;
+-*GOTO AROUNDG
+
+-*  ATP, Online %, NonRefundable %, Advanced Purchase % Graph
+DEFINE FILE RPTH
+DOMNT/D12 = IF INTL_DOM EQ 'D' THEN NET_TKT_CNT ELSE 0;
+DOMFP/D12 = IF INTL_DOM EQ 'D' THEN FARE_PAID ELSE 0;
+ONL_TKTS/D12 = IF INTL_DOM EQ 'D' THEN ONL_T ELSE 0;
+NR_TKTS/D12 = IF NONREF_FLAG EQ 'N' THEN NET_TKT_CNT ELSE 0;       
+END
+
+TABLE FILE RPTH
+SUM DOMNT DOMFP FARE_PAID NET_TKT_CNT ONL_TKTS NR_TKTS ADV_T
+BY YEAR
+BY TRAN
+ON TABLE HOLD AS FIRST
+END
+-RUN
+
+TABLE FILE FIRST
+SUM 
+COMPUTE DATP/D12 = IF ((DOMNT LT 1) AND (DOMNT GT (-1))) THEN 0 ELSE
+                      (DOMFP/DOMNT);
+        TATP/D12 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                      (FARE_PAID/NET_TKT_CNT);
+        ONLP/D6 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                     ((ONL_TKTS/NET_TKT_CNT)*100);
+        NRP/D6 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                     ((NR_TKTS/NET_TKT_CNT)*100);
+        APP/D6 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                    ((ADV_T/NET_TKT_CNT)*100);
+BY YEAR BY TRAN
+ON TABLE HOLD AS DGHOLD
+END
+-RUN
+
+
+GRAPH FILE DGHOLD
+SUM DATP AS 'Domestic ATP'
+    TATP AS 'Total ATP'
+    ONLP AS '% Domestic Online'
+    NRP AS '% Non-Refundable'
+    APP AS '% 0-13 Adv Purch'
+ACROSS TRAN AS ' '
+ON GRAPH SET LOOKGRAPH VBAR2AX
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET GRAPHSTYLE *
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(1, new Color, 145 207 255));
+setSeriesFillColor(2, new Color, 125 0 0));
+setSeriesFillColor(3, new Color, 160 0 181));
+setSeriesFillColor(4, new Color, 255 255 128));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setSeriesType(2,2);
+setSeriesType(3,2);
+setSeriesType(4,2);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setY2MajorGridDisplay(false);
+setY2MinorGridDisplay(false);
+setO1LabelRotate(0);
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(2);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setLegendPosition(1);
+setLegendTextAutofix(true);
+setLegendMarkersPerRow(3);
+setTitleString("Average Ticket Price (ATP), Domestic Online %");
+setSubtitleString("Nonrefundable % and Advanced Purchase %");
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setY2LabelDisplay(true);
+setY2LabelFormat(6);
+setY1AxisSide(0);
+setY2AxisSide(1);
+setFontSizeAbsolute(getTitle(),false); 
+setAutofit(getTitle(),true);
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),1);
+setFontSize(getTitle(),10);
+setFontSizeAbsolute(getSubtitle(),true); 
+setAutofit(getSubtitle(),false);
+setTextJustHoriz(getSubtitle(),1);
+setFontStyle(getSubtitle(),1);
+setFontSize(getSubtitle(),20);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH HOLD AS TDG1 FORMAT SVG
+END
+-RUN
+
+-SET &&G_TDG1=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+ -RUN
+
+-AROUNDG
+
+-SET &&G_TDG1='N';
+-RUN
+
+
+-SET &Q1 = ' ';
+-SET &Q2 = ' ';
+-SET &Q3 = ' ';
+-SET &Q4 = ' ';
+-SET &Q5 = ' ';
+-SET &Q6 = ' ';
+-SET &Q7 = ' ';
+-SET &Q8 = ' ';
+-SET &TD1 = ' ';
+-SET &TD2 = ' ';
+-SET &TD3 = ' ';
+-SET &TD4 = ' ';
+-SET &TD5 = ' ';
+-SET &TD6 = ' ';
+-SET &TD7 = ' ';
+-SET &TD8 = ' ';
+-SET &DATP1 = ' ';
+-SET &DATP2 = ' ';
+-SET &DATP3 = ' ';
+-SET &DATP4 = ' ';
+-SET &DATP5 = ' ';
+-SET &DATP6 = ' ';
+-SET &DATP7 = ' ';
+-SET &DATP8 = ' ';
+-SET &TATP1 = ' ';
+-SET &TATP2 = ' ';
+-SET &TATP3 = ' ';
+-SET &TATP4 = ' ';
+-SET &TATP5 = ' ';
+-SET &TATP6 = ' ';
+-SET &TATP7 = ' ';
+-SET &TATP8 = ' ';
+-SET &ONLP1 = ' ';
+-SET &ONLP2 = ' ';
+-SET &ONLP3 = ' ';
+-SET &ONLP4 = ' ';
+-SET &ONLP5 = ' ';
+-SET &ONLP6 = ' ';
+-SET &ONLP7 = ' ';
+-SET &ONLP8 = ' ';
+-SET &NRP1 = ' ';
+-SET &NRP2 = ' ';
+-SET &NRP3 = ' ';
+-SET &NRP4 = ' ';
+-SET &NRP5 = ' ';
+-SET &NRP6 = ' ';
+-SET &NRP7 = ' ';
+-SET &NRP8 = ' ';
+-SET &APP1 = ' ';
+-SET &APP2 = ' ';
+-SET &APP3 = ' ';
+-SET &APP4 = ' ';
+-SET &APP5 = ' ';
+-SET &APP6 = ' ';
+-SET &APP7 = ' ';
+-SET &APP8 = ' ';
+
+
+-SET &CNT = 0;
+-REPEAT TOEND &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ ATP NOCLOSE &TD.&CNT.7. &DATP.6. &TATP.6. &ONLP.6. &NRP.6. &APP.6.
+
+EX FMTNUMBER VALUE=&DATP;
+-RUN
+-SET &DATP.&CNT = &&RETVAL;
+
+EX FMTNUMBER VALUE=&TATP;
+-RUN
+-SET &TATP.&CNT = &&RETVAL;
+
+EX FMTNUMBER VALUE=&ONLP;
+-RUN
+-SET &ONLP.&CNT = &&RETVAL;
+
+EX FMTNUMBER VALUE=&NRP;
+-RUN
+-SET &NRP.&CNT = &&RETVAL;
+
+EX FMTNUMBER VALUE=&APP;
+-RUN
+-SET &APP.&CNT = &&RETVAL;
+
+-*-SET &DATP.&CNT = FTOA(&DATP, '(D6M)', 'A8');
+-*-SET &TATP.&CNT = FTOA(&TATP, '(D6M)', 'A8');
+-*-SET &ONLP.&CNT = FTOA(&ONLP, '(D6)', 'A8');
+-*-SET &NRP.&CNT = FTOA(&NRP, '(D6)', 'A8');
+-*-SET &APP.&CNT = FTOA(&APP, '(D6)', 'A8');
+
+-TOEND 
+-CLOSE ATP
+
+
+-* Peer Group Sets
+-SET &PCPMQ1 = ' ';
+-SET &PCPMQ2 = ' ';
+-SET &PCPMQ3 = ' ';
+-SET &PCPMQ4 = ' ';
+-SET &PCPMQ5 = ' ';
+-SET &PCPMQ6 = ' ';
+-SET &PCPMQ7 = ' ';
+-SET &PCPMQ8 = ' ';
+-SET &YR1 = ' ';
+-SET &YR2 = ' ';
+-* BaseRoll Sets
+-SET &BCPMQ1 = ' ';
+-SET &BCPMQ2 = ' ';
+-SET &BCPMQ3 = ' ';
+-SET &BCPMQ4 = ' ';
+-SET &BCPMQ5 = ' ';
+-SET &BCPMQ6 = ' ';
+-SET &BCPMQ7 = ' ';
+-SET &BCPMQ8 = ' ';
+-SET &YR1 = ' ';
+-SET &YR2 = ' ';
+
+-******************************* lusheng *****************************************
+-*Retrieve Base Rollup CPM
+-SET &BCPML1 = ' '; 
+-SET &BCPML2 = ' '; 
+-SET &PCPML1 = ' '; 
+-SET &PCPML2 = ' '; 
+
+DEFINE FILE QRTRND2
+  ROLL/A15 = IF ROLLUP_CODE EQ '&&BASEROLL.EVAL' THEN 'Cost Per Mile' 
+    ELSE 'Peer Group CPM';
+END
+
+TABLE FILE QRTRND2
+SUM FARE_PAID
+    NEW_SEG_MILES
+COMPUTE CPM/D6.2 = IF ((NEW_SEG_MILES LT 1) AND (NEW_SEG_MILES GT (-1))) THEN 0 ELSE
+                       (FARE_PAID/NEW_SEG_MILES);
+BY ROLL
+BY YEAR
+BY TRAN
+ON TABLE HOLD AS PBHOLD1
+END
+-RUN
+
+TABLE FILE PBHOLD1
+SUM CPM
+BY ROLL
+BY YEAR 
+BY TRAN
+-* WHERE ROLLUP_CODE EQ '&&BASEROLL.EVAL'
+WHERE ROLL EQ 'Cost Per Mile'
+ON TABLE SAVE AS BCPMSAVE
+END
+-RUN
+
+-SET &CNT = 1;
+-REPEAT BCPMEND &LINES TIMES
+-READ BCPMSAVE NOCLOSE &ROLL.15. &YEAR.4. &TRAN.7. &CPM.6.
+-SET &ROLL1 = &ROLL;
+-SET &YEAR.&CNT = &YEAR;
+-SET &TD.&CNT = &TRAN;
+-SET &BCPMQ.&CNT = &CPM;
+-SET &CNT = &CNT + 1;
+-BCPMEND
+-CLOSE BCPMSAVE
+
+-*Retrieve Peer Group CPM
+TABLE FILE PBHOLD1
+SUM CPM
+BY ROLL
+BY YEAR 
+BY TRAN
+-* WHERE ROLLUP_CODE NE '&&BASEROLL.EVAL'
+WHERE ROLL EQ 'Peer Group CPM'
+ON TABLE SAVE AS PCPMSAVE
+END
+-RUN
+
+-SET &CNT = 1;
+-REPEAT PCPMEND &LINES TIMES
+-READ PCPMSAVE NOCLOSE &ROLL.15. &YEAR.4. &TRAN.7. &CPM.6.
+-SET &ROLL2 = &ROLL;
+-SET &YEAR.&CNT = &YEAR;
+-SET &TD.&CNT = &TRAN;
+-SET &PCPMQ.&CNT = &CPM;
+-SET &CNT = &CNT + 1;
+-PCPMEND
+-CLOSE PCPMSAVE
+
+-*Calculate CPM variations for base rollup YTD
+TABLE FILE PBHOLD1
+SUM CPM
+BY YEAR 
+-* WHERE ROLLUP_CODE EQ '&&BASEROLL.EVAL'
+WHERE ROLL EQ 'Cost Per Mile'
+ON TABLE SAVE AS BCPMVY
+END
+-RUN
+
+-*No historical data
+-IF &LINES LT 2 THEN GOTO ENDCPMCMT;
+
+-SET &CNT = 0;
+-REPEAT BCPMVYEND &LINES TIMES
+-READ BCPMVY NOCLOSE &X.4. &CPM.6.
+-SET &CNT = &CNT + 1;
+-SET &B1CPM.&CNT = &CPM;
+-BCPMVYEND
+
+-*Calculate CPM variations for base rollup Last Q over Last Q
+TABLE FILE PBHOLD1
+SUM LST.TRAN LST.CPM
+BY YEAR 
+-* WHERE ROLLUP_CODE EQ '&&BASEROLL.EVAL'
+WHERE ROLL EQ 'Cost Per Mile'
+ON TABLE SAVE AS BCPMV
+END
+-RUN
+
+-SET &CNT = 0;
+-REPEAT BCPMVEND &LINES TIMES
+-READ BCPMV NOCLOSE &X.4. &TRAN.7. &CPM.6.
+-SET &CNT = &CNT + 1;
+-SET &B2CPM.&CNT = &CPM;
+-SET &TRAN.&CNT = &TRAN;
+-BCPMVEND
+
+-*Calculate CPM variations for Peer Group YTD
+TABLE FILE PBHOLD1
+SUM CPM
+BY YEAR 
+-* WHERE ROLLUP_CODE NE '&&BASEROLL.EVAL'
+WHERE ROLL EQ 'Peer Group CPM'
+ON TABLE SAVE AS BCPMVY
+END
+-RUN
+
+-SET &CNT = 0;
+-REPEAT PCPMVYEND &LINES TIMES
+-READ BCPMVY NOCLOSE &X.4. &CPM.6.
+-SET &CNT = &CNT + 1;
+-SET &P1CPM.&CNT = &CPM;
+-PCPMVYEND
+
+-*Calculate CPM variations for Peer Group Last Q over Last Q
+TABLE FILE PBHOLD1
+SUM LST.TRAN LST.CPM
+BY YEAR 
+-* WHERE ROLLUP_CODE NE '&&BASEROLL.EVAL'
+WHERE ROLL EQ 'Peer Group CPM'
+ON TABLE SAVE AS BCPMV
+END
+-RUN
+
+-SET &CNT = 0;
+-REPEAT PCPMVEND &LINES TIMES
+-READ BCPMV NOCLOSE &X.4. &TRAN.7. &CPM.6.
+-SET &CNT = &CNT + 1;
+-SET &P2CPM.&CNT = &CPM;
+-PCPMVEND
+
+DEFINE FILE BRPTINST
+ BYCPM/D6.2 = (&B1CPM2 - &B1CPM1);
+ BQCPM/D6.2 = (&B2CPM2 - &B2CPM1);
+ PYCPM/D6.2 = (&P1CPM2 - &P1CPM1);
+ PQCPM/D6.2 = (&P2CPM2 - &P2CPM1);
+  
+  ABSBY/D6.2 = ABS(BYCPM);
+  ABSBQ/D6.2 = ABS(BQCPM);
+  ABSPY/D6.2 = ABS(PYCPM);
+  ABSPQ/D6.2 = ABS(PQCPM);
+END
+
+TABLE FILE BRPTINST
+PRINT BYCPM BQCPM PYCPM PQCPM ABSBY ABSBQ ABSPY ABSPQ
+BY INST_KEY NOPRINT
+ON TABLE SAVE
+END
+-RUN
+-READ SAVE &BYCPM.6. &BQCPM.6. &PYCPM.6. &PQCPM.6. &ABSBY.6. &ABSBQ.6. &ABSPY.6. &ABSPQ.6.
+
+-SET &CPML1 = IF &BYCPM GT .00 THEN ' increased $' | '&BYCPM.EVAL ' ELSE IF &BYCPM LT 0 THEN ' decreased $' | '&ABSBY.EVAL' ELSE 'remains same ';
+-SET &BCPML1 = 'Average cost per mile (CPM)' | '&CPML1.EVAL' | 'year to date.';
+
+-SET &CPML1 = IF &BQCPM GT .00 THEN '(increased $' | '&BQCPM.EVAL ' ELSE IF &BQCPM LT 0 THEN '( decreased $' | '&ABSBQ.EVAL' ELSE '(remains same ';
+-SET &BCPML2 = '&CPML1.EVAL' | ' &TRAN2.EVAL' | ' over ' | '&TRAN1.EVAL' | ')';
+
+-SET &CPML1 = IF &PYCPM GT .00 THEN ' increased $' | '&PYCPM.EVAL ' ELSE IF &PYCPM LT 0 THEN ' decreased $' | '&ABSPY.EVAL ' ELSE ' remains same ';
+-SET &PCPML1 = 'Peer group average (CPM)' |'&CPML1.EVAL' | 'year to date.';
+
+-SET &CPML1 = IF &PQCPM GT .00 THEN '(increased $' | '&PQCPM.EVAL ' ELSE IF &PQCPM LT 0 THEN '( decreased $' | '&ABSPQ.EVAL ' ELSE '(remains same ';
+-SET &PCPML2 = '&CPML1.EVAL' | ' &TRAN2.EVAL' | ' over ' | '&TRAN1.EVAL' | ')';
+
+-ENDCPMCMT
+-******************************* lusheng *****************************************
+
+-IF &&SKIPGRAPH EQ 'Y' THEN GOTO AROUNDG1;
+-*GOTO AROUNDG1
+-* COST PER MILE GRAPH
+DEFINE FILE QRTRND2
+BFARE/D12.2 = IF ROLLUP_CODE EQ '&&BASEROLL' THEN FARE_PAID ELSE 0;
+PFARE/D12.2 = IF ROLLUP_CODE NE '&&BASEROLL' THEN FARE_PAID ELSE 0;
+BMILE/P10 = IF ROLLUP_CODE EQ '&&BASEROLL' THEN NEW_SEG_MILES ELSE 0;
+PMILE/P10 = IF ROLLUP_CODE NE '&&BASEROLL' THEN NEW_SEG_MILES ELSE 0;
+END
+-RUN
+
+TABLE FILE QRTRND2
+SUM BFARE BMILE PFARE PMILE
+BY YEAR
+BY TRAN
+ON TABLE HOLD AS CPMG
+END
+-RUN
+
+GRAPH FILE CPMG
+SUM 
+COMPUTE BCPM/D12.2CS = IF ((BMILE LT 1) AND (BMILE GT (-1))) THEN 0 ELSE
+                          (BFARE/BMILE); AS 'Cost Per Mile'
+COMPUTE PCPM/D12.2CS = IF ((PMILE LT 1) AND (PMILE GT (-1))) THEN 0 ELSE
+                          (PFARE/PMILE); AS 'Peer Group CPM'
+ACROSS TRAN AS ' '
+ON GRAPH SET LOOKGRAPH VBAR
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO OFF
+ON GRAPH SET GRID OFF
+ON GRAPH SET GRAPHSTYLE *
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(1, new Color, 145 207 255));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setSeriesType(1,2);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setY2MajorGridDisplay(false);
+setY2MinorGridDisplay(false);
+setO1LabelRotate(0);
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(2);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setLegendPosition(1);
+setLegendTextAutofix(true);
+setLegendMarkersPerRow(3);
+setTitleString("Cost Per Mile");
+setSubtitleString(" ");
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setY2LabelDisplay(true);
+setY2LabelFormat(6);
+setY1AxisSide(0);
+setY2AxisSide(1);
+setFontSizeAbsolute(getTitle(),false); 
+setAutofit(getTitle(),true);
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),1);
+setFontSize(getTitle(),10);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH HOLD AS TDG2 FORMAT SVG
+END
+-RUN
+
+-SET &&G_TDG2=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+ -RUN
+
+-AROUNDG1
+
+-SET &&G_TDG2='N';
+-RUN
+
+DEFINE FILE RPTH
+CURRENT/A1 = IF TRN_DATE GE '&&FROMDT.EVAL' AND
+                TRN_DATE LE '&&TODT.EVAL' THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE '&&FXDATE.EVAL' AND
+               TRN_DATE LE '&&TXDATE.EVAL' THEN 'Y' ELSE 'N';
+CFARE/D6.2 = IF CURRENT EQ 'Y' THEN FARE_PAID ELSE 0;
+PFARE/D6.2 = IF PRIOR EQ 'Y' THEN FARE_PAID ELSE 0;
+CNT/D6 = IF CURRENT EQ 'Y' THEN NET_TKT_CNT ELSE 0;
+PNT/D6 = IF PRIOR EQ 'Y' THEN NET_TKT_CNT ELSE 0;
+CNR/D12 = IF (CURRENT EQ 'Y') AND (NONREF_FLAG EQ 'N') THEN NET_TKT_CNT ELSE 0;
+PNR/D12 = IF (PRIOR EQ 'Y') AND (NONREF_FLAG EQ 'N') THEN NET_TKT_CNT ELSE 0;
+CADV/D12 = IF CURRENT EQ 'Y' THEN ADV_T ELSE 0;
+PADV/D12 = IF PRIOR EQ 'Y' THEN ADV_T ELSE 0;
+-* TRN2/YY = TRAN;
+FLAG/A1 = 'A';
+END
+-RUN
+
+-* 1st set of comments
+
+TABLE FILE RPTH
+SUM CFARE PFARE CNT PNT CNR PNR CADV PADV 
+BY FLAG
+BY YEAR
+BY TRAN
+ON TABLE HOLD AS 1HOLD
+END
+-RUN
+
+TABLE FILE 1HOLD
+SUM COMPUTE CAVG/D6.2 = IF ((CNT LT 1) AND (CNT GT (-1))) THEN 0 ELSE
+                           (CFARE/CNT);
+    COMPUTE PAVG/D6.2 = IF ((PNT LT 1) AND (PNT GT (-1))) THEN 0 ELSE
+                           (PFARE/PNT);
+    COMPUTE CNRP/D6.2 = IF ((CNT LT 1) AND (CNT GT (-1))) THEN 0 ELSE
+                           (CNR/CNT);
+    COMPUTE PNRP/D6.2 = IF ((PNT LT 1) AND (PNT GT (-1))) THEN 0 ELSE
+                           (PNR/PNT);
+    COMPUTE CADV/D6.2 = IF ((CNT LT 1) AND (CNT GT (-1))) THEN 0 ELSE
+                           (CADV/CNT);
+    COMPUTE PADV/D6.2 = IF ((PNT LT 1) AND (PNT GT (-1))) THEN 0 ELSE
+                           (PADV/PNT);
+    
+    COMPUTE VARAT/D3 = IF ((PAVG LT 1) AND (PAVG GT (-1))) THEN 0 ELSE
+                          (((CAVG-PAVG)/PAVG)*100);
+    COMPUTE VARNR/D3 = IF ((PNRP LT 1) AND (PNRP GT (-1))) THEN 0 ELSE
+                          (((CNRP-PNRP)/PNRP)*100);
+    COMPUTE VARAP/D3 = IF ((PADV LT 1) AND (PADV GT (-1))) THEN 0 ELSE
+                          (((CADV-PADV)/PADV)*100);
+    
+
+BY FLAG
+ON TABLE HOLD AS 2HOLD
+END
+-RUN
+
+DEFINE FILE 2HOLD
+FIELD1/A20 = 'Average ticket price';
+FIELD2/A9 = IF VARAT GT 0 THEN 'increased' ELSE 'decreased';
+FIELD3/A14 = ' year to date.';
+FIELD4/A20 = '(Quarter Comparison)';
+FIELD5/A28 = 'Use of nonrefundable tickets';
+FIELD6/A9 = IF VARNR GT 0 THEN 'increased' ELSE 'decreased';
+FIELD7/A32  = 'Advanced purchase within 13 days';
+FIELD8/A9 = IF VARAP GT 0 THEN 'increased' ELSE 'decreased';
+END
+-RUN
+
+TABLE FILE 2HOLD
+PRINT FIELD1 FIELD2 VARAT FIELD3 FIELD4 FIELD5 FIELD6 VARNR FIELD7 FIELD8 VARAP
+ON TABLE SAVE AS COMMENT1 FORMAT ALPHA
+END
+-RUN
+
+-SET &FIELD1 = ' ';
+-SET &FIELD2 = ' ';
+-SET &FIELD3 = ' ';
+-SET &FIELD4 = ' ';
+-SET &FIELD5 = ' ';
+-SET &FIELD6 = ' ';
+-SET &FIELD7 = ' ';
+-SET &FIELD8 = ' ';
+
+
+-READ COMMENT1 NOCLOSE &FIELD1.20. &FIELD2.9. &VARAT.3. &FIELD3.14. &FIELD4.20. &FIELD5.28. &FIELD6.9. &VARNR.3. &FIELD7.32. &FIELD8.9. &VARAP.3.
+-SET &VARAT = '&VARAT.EVAL'|'%';
+-SET &VARNR = '&VARNR.EVAL'|'%';
+-SET &VARAP = '&VARAP.EVAL'|'%';
+-CLOSE COMMENT1
+
+
+-****** Start to calculate the changes by quarter - Lusheng ***************
+
+TABLE FILE 1HOLD
+SUM COMPUTE CAVG/D6.2 = IF ((CNT LT 1) AND (CNT GT (-1))) THEN 0 ELSE
+                           (CFARE/CNT);
+    COMPUTE PAVG/D6.2 = IF ((PNT LT 1) AND (PNT GT (-1))) THEN 0 ELSE
+                           (PFARE/PNT);
+    COMPUTE CNRP/D6.2 = IF ((CNT LT 1) AND (CNT GT (-1))) THEN 0 ELSE
+                           (CNR/CNT);
+    COMPUTE PNRP/D6.2 = IF ((PNT LT 1) AND (PNT GT (-1))) THEN 0 ELSE
+                           (PNR/PNT);
+    COMPUTE CADV/D6.2 = IF ((CNT LT 1) AND (CNT GT (-1))) THEN 0 ELSE
+                           (CADV/CNT);
+    COMPUTE PADV/D6.2 = IF ((PNT LT 1) AND (PNT GT (-1))) THEN 0 ELSE
+                           (PADV/PNT);
+BY YEAR 
+BY TRAN
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+TABLE FILE HOLD3
+SUM LST.TRAN LST.CAVG LST.PAVG LST.CNRP LST.PNRP LST.CADV LST.PADV
+BY YEAR
+ON TABLE SAVE
+END
+-RUN
+
+-SET &CLINE2 = ' ';
+-SET &CLINE4 = ' ';
+-SET &CLINE6 = ' ';
+-IF &LINES LT 2 THEN GOTO ENDCOMMENT;
+-SET &CNT = 1;
+-REPEAT TOCEND &LINES TIMES
+-READ SAVE NOCLOSE &YEAR.4. &TRAN.7. &CAVG.6. &PAVG.6. &CNRP.6. &PNRP.6. &CADV.12. &PADV.12.
+-SET &TRAN.&CNT = &TRAN;
+
+-SET &CAVG.&CNT = &CAVG;
+-SET &PAVG.&CNT = &PAVG;
+-SET &CNRP.&CNT = &CNRP;
+-SET &PNRP.&CNT = &PNRP;
+-SET &CADV.&CNT = &CADV;
+-SET &PADV.&CNT = &PADV;
+-SET &CNT = &CNT + 1;
+-TOCEND
+-*the first record contains the value of previous Q.
+-*the second contains the value of current Q.
+DEFINE FILE BRPTINST
+  VAVG/D3 = (&CAVG2 - &PAVG1)/&PAVG1 * 100;
+  VNR/D3 = (&CNRP2 - &PNRP1)/&PNRP1 * 100;
+  VAP/D3 = (&CADV2 - &PADV1)/&PADV1 * 100;
+  VAVGA/D3 = ABS(VAVG);
+  VNRA/D3 = ABS(VNR);
+  VAPA/D3 = ABS(VAP);
+END
+TABLE FILE BRPTINST
+PRINT VAVG VNR VAP VAVGA VNRA VAPA 
+BY INST_KEY NOPRINT
+ON TABLE SAVE
+END
+-RUN
+
+-READ SAVE &VAVG.3. &VNR.3. &VAP.3. &VAVGA.3. &VNRA.3. &VAPA.3. 
+-SET &TEMP = IF &VAVG GT 0 THEN ' ( increased &VAVGA.EVAL% ' 
+-  ELSE IF &VAVG LT 0 THEN ' ( decreased &VAVGA.EVAL% ' 
+-  ELSE '( remains same';
+-* -SET &CLINE2 = 'Average ticket price ' | '&TEMP.EVAL' | '&TRAN2.EVAL' || ' over ' | '&TRAN1.EVAL' | '.';
+-SET &CLINE2 = '&TEMP.EVAL' | ' &TRAN2.EVAL' | ' over ' | ' &TRAN1.EVAL' | ')';
+-SET &TEMP = IF &VNR GT 0 THEN '( increased &VNRA.EVAL% '
+-  ELSE IF &VNR LT 0 THEN '( decreased &VNRA.EVAL% '
+-  ELSE '( remains same ';
+-* -SET &CLINE4 = 'Use of nonrefundable tickets' | '&TEMP.EVAL' | '&TRAN2.EVAL' || ' over ' | '&TRAN1.EVAL' | '.';
+-SET &CLINE4 = '&TEMP.EVAL' | '&TRAN2.EVAL' | ' over ' | '&TRAN1.EVAL' | ')';
+-SET &TEMP = IF &VAP GT 0 THEN '( increased &VAPA.EVAL% ' 
+-  ELSE IF &VAP LT 0 THEN '( decreased &VAPA.EVAL% '
+-  ELSE '( remains same ';
+-* -SET &CLINE6 = 'Advance purchase within 13 days' | '&TEMP.EVAL' | '&TRAN2.EVAL' || ' over ' | '&TRAN1.EVAL' | '.';
+-SET &CLINE6 = '&TEMP.EVAL' | '&TRAN2.EVAL' | ' over ' | '&TRAN1.EVAL' | ')';
+
+-ENDCOMMENT
+-****** End to calculate the changes by quarter - Lusheng ***************
+
+TABLE FILE BRPTINST
+BY INST_KEY NOPRINT
+ON TABLE SET PAGE-NUM OFF
+&&OUTLINE1
+&&OUTLINE2
+FOOTING
+"</5"
+"&FIELD1 &FIELD2 &VARAT &FIELD3"
+"&CLINE2"
+"</2"
+"&FIELD5 &FIELD6 &VARNR &FIELD3"
+"&CLINE4"
+"</2"
+"&FIELD7 &FIELD8 &VARAP &FIELD3"
+"&CLINE6"
+"</1"
+"<58 ____________________________________________________________________________________________________________"
+"<58 | <&POS1A | <&POS1 &TD1 <&POS2A | <&POS2 &TD2 <&POS3A | <&POS3 &TD3 <&POS4A | <&POS4 &TD4 <&POS5A | <&POS5 &TD5 <&POS6A | <&POS6 &TD6 <&POS7A | <&POS7 &TD7 <&POS8A | <&POS8 &TD8 <115 | "
+"<58 |___________________________________________________________________________________________________________<115 | "
+"<58 |Domestic ATP <&POS1A | <&POS1 &DATP1 <&POS2A | <&POS2 &DATP2 <&POS3A | <&POS3 &DATP3 <&POS4A | <&POS4 &DATP4 <&POS5A | <&POS5 &DATP5 <&POS6A | <&POS6 &DATP6 <&POS7A | <&POS7 &DATP7 <&POS8A | <&POS8 &DATP8 <115 | "
+"<58 |___________________________________________________________________________________________________________<115 |"
+"<58 |Total ATP <&POS1A | <&POS1 &TATP1 <&POS2A | <&POS2 &TATP2 <&POS3A | <&POS3 &TATP3 <&POS4A | <&POS4 &TATP4 <&POS5A | <&POS5 &TATP5 <&POS6A | <&POS6 &TATP6 <&POS7A | <&POS7 &TATP7 <&POS8A | <&POS8 &TATP8 <115 | "
+"<58 |___________________________________________________________________________________________________________<115 |"
+"<58 |% Domestic Online <&POS1A | <&POS1 &ONLP1 <&POS2A | <&POS2 &ONLP2 <&POS3A | <&POS3 &ONLP3 <&POS4A | <&POS4 &ONLP4 <&POS5A | <&POS5 &ONLP5 <&POS6A | <&POS6 &ONLP6 <&POS7A | <&POS7 &ONLP7 <&POS8A | <&POS8 &ONLP8 <115 |"
+"<58 |___________________________________________________________________________________________________________<115 |"
+"<58 |% Non-Refundable <&POS1A | <&POS1 &NRP1 <&POS2A | <&POS2 &NRP2 <&POS3A | <&POS3 &NRP3 <&POS4A | <&POS4 &NRP4 <&POS5A | <&POS5 &NRP5 <&POS6A | <&POS6 &NRP6 <&POS7A | <&POS7 &NRP7 <&POS8A | <&POS8 &NRP8 <115 |"
+"<58 |___________________________________________________________________________________________________________<115 |"
+"<58 |% 0-13 Adv Pur Days <&POS1A | <&POS1 &APP1 <&POS2A | <&POS2 &APP2 <&POS3A | <&POS3 &APP3 <&POS4A | <&POS4 &APP4 <&POS5A | <&POS5 &APP5 <&POS6A | <&POS6 &APP6 <&POS7A | <&POS7 &APP7 <&POS8A | <&POS8 &APP8 <115 |"
+"<58 |___________________________________________________________________________________________________________<115 |"
+"</5"
+"<60 &BCPML1"
+"<60 &BCPML2"
+"</2"
+"<60 &PCPML1"
+"<60 &PCPML2"
+"</8"
+"____________________________________________________________________________________________________________"
+"| <&POS1AA | <&POSA1 &TD1  <&POS2AA | <&POSA2 &TD2 <&POS3AA | <&POSA3 &TD3 <&POS4AA | <&POSA4 &TD4 <&POS5AA | <&POSA5 &TD5 <&POS6AA | <&POSA6 &TD6 <&POS7AA | <&POSA7 &TD7 <&POS8AA | <&POSA8 &TD8 <58 | "
+"|___________________________________________________________________________________________________________<58 | "
+"|Cost Per Mile <&POS1AA | <&POSA1 &BCPMQ1 <&POS2AA | <&POSA2 &BCPMQ2 <&POS3AA |  <&POSA3 &BCPMQ3 <&POS4AA | <&POSA4 &BCPMQ4 <&POS5AA | <&POSA5 &BCPMQ5 <&POS6AA | <&POSA6 &BCPMQ6 <&POS7AA | <&POSA7 &BCPMQ7 <&POS8AA | <&POSA8 &BCPMQ8 <58 | "
+"|___________________________________________________________________________________________________________<58 | "
+"|Peer Group CPM <&POS1AA | <&POSA1 &PCPMQ1 <&POS2AA | <&POSA2 &PCPMQ2 <&POS3AA |  <&POSA3 &PCPMQ3 <&POS4AA | <&POSA4 &PCPMQ4 <&POS5AA | <&POSA5 &PCPMQ5 <&POS6AA | <&POSA6 &PCPMQ6 <&POS7AA | <&POSA7 &PCPMQ7 <&POS8AA | <&POSA8 &PCPMQ8 <58 | "
+"|___________________________________________________________________________________________________________<58 | "
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.150000, 
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=7, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=FOOTING, SIZE=15, LINE=7, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=8, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=12, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=13, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=17, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=18, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=40, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=41, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=45, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=46, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=REPORT, IMAGE=TrendingData.GIF,POSITION=(0.1 0.1), SIZE=(10.75 .75), $
+-IF '&&SKIPGRAPH.EVAL' EQ 'Y' GOTO SKIP_DGAT1;
+TYPE=REPORT,IMAGE=TDG1.SVG,POSITION=(5.5  1.0), SIZE=(5.5 2.5), $
+-SKIP_DGAT1
+-IF '&&SKIPGRAPH.EVAL' EQ 'Y' GOTO SKIP_DGAT2;
+TYPE=REPORT,IMAGE=TDG2.SVG,POSITION=(0.3  4.7), SIZE=(5.5 2.5), $
+-SKIP_DGAT2
+ENDSTYLE
+END
+-RUN

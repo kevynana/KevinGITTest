@@ -1,0 +1,291 @@
+-* File TRVLSUMA.FEX
+-* This Travel Summary includes all the standard travel summary 
+-* reports.
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            CHANGED TEMPDISK TO TEMPDIR
+-**********************************************************************
+SET 3D=OFF
+SET GRID=ON
+SET VGRID=OFF
+SET EMPTYREPORT=ON
+
+-* Following set command determines of the reports created by this
+-* Stream will be drillable
+-SET &&DRILLABLE = IF &&DEPLOY EQ 'L' AND EDIT(&&OUTTO,'$9') NE 'B' 
+- THEN 'N' ELSE 'Y'; 
+-*
+
+EX TSSETDB SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+-**********************************************************************
+-* GET INFO FOR SAVING THE SETFILE
+-**********************************************************************
+-**********FIND LENGTH OF &&INSTID EXCLUDING TRAILING BLANKS
+-*-SET &IDLEN = ARGLEN(22, &&INSTID, 'I2');
+-**********CHANGE BLANKS TO UNDERSCORES EXCLUDING TRAILING BLANKS
+-*-SET &IID = CTRAN(&IDLEN, &&INSTID, 32, 95, 'A22');
+
+-SET &IID = &&INSTID;
+-**********DETERMINE DATE AND TIME FOR FILE TO SAVE
+-SET &NOWTM = HHMMSS ('A8');
+-SET &NOWTM = EDIT(&NOWTM,'99$99$99');
+-SET &NOWDT = &YYMD;
+-SET &NOWDTTM = &NOWDT || '_' || &NOWTM;
+-SET &STRMID = &&STREAM || '_' || &IID;
+-SET &&DTTMSTRM = &NOWDTTM || '_' || &STRMID;
+
+-**********************************************************************
+-* DETERMINE IF WE HAVE WEB DEPLOYMENT OR LOCAL STAND ALONE
+-* SET PATH FOR SAVING THE SETFILE
+-**********************************************************************
+-******LOCAL DEPLOYMENT
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-*-SET &&LOCPATH = &&TNTDRV || '\TT\ ' ||&&ROLLUP || '\ '||&&UNAME.EVAL|| '\';
+-SET &&SETFNM= &&LOCPATH || &&DTTMSTRM ||'.FTM';
+COPY &&SETF &&SETFNM
+-RUN
+-GOTO SETFILDEF;
+
+-******WEB DEPLOYMENT
+-SETWEB
+-SET &&WEBPATH = '&&WEBSRV.EVAL' || '\TTWEB\ ' || &&ROLLUP || '\ '||&&UNAME.EVAL|| '\';
+-SET &&SETFNM = &&WEBPATH || &&DTTMSTRM ||'.FTM';
+COPY &&VARFWEB &&SETFNM
+-INCLUDE SETFPARM
+-RUN
+-GOTO SETFILDEF;
+
+-SETFILDEF
+-INCLUDE APNDSETF
+-RUN
+
+EX TS_JAMS
+-RUN
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-INCLUDE SELCATQT
+-RUN
+
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+
+
+-SET &&SMD = 'S';
+-RUN
+
+EX TSAIRUSE
+-RUN
+
+EX SELDESC2
+-RUN
+-* -GOTO JOY
+
+
+-TYPE TSSHOLD
+EX TSSHOLD
+-RUN
+-GOTO JOY
+
+
+-TYPE EXECMAI1
+EX EXECMAI1
+-RUN
+
+-TYPE EXECMAI2
+EX EXECMAI2
+-RUN
+
+USE CLEAR *
+-RUN
+EX CARUSE
+-RUN
+
+-TYPE EXECCAR1
+EX EXECCAR1
+-RUN
+
+-TYPE EXECCAR2
+EX EXECCAR2
+-RUN
+
+EX HTLUSE
+-RUN
+
+-TYPE EXECHTL1
+EX EXECHTL1
+-RUN
+
+-TYPE EXECHTL2
+EX EXECHTL2
+-RUN
+
+-TYPE EXECTOT1
+EX EXECTOT1
+-RUN
+
+-TYPE EXECTOT2
+EX EXECTOT2
+-RUN
+
+
+-TYPE EXECSUM1
+EX EXECSUM1
+-RUN
+
+-* -TYPE LSTJOYD
+-* EX LSTJOYD
+-* -RUN
+-* -TYPE LSTJOYI
+-* EX LSTJOYI
+-* -RUN
+-* -JOY
+-TYPE JOYCLSD
+EX JOYCLSD
+-RUN
+-* -TYPE JOYCLSI
+-* EX JOYCLSI
+-GOTO XXIT
+
+-TYPE AVGJOY
+EX AVGJOY
+-RUN
+
+-TYPE NETTJOY
+ EX NETTJOY
+-RUN
+-GOTO XXIT
+
+-TYPE AVGTKT
+EX AVGTKT
+-RUN
+
+-SAVINGS
+-TYPE SAVINGS
+EX SAVINGS
+-RUN
+
+-TYPE AIRCLASS
+EX AIRCLASS
+-RUN
+
+-TYPE YTDCLASS
+EX YTDCLASS
+-RUN
+
+-JOY
+
+EX TS_JAMM
+-RUN
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&LUSEPASS
+-RUN
+
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-INCLUDE SELCATQT
+-RUN
+
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+
+-SET &&SMD = 'M';
+-RUN
+
+EX TSAIRUSE
+-RUN
+
+-TYPE TSMHOLD
+EX TSMHOLD
+-RUN
+
+-TYPE ORGDST1
+EX ORGDST1
+-RUN 
+-GOTO XXIT
+
+-TYPE YRORGDST
+EX YRORGDST
+-RUN
+
+-TYPE CARRIER
+EX CARRIER
+-RUN
+
+-TYPE YRCARIER
+EX YRCARIER
+-RUN
+
+EX HTLUSE
+-RUN
+
+-TYPE TSHTLSM
+EX TSHTLSM
+-RUN
+
+EX CARUSE
+-RUN
+
+-TYPE TSCARSM
+EX TSCARSM
+-RUN
+
+-SKIP_TRIG
+-*-SET &ERASEFILE1 = &&OUTPUTDEST.EVAL || '*.FTM';
+-*-SET &ERASEFILE2 = &&OUTPUTDEST.EVAL || '*.MAS';
+-*-SET &ERASEFILE3 = &&OUTPUTDEST.EVAL || '*.STY';
+-*-SET &ERASEFILE4 = &&OUTPUTDEST.EVAL || '*.FOC';
+-*DOS ERASE &ERASEFILE1
+-*-RUN
+-*DOS ERASE &ERASEFILE2
+-*-RUN
+-*DOS ERASE &ERASEFILE3
+-*-RUN
+-*DOS ERASE &ERASEFILE4
+-*-RUN
+SET EMPTYREPORT=OFF
+-RUN
+
+-XXIT
+
+-* REJ EX RESTART 
+-*-EXIT

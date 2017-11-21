@@ -1,0 +1,222 @@
+
+-INCLUDE SETECHO
+ 
+SET TEMPERASE=ON
+-*File WRUNINDV.FEX
+-DEFAULT &dateType='';
+-DEFAULT &fm1_pm1='';
+-DEFAULT &to1_pm1='';
+-DEFAULT &fx_pm='';
+-DEFAULT &tx_pm='';
+-DEFAULT &cmfm='';
+-DEFAULT &cmto='';
+-DEFAULT &pmfm='';
+-DEFAULT &pmto='';
+-DEFAULT &cyfm='';
+-DEFAULT &cyto='';
+-DEFAULT &pyfm='';
+-DEFAULT &pyto='';
+-*-DEFAULT &DSTEDAUSER='default';
+-DEFAULT &user='default';
+
+-DEFAULT &ELINKS='N';
+-DEFAULT &DSTSCHEDID='';
+-DEFAULT &PUSHNAME='';
+ 
+-SET &&UNAME=&user;
+-*-SET &DSTEDAUSER=&user;
+
+-SET &&SETZIP= 'N';
+-SET &&DRILLED_RUN = 'N';
+-SET &&DRILLSTREAM = 'N';
+-SET &&WRRUN = 'Y';
+
+-SET &&ELINKS=&ELINKS;
+-SET &&SCHED=&DSTSCHEDID;
+-SET &&PUSHNAME=&PUSHNAME;
+ 
+-* THESE VARIABLES ARE BEING PASSED FROM ASP
+-*-SET &&STREAM=&st_pm;
+-*-SET &&SETF=&se_pm;
+-*-SET &&RPTTYP=&rp_pm;
+-SET &&IKEY=&in_pm;
+-*-SET &&RN=&rt_pm;
+-*-SET &&RS=&sn_pm;
+-SET &&SKEY=&sk_pm;
+-SET &&OUTFMT=IF &outfmt EQ '' THEN 'PDF' ELSE &outfmt;
+-SET &&OUTTO=&outto;
+-*-SET &&IDKEY=&ix_pm;
+-SET &&FM_PM=&fm1_pm1;
+-SET &&TO_PM=&to1_pm1;
+-SET &&FX_PM=&fx_pm;
+-SET &&TX_PM=&tx_pm;
+-SET &&CMFM=&cmfm;
+-SET &&CMTO=&cmto;
+-SET &&PMFM=&pmfm;
+-SET &&PMTO=&pmto;
+-SET &&CYFM=&cyfm;
+-SET &&CYTO=&cyto;
+-SET &&PYFM=&pyfm;
+-SET &&PYTO=&pyto;
+ 
+-SET &&DATETYPE= '&dateType.EVAL';
+-RUN
+ 
+-********************************************************************
+-* Assign Date ranges automatically if &fm1_pm1 = 'MTD' OR 'YTD'
+-* Also looks at &fx_pm and if it contains 'PMTD' the previous range
+-* is set to the month before current range otherwise it is a year
+-* before the current range.
+-* Added this for the NYL-R Push Reports - REJ 03/20/2008
+-IF &fm1_pm1 EQ 'MTD' OR 'YTD' GOTO AUTO_DATES;
+-GOTO CONT_DATE;
+ 
+-AUTO_DATES
+-SET &TDATE1=&YYMD;
+-SET &TDATE2=DATECVT('&TDATE1.EVAL', 'A8YYMD', 'YYMD');
+DEFINE FILE ROLLUP
+TDATE1/YYMD=&YYMD;
+P_MONTH/MDYY=DATEADD(TDATE1, 'M', (-1));
+P_BOM/MDYY=DATEMOV(P_MONTH, 'BOM');
+P_EOM/MDYY=DATEMOV(P_MONTH, 'EOM');
+P_BOY/MDYY=DATEMOV(P_MONTH, 'BOY');
+FM_DATE/MDYY=IF '&fm1_pm1' EQ 'MTD' THEN P_BOM ELSE P_BOY;
+TO_DATE/MDYY=P_EOM;
+FX_DATE/MDYY=IF '&fx_pm' EQ 'PMTD' THEN DATEADD(FM_DATE, 'M', (-1)) ELSE DATEADD(FM_DATE, 'Y', (-1));
+TX_DATE0/MDYY=IF '&fx_pm' EQ 'PMTD' THEN DATEADD(TO_DATE, 'M', (-1)) ELSE DATEADD(TO_DATE, 'Y', (-1));
+TX_DATE/MDYY=DATEMOV(TX_DATE0, 'EOM');
+ 
+FM_DATE1/A8MDYY=FM_DATE;
+TO_DATE1/A8MDYY=TO_DATE;
+FX_DATE1/A8MDYY=FX_DATE;
+TX_DATE1/A8MDYY=TX_DATE;
+ 
+FM_DATE2/A10=EDIT(FM_DATE1,'99/99/9999');
+TO_DATE2/A10=EDIT(TO_DATE1,'99/99/9999');
+FX_DATE2/A10=EDIT(FX_DATE1,'99/99/9999');
+TX_DATE2/A10=EDIT(TX_DATE1,'99/99/9999');
+END
+TABLE FILE ROLLUP
+PRINT FM_DATE2 TO_DATE2 FX_DATE2 TX_DATE2
+BY ROLLUP_CODE NOPRINT
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE SAVE AS HADATES
+WHERE RECORDLIMIT EQ 1
+END
+-RUN
+-READ HADATES &&FM_PM.A10, &&TO_PM.A10, &&FX_PM.A10, &&TX_PM.A10
+-GOTO CONT_DATE;
+ 
+-CONT_DATE
+-********************************************************************
+-********************************************************************
+
+EX RESET
+-RUN
+ 
+-INCLUDE HOLDDATAPATH
+-RUN
+ 
+-INCLUDE WRBATCH
+-RUN
+-INCLUDE LOADBINS
+-RUN
+ 
+EX WRRIUPD
+-RUN
+ 
+-* REJ ADDED TO FIX PROBLEM WITH DISTRIBUTION SERVER RUNNING
+-*     REPORTCASTER JOBS WITH WRONG ID
+ 
+-*-IF &DSTEDAUSER.EXIST EQ 0 GOTO NOTFROM_RC;
+-*-SET &&UNAME=&DSTEDAUSER;
+-*-NOTFROM_RC
+ 
+EX RPTRESET
+-RUN
+ 
+-IF &&STREAM EQ 'xxxxxxxx' THEN GOTO XXIT;
+ 
+-SET &&NOW_CYC = 'NOW';
+-*-SET &&RN = LJUST(50, &&RN, &&RN);
+-*-SET &&RS = LJUST(40, &&RS, &&RS);
+ 
+-*-SET &&INSTID = SUBSTR(72, &&IKEY, 51, 72, 22, 'A22');
+-SET &&INSTID = &&IDKEY;
+-SET &&VARFILE = 'D:\tnt\TTRACKER\SETFILES\' || '&&SETF.EVAL' || '.FEX';
+-SET &&VARFWEB = &&WEB_PATH || &&SETF || '.FEX';
+-SET &&READSET = &&WEB_PATH || 'READSET.FTM';
+FILEDEF READSET DISK &&READSET
+FILEDEF OLDSET DISK &&VARFWEB
+-RUN
+ 
+-* WORKAROUND TO PROBLEM WITH -READ AND (MAINTAIN AND FIX FILES)
+ 
+COPY &&VARFILE &&READSET
+-RUN
+ 
+TABLE FILE READSET
+PRINT *
+ON TABLE HOLD AS READSET FORMAT ALPHA
+END
+-RUN
+-* END OF WORKAROUND
+ 
+FILEDEF READSET CLEAR
+FILEDEF OLDSET CLEAR
+FILEDEF OUTFILE DISK &&VARFWEB
+FILEDEF READSET DISK &&READSET
+-RUN
+ 
+EX VARSETS
+-RUN
+ 
+-* IBIRJ TEST CODE
+-SET &&TESTSETF='D:\TEMP\' || &&SETF || '.FEX';
+COPY &&VARFWEB &&TESTSETF
+-RUN
+ 
+FILEDEF READSET CLEAR
+FILEDEF OUTFILE CLEAR
+-RUN
+ 
+-*Generate the screening conditions
+EX CODEGEN
+-RUN
+ 
+EX SELDESC2
+-RUN
+ 
+-SET &&NOW_CYC = 'NOW';
+-TYPE Executing &&STREAM
+-RUN
+ 
+EX &&STREAM
+-RUN
+ 
+EX SETRSRN
+-RUN
+-SET &&SET_DONE = 'Y';
+-SET &&RS = LJUST(40, &&RS, &&RS);
+ 
+EX SETDONE
+-RUN
+
+-GOTO XEXIT;
+-XXIT
+ 
+-HTMLFORM BEGIN
+<html>
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>New Page 1</title>
+</head>
+<body><p align="center"><b>No report selected to run.</b></p>
+</body>
+</html>
+-HTMLFORM END
+ 
+-XEXIT

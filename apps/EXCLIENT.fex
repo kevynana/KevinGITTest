@@ -1,0 +1,6 @@
+-* External Procedure to populate the all Clients
+TABLE FILE CLIENT
+PRINT *
+ON TABLE PCHOLD
+WHERE ROLLUP_CODE EQ '&1'
+END

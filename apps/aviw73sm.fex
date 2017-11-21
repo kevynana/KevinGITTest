@@ -1,0 +1,226 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File APSMRY.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-*1/22/02      TANDT-DB             CARRIED THROUGH VAL_AIRLINE
+-*6/19/02      STEVE                ADDED REC_CNT TO CORRECT AVERAGE
+-*                                  BOOKING DAYS AND PURCHASE DAYS
+-*6/25/02      STEVE                REC_CNT DOES NOT INCLUDE REFUNDS/EXCHANGES
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*3/24/03      DEB                  CARRIED THROUGH CTRY_FLAG
+-*6/15/04      DEB                  CARRIED THROUGH XLEVEL3 XLEV_3
+-*12/10/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-*07/11/16 - RSB - S-20630 - New Employee ID database field
+-*                           Added EMP_ID
+-**********************************************************************
+
+SET ASNAMES = ON
+
+
+TABLE FILE &&RPT_HOLD
+
+SUM 
+    DISSAVINGS AS 'DISSAV'
+    FARE_PAID/D12.2CS AS 'TFARE'
+    NET_TKT_CNT AS 'NTTKT'
+    REF_EXCH_CNT AS 'TRFEX'
+    SAVINGS AS 'TSAVE'
+    TKT_PURCH AS 'TTKT'
+BY AROLL_DSC1    
+ON TABLE HOLD AS HOLDONE
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT
+  CLIENT_NAME 
+  CTRY_FLAG
+  DISSAVINGS
+  FARE_PAID
+  EMP_ID
+  LEVEL1
+  LEVEL2
+  LEVEL3
+  LEVEL_DESC
+  MC_ADV_BOOK
+  MRK_TKT_CNT	
+  MX_ADV_PUR
+  MC_DAYS	
+  MX_DAYS
+  NET_TKT_CNT	
+  REF_EXCH_CNT	
+  RTE_APT_NM
+  SEG_AMT
+  SAVINGS  	
+  TKT_PURCH	
+  UP_ADV_PUR	
+  UP_DAYS
+  VAL_AIRLINE	
+  XPSNGR_NM
+  XLEVEL3
+  XLEV_3
+BY AROLL_DSC1
+BY NEW_ADV_PURCH
+BY GRP_ADV_PUR
+BY NEW_ADV_BOOK
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT
+  CLIENT_NAME
+  CTRY_FLAG 
+  DISSAVINGS
+  FARE_PAID	
+  GRP_ADV_PUR 	
+  EMP_ID
+  LEVEL1
+  LEVEL2
+  LEVEL3
+  LEVEL_DESC
+  MC_ADV_BOOK
+  MRK_TKT_CNT
+  MX_ADV_PUR
+  MC_DAYS	
+  MX_DAYS
+  NET_TKT_CNT	
+  NEW_ADV_BOOK
+  NEW_ADV_PURCH	
+  REF_EXCH_CNT	
+  RTE_APT_NM
+  SAVINGS	
+  SEG_AMT
+  TKT_PURCH	
+  UP_ADV_PUR	
+  UP_DAYS
+  VAL_AIRLINE	
+  XPSNGR_NM
+  XLEVEL3
+  XLEV_3
+BY AROLL_DSC1
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM TTKT
+    TRFEX
+    NTTKT
+    DISSAV
+    TSAVE
+    TFARE
+BY AROLL_DSC1
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW 
+END
+-RUN
+
+DEFINE FILE XTHREE
+  PCTDSAVE/D8.1 = IF ((DISSAV LT 1) AND (DISSAV GT (-1))) THEN 0
+                  ELSE ((DISSAVINGS/DISSAV)*100);	
+  PCTFARE/D8.1S = IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0 
+                  ELSE ((FARE_PAID/TFARE)*100);	
+  PCTNETTKT/D8.1S = IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0
+                  ELSE ((NET_TKT_CNT/NTTKT)*100);	
+  PCTRFEX/D8.1S = IF ((TRFEX LT 1) AND (TRFEX GT (-1))) THEN 0
+                  ELSE ((REF_EXCH_CNT/TRFEX)*100);	
+  PCTSAVE/D8.1 = IF ((TSAVE LT 1) AND (TSAVE GT (-1))) THEN 0
+                  ELSE ((SAVINGS/TSAVE)*100);	
+  PCTTKT/D8.1S = IF ((TTKT LT 1) AND (TTKT GT (-1))) THEN 0
+                 ELSE ((TKT_PURCH/TTKT)*100);
+  REC_CNT/D8CS = IF NET_TKT_CNT EQ 1 THEN 1 ELSE 0;	
+  TTLDAYS/D8 = NEW_ADV_PURCH*REC_CNT;
+  
+  
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH AROLL_DSC1 = HHMMSS (NOWTOD);	
+
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+
+TABLE FILE XTHREE
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYS
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3

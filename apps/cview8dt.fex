@@ -1,0 +1,305 @@
+
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*                     FOCEXEC: AIRRPT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*
+-*11/23/04       DEB                ADDED CODE FOR GLOBAL CURRENCY
+-**************************************************************************
+
+
+SET ASNAMES = ON
+-RUN
+
+
+
+
+-SET &&RANK_METH =  'RENTAL_AMT';
+-SET &&RANK_LIMIT =    10;
+
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = ' TOTAL,RENTAL,AMOUNT, (' | &&CURRENCY || ')';
+-SET &CADR_CUR = 'AVG,DAILY,RATE, (' | &&CURRENCY || ')';
+-SET &&PRINT2 ='AMT_RENTALX/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+-SET &&PRINT3='COMPUTE AVGDR/D12.2CS=IF (AMT_RENTALX LT 0) AND ';
+-SET &&PRINT4='(RENTAL_DAYS LT 0) THEN ((AMT_RENTALX/RENTAL_DAYS) * (-1)) ';
+-SET &&PRINT5='ELSE IF ((RENTAL_DAYS LT 1) AND (RENTAL_DAYS GT (-1))) THEN 0';
+-SET &&PRINT6='ELSE (AMT_RENTALX/RENTAL_DAYS); AS ' | '''&CADR_CUR.EVAL''';
+
+-NEXT;
+
+TABLE FILE CARHLD7
+SUM NBR_DAYS
+    RENTAL_DAYS/I8 AS 'NMBR_DAYS'
+    RENTAL_AMT/D12.2 AS 'CAR_AMT'
+    AMT_RENTALX/D16.2 AS 'GCAR_AMT'
+BY PASSNGR_NAME   
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+SUM NBR_DAYS
+    NMBR_DAYS
+    CAR_AMT
+    GCAR_AMT
+-* RANKED BY &&RANK_ORDER NMBR_DAYS NOPRINT
+RANKED BY &&RANK_ORDER &&RANK_METH NOPRINT
+BY PASSNGR_NAME
+ON TABLE HOLD AS RNKHLD1
+END 
+-RUN
+
+TABLE FILE CARHLD7
+PRINT AMT_RENTALX/D16.2
+  BOOKINGS
+  CAR_DSC
+  CAR_RATE 	
+  CAR_TYPE 	
+  DAILY_RATE 	
+  DROP_CTY_NAME
+  DROP_OFF_DT
+  LEVEL_DESC
+  NAMEC	
+  NBR_DAYS
+  PASSNGR_NAME
+  PICK_CTY_NAME
+  PICK_UP_DT	
+  PICKUP_DATE
+  RATE_DLYX/D16.2	
+  RENTAL_AMT 
+  RENTAL_DAYS	
+  VENDOR_NAME
+BY PASSNGR_NAME
+ON TABLE HOLD AS HOLD5
+END 
+-RUN
+
+
+DEFINE FILE RNKHLD1
+  DRANK/D9 = RANK;
+  ARANKX/A11 = FTOA(DRANK, '(D9)', 'A11');
+  ARANK/A9 = EDIT(ARANKX,'$$999999999');
+  LIST/D9 = (LAST LIST + 1);
+  CRANKX/A11 = FTOA(LIST, '(D9)', 'A11');
+  CRANK/A9 = EDIT(CRANKX,'$$999999999');
+  RANK_VALUE/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE 
+                  IF LIST GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE 
+                  CRANK;
+  RANK_VAL/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE
+                IF RANK GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE
+                ARANK;
+  RANK_LAB1/A60 = IF RANK_VAL NE 'ALL OTHER' THEN &&RANK_LABEL1
+                  ELSE 'ALL OTHER';
+  RANK_LABEL1/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL1
+                      ELSE ' ';
+  RANK_LABEL2/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL2
+                      ELSE ' ';
+  RANK_LABEL3/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL3
+                      ELSE ' ';
+END
+-RUN 
+
+
+TABLE FILE RNKHLD1
+SUM NBR_DAYS
+    CAR_AMT
+    NMBR_DAYS
+    GCAR_AMT
+BY RANK_VALUE
+BY PASSNGR_NAME
+BY RANK_LABEL1
+BY RANK_LABEL2
+BY RANK_LABEL3
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN 
+
+
+MATCH FILE HOLD5
+PRINT AMT_RENTALX 
+  BOOKINGS
+  CAR_DSC
+  CAR_RATE 	
+  CAR_TYPE 	
+  DAILY_RATE 	
+  DROP_CTY_NAME
+  DROP_OFF_DT
+  LEVEL_DESC
+  NAMEC	
+  NBR_DAYS
+  PASSNGR_NAME
+  PICK_CTY_NAME
+  PICK_UP_DT	
+  PICKUP_DATE
+  RATE_DLYX	
+  RENTAL_AMT
+  RENTAL_DAYS	
+  VENDOR_NAME
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN
+FILE RNKHLD2
+SUM RANK_LABEL1
+    RANK_LABEL2
+    RANK_LABEL3
+    RANK_VALUE
+    CAR_AMT
+    NMBR_DAYS
+    GCAR_AMT
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS XTWO OLD-AND-NEW
+END
+-RUN
+
+TABLE FILE XTWO
+PRINT AMT_RENTALX/D16.2
+  BOOKINGS
+  CAR_AMT
+  CAR_DSC
+  CAR_RATE 	
+  CAR_TYPE 	
+  DAILY_RATE 	
+  DROP_CTY_NAME
+  DROP_OFF_DT
+  GCAR_AMT/D16.2
+  LEVEL_DESC
+  NAMEC
+  NBR_DAYS	
+  NMBR_DAYS
+  PASSNGR_NAME
+  PICK_CTY_NAME
+  PICK_UP_DT	
+  PICKUP_DATE
+  RANK_VALUE
+  RANK_LABEL1
+  RANK_LABEL2
+  RANK_LABEL3
+  RATE_DLYX/D16.2
+  RENTAL_AMT
+  RENTAL_DAYS	
+  VENDOR_NAME
+BY PASSNGR_NAME
+ON TABLE HOLD AS CARHOLD4 
+END
+-RUN
+
+
+DEFINE FILE CARHOLD4
+NOWTOD/A8 WITH PASSNGR_NAME = HHMMSS (NOWTOD);
+END
+
+-RUN
+
+
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*7/31/00     IBISTL-KR             ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'CARHOLD4';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+TABLE FILE CARHOLD4
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*

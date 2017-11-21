@@ -1,0 +1,261 @@
+-************************************************************************
+-* File: clean_up_load_process.fex
+-* Clean the files and folders created in the load process.
+-*
+-* Keep these folders in 30 days in d:\ibi\apps\load_executes\date_time 
+-* (20110601_230004)
+-* We create another directory inside of d:\ibi\apps\load_executes 
+-* with a name of the date and time.
+-*
+-* Keep files in 30 days in this folder d:\ibi\apps\load_executes\logs
+-*
+-* Keep files and folders for 4 months
+-* d:\ibi\apps\qreview_executes
+-* d:\ibi\apps\qreview_executes\logs
+-*
+-* Keep Aux load files 2 weeks in  D:\data\as400_aux_files\,
+-* Keep AS_400_files   12 months in D:\data\as400_files.
+-*
+-* Command Syntax
+-* CD C:\
+-* RMDIR C:\TEST /S /Q
+-**************************************************************************
+-*  DATE      PROGRAMMER  CHANGE                                       
+-*  ----      ----------  -------------------------------------------------
+-*  11/15/13  GSE         Removed all hard-coded machine name references
+-*                        and changed &DRV to use &&DATASRV                  
+-**************************************************************************
+-INIT_ENV
+-****************************
+-INCLUDE SETECHO
+SET TEMPERASE = OFF
+ 
+-* NUMBER OF DAYS TO DELETE PAST
+-* 5 days in d:\ibi\apps\load_executes\
+-SET &NUMDAYS = 30;
+-SET &NUMDAYS1 = 30;
+ 
+-* 120 days in d:\ibi\apps\qreview_executes
+-SET &NUMDAYS2 = 120;
+ 
+-* 14 days in d:\data\as400_aux_files
+-SET &NUMDAYS3 = 15;
+ 
+-* 3 Months (one year) in d:\data\as400_files
+-SET &NUMDAYS4 = 366;
+ 
+-* INITIAL DIRECTORY FOR TREE
+-SET &DRV = '&&DATASRV.EVAL';
+-SET &INITDIR = &DRV || '\ibi\apps\load_executes';
+ 
+-* FILEDEF FOR INITIAL TREE OUTPUT
+-SET &FILELOC = '&DRV.EVAL' || '\TEMP\OUTPUT.FTM';
+ 
+-* FILEDEF FOR FILE NAMES FROM TREE OUTPUT
+-SET &FILETREE = '&DRV.EVAL' || '\TEMP\FILETREE.FTM';
+ 
+-* FILEDEF FOR DELETETION BAT FILE
+-SET &FILEDELS = '&DRV.EVAL' || '\TEMP\FILEDELS.BAT';
+-*
+ 
+FILEDEF FILETREE DISK &FILETREE.EVAL
+FILEDEF FILEDELS DISK &FILEDELS.EVAL (APPEND
+-RUN
+ 
+-**************************************************************************************************
+-CREATE_TREE
+-**************************************************************************************************
+ 
+DOS TREE &INITDIR /F /A >> &FILELOC.EVAL
+-RUN
+ 
+-SET &CNT = 1;
+-SET &TimesToLoop = 4;
+-REPEAT LOOPENDX 4 TIMES
+ 
+FILEDEF TREE00 DISK &FILELOC.EVAL
+-RUN
+-*
+-**************************************************************************************************
+-*Hold folders to be removed
+-**************************************************************************************************
+DEFINE FILE TREE00
+ VAL/A4    =IF EDIT(TREE,'9999') EQ '+---' THEN 'DIR1'
+       ELSE IF EDIT(TREE,'999999999999') EQ '|           ' OR '|   |       ' OR '    |       ' OR '            '  THEN 'FILE'
+       ELSE 'DIR0';
+ DIR/A4    =IF VAL EQ 'FILE' AND EDIT(TREE,'$$$$$$$$$$$$9') EQ ' '
+             THEN 'DIR0' ELSE VAL;
+ TESTVAL/A19 = EDIT(TREE,'9999999999999999999');
+ DIRNAME/A15 = EDIT(TREE,'$$$$999999999999999');
+ 
+ THISDAY/YYMD = &YYMD;
+ THE5DAYS/YYMD = THISDAY - &NUMDAYS;
+ ATHE5DAYS/A8YYMD = THE5DAYS;
+ THRESH1/A19 =  '+---' | ATHE5DAYS | '_000000';
+ 
+END
+ 
+TABLE FILE TREE00
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET LINES 999999
+PRINT
+  DIRNAME AS ''
+ 
+BY TREE NOPRINT
+WHERE VAL EQ 'DIR1'
+  AND TESTVAL LT THRESH1
+ON TABLE HOLD AS FILETREE FORMAT ALPHA
+END
+-RUN
+ 
+-IF &LINES EQ 0 THEN GOTO IncCount;
+-**************************************************************************************************
+-*Remove directories more than the specified days
+-**************************************************************************************************
+FILEDEF TREE1F DISK &FILETREE.EVAL
+-RUN
+ 
+DEFINE FILE TREE1F
+ DELLINE/A120 = 'RMDIR ' | '&INITDIR.EVAL' | '\' | TREE || ' /S /Q';
+END
+ 
+TABLE FILE TREE1F
+SUM DELLINE
+BY DELLINE NOPRINT
+ON TABLE HOLD AS FILEDELS FORMAT ALPHA
+END
+-RUN
+ 
+-*DOS CD D:
+-*DOS  &FILEDELS
+-RUN
+ 
+-**************************************************************************************************
+-*CLEAN_UP Temp Files for file folder d:\ibi\apps\load_executes
+-**************************************************************************************************
+DOS DEL &FILELOC.EVAL
+DOS DEL &FILETREE.EVAL
+-RUN
+ 
+-IncCount
+ 
+-SET &CNT = &CNT + 1;
+-IF &CNT GT &TimesToLoop THEN GOTO LOOPENDX;
+ 
+-SET &NUMDAYS = IF &CNT EQ 2 THEN &NUMDAYS2 ELSE IF &CNT EQ 3 THEN &NUMDAYS3 ELSE &NUMDAYS4;
+ 
+-SET &INITDIR = IF &CNT EQ 2 THEN &DRV || '\ibi\apps\qreview_executes'
+- ELSE IF &CNT EQ 3 THEN &DRV || '\data\as400_aux_files'
+- ELSE  &DRV || '\data\as400_files';
+ 
+FILEDEF TREE00 CLEAR
+FILEDEF TREE00 DISK &FILELOC.EVAL
+FILEDEF FILETREE CLEAR
+FILEDEF FILETREE DISK &FILETREE.EVAL
+-RUN
+ 
+DOS TREE &INITDIR /F /A >> &FILELOC.EVAL
+-RUN
+ 
+-LOOPENDX
+ 
+-**************************************************************************************************
+-* Delete all Log Files in \ibi\apps\load_executes\logs as there is no need to keep
+-* Get all file names in \ibi\apps\load_executes\logs to be deleted.
+-**************************************************************************************************
+-SET &INITDIR = &DRV || '\ibi\apps\load_executes\logs';
+DOS TREE  &INITDIR  /F /A   >> &FILELOC.EVAL
+-RUN
+ 
+ 
+TABLE FILE TREE00
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET LINES 999999
+SUM TREE AS ''
+BY TREE NOPRINT
+WHERE TREE CONTAINS '.log' AND TREE NE '  '
+ON TABLE HOLD AS FILETREE FORMAT ALPHA
+END
+-RUN
+ 
+-IF &LINES EQ 0 THEN GOTO DelQTRLogs;
+-**************************************************************************************************
+-* Put all log file names in the .bat file for deletion
+-**************************************************************************************************
+FILEDEF TREE1L DISK &FILETREE.EVAL
+-RUN
+ 
+DEFINE FILE TREE1L
+ DELLINE/A120 = 'DEL ' | '&INITDIR.EVAL' | '\' | EDIT(TREE,'$$$$99999999999999999999999999999999999999999999999999') || ' /F /Q';
+END
+ 
+TABLE FILE TREE1L
+SUM DELLINE
+BY DELLINE NOPRINT
+WHERE TREE NE ' '
+ON TABLE HOLD AS FILEDELS FORMAT ALPHA
+END
+-RUN
+-**************************************************************************************************
+-* Delete all Log Files in \ibi\apps\qreview_executes\logs as there is no need to keep
+-* Get all file names in \ibi\apps\qreview_executes\logs to be deleted.
+-**************************************************************************************************
+DOS DEL &FILELOC.EVAL
+DOS DEL &FILETREE.EVAL
+FILEDEF TREE00 CLEAR
+FILEDEF TREE00 DISK &FILELOC.EVAL
+FILEDEF FILETREE CLEAR
+FILEDEF FILETREE DISK &FILETREE.EVAL
+-RUN
+ 
+ 
+-SET &INITDIR = &DRV || '\ibi\apps\qreview_executes\logs';
+DOS TREE  &INITDIR  /F /A   >> &FILELOC.EVAL
+-RUN
+ 
+ 
+TABLE FILE TREE00
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET LINES 999999
+SUM TREE AS ''
+BY TREE NOPRINT
+WHERE TREE CONTAINS '.log' AND TREE NE '  '
+ON TABLE HOLD AS FILETREE FORMAT ALPHA
+END
+-RUN
+ 
+-IF &LINES EQ 0 THEN GOTO DoneDelTemp;
+-**************************************************************************************************
+-* Put all log file names in the .bat file for deletion
+-**************************************************************************************************
+FILEDEF TREE1L DISK &FILETREE.EVAL
+-RUN
+ 
+DEFINE FILE TREE1L
+ DELLINE/A120 = 'DEL ' | '&INITDIR.EVAL' | '\' | EDIT(TREE,'$$$$99999999999999999999999999999999999999999999999999') || ' /F /Q';
+END
+ 
+TABLE FILE TREE1L
+SUM DELLINE
+BY DELLINE NOPRINT
+WHERE TREE NE ' '
+ON TABLE HOLD AS FILEDELS FORMAT ALPHA
+END
+-RUN
+ 
+-DoneDelTemp
+ 
+DOS  &FILEDELS
+-RUN
+ 
+-************
+-CLEAN_UP_TMP
+-************
+DOS DEL &FILELOC.EVAL
+DOS DEL &FILETREE.EVAL
+DOS DEL &FILEDELS.EVAL
+-RUN
+ 
+-************
+-LEAVENOW
+-************

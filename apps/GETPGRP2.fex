@@ -1,0 +1,24 @@
+-**********************************************************************
+-* GETPGROUP.FEX
+-* Retrieve Peer Group selected
+-**********************************************************************
+-INCLUDE SETECHO
+-*Retain the original rollup code (base rollup)
+
+TABLE FILE BRPTFLDS
+PRINT PEERMBR
+WHERE INST_KEY EQ &&IKEY AND PEERMBR NE ' '
+ON TABLE SAVE AS PEERMEM
+END
+-RUN
+-SET &&TOTPEERS = &LINES;
+-IF &LINES EQ 0 THEN GOTO NOPEERGROUP;
+
+-SET &CNT = 1;
+-REPEAT TOEND &LINES TIMES
+-READ PEERMEM NOCLOSE &PEERMBR.8.
+-SET &&PEERMBR.&CNT = '&PEERMBR.EVAL';
+-SET &CNT = &CNT + 1;
+-TOEND
+-CLOSE PEERMEM;
+-NOPEERGROUP

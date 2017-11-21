@@ -1,0 +1,176 @@
+-***************************************************************************
+-* REPORT NAME: TOP ORIGINATION SUMMARY
+-* TOTAL COMPANY REPORTING
+-*8/29/17-JEM-S-34936 Removed TNT_COMPANY FIELD BUT LEFT SELECTION AS TNT_COMPANY WILL BE UPDATED TO HAVE THE VALUE OF 1/2/3
+
+-***************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-SET &&INTDOM = IF &&SETF EQ 'TCTPORGD' THEN 'D' ELSE
+-               IF &&SETF EQ 'TCTPORGI' THEN 'I' ELSE 'T';
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED IN STEP7
+-*========================================================================
+DEFINE FILE &&EXTRACT
+FARE_PAID/D12.2CSM   = SEG_AMT + SEG_TAX;
+-* NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+-*                            (FARE_PAID GE 0) AND
+-*                            (SEG_COUNT EQ 1) AND 
+-*                            (CONJ_REL EQ 1) THEN 1 ELSE 
+-*                         IF (TICKET_CODE EQ '1') AND
+-*                            (EX_FLAG NE ' ') THEN (-1) ELSE 
+-*                         IF (TICKET_CODE EQ '1') AND
+-*                            (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;  
+MILES/D9CS = CITYPAIR.SEG_MILES;                           
+
+ORGDST/A6=ORG_APC||DST_APC;                      
+                           
+-* Defines on Previous Defines
+
+
+END
+
+TABLEF FILE &&EXTRACT
+PRINT C_ITIN
+  MILES
+  FARE_PAID  AS 'CP_FARE_PD'
+  NET_TKT_CNT
+  ORGDST
+  ORG_APC
+  ORG_APCX
+  DST_APC
+  DST_APCX
+  TKT_NUM
+-IF &&INTDOM EQ 'T' THEN GOTO SKIP;
+WHERE AIR_MAIN.INTL_DOM EQ '&&INTDOM.EVAL'
+-SKIP
+WHERE TRN_DATE GE &&FROMDT.EVAL AND TRN_DATE LE &&TODT.EVAL
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+WHERE TNT_COMPANY EQ '1' OR '2'
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TC_ORG 
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM STEP4 - HOLD TO FOCUS DATABASE TCRANK        
+-*========================================================================
+
+-IF &&SETF EQ 'TCTPORDS' OR 'TCTPORD' OR 'TCTPORDD' OR 'TCTPORDI' OR 'TCTPORI' OR 'TCTPOFD' THEN GOTO ORGDST;
+
+DEFINE FILE TC_ORG
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TC_ORG
+SUM CP_FARE_PD AS 'FARE'
+    MILES	
+    NET_TKT_CNT	
+BY ROLLCD
+BY ORG_APC
+BY ORG_APCX
+BY DST_APC
+BY DST_APCX
+ON TABLE HOLD AS HOLD2 
+END
+-RUN
+
+DEFINE FILE HOLD2
+NMB/I5 = NMB + 1;
+END
+
+TABLE FILE HOLD2
+PRINT ORG_APCX
+    DST_APCX
+    NET_TKT_CNT
+    FARE
+    MILES
+BY ROLLCD
+-* BY NMB
+BY ORG_APC
+BY DST_APC
+ON TABLE HOLD AS TCORG1
+END
+-RUN
+
+
+MODIFY FILE TCORG
+LOG DUPL MSG OFF
+FIXFORM FROM TCORG1
+DATA ON TCORG1
+END
+-RUN
+
+-GOTO XXIT;
+
+-ORGDST;
+DEFINE FILE TC_ORG
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TC_ORG
+SUM CP_FARE_PD AS 'FARE'
+    MILES	
+    NET_TKT_CNT 	
+BY ROLLCD
+BY ORGDST
+BY ORG_APC
+BY ORG_APCX
+BY DST_APC
+BY DST_APCX
+BY C_ITIN
+ON TABLE HOLD AS HOLD2 
+END
+-RUN
+
+TABLE FILE HOLD2
+PRINT ORG_APC
+    DST_APC
+    ORG_APCX
+    DST_APCX
+    C_ITIN
+    NET_TKT_CNT
+    FARE
+    MILES
+    C_ITIN
+BY ROLLCD
+BY ORGDST
+ON TABLE HOLD 
+END
+-RUN
+
+
+MODIFY FILE TCORG1
+LOG DUPL MSG OFF
+FIXFORM FROM HOLD
+DATA ON HOLD
+END
+-RUN
+
+
+
+-NEXTONE;
+-XXIT;

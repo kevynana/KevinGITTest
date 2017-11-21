@@ -1,0 +1,525 @@
+-*1/13/15     S-06926 Changed placement of footer remarks- DEB
+ 
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+-INCLUDE SETECHO 
+-* File SMRYRPT.FEX 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS
+-*                                  USED IN FOOTERSM
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR
+-*                                  DRILLABLE REPORTS.
+-*2/05/01      TANDT-SS             ADD BASE_FARE, DEPT_MONTH, SEG_DESIG
+-*                                  AND TOUR_CODE.
+-*5/10/01      TANDT-SS             ADD EMB_APT_CD AND RTE_APT_CD.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*6/10/13      Joy                  Added NORECORDS logic
+-* 4/8/14      DEB                    ADDED LONHI TO ABCDNH ROUTINE
+-*4/16/14      DEB                 ADDED NOHTL_RSN DEFINE
+-*8/6/14       JOY                 ADDED LOGIC FOR PHYNH REPORT
+-*11/4/14    JOY                UPDATED NORECORDS LOGIC FOR ABCDNH DUE TO ERRORS
+-*1/8/15     DEB                S-06898 corrected issue in Excel format report failing
+-*                              added cout to -SET &&DRILLABLE
+-*1/12/15   DEB                 S-06926 Updated placement of footers
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*5/21/2015 DEB - S-09179   - Corrected POTENTIAL AIR TKT HTL NGTS FOOTER =
+-*  10/30/2015  REJ  S-12492 Added special code for AVIW56 because the parameters in the subfoot
+-*                           were not always showing correctly.  This stream is written a little
+-*                           different where the Hotel extract is really happening in the Summary
+-*                           and Detail report focexecs.
+-*12/09/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-*9/14/16-JEM-S-24753-Updated PHYNH to no allow drilldown as there is no code for it in detail
+-*10/4/16-JEM-S-25410-Added BBSDQNH to goto so report will run
+-*11/21/2016 RSB - S-23625 Create new standard hotel attachment report - Summary/Detail by Ticket
+-*                          Added logic to bypass hotel data.
+-*                          Created new report section: -ABHTLTKTS
+-*12/27/2016 RSB - S-24104 Create new standard hotel attachment report - Summary/Detail by City
+-*                          Created new report section: -ABHTLCTYS
+-*
+-* 03/07/2017 DLV - S-31658 - Updated extract and moved SM code to AVIW56SM and DT code into AVIW56DT
+-*                            for ABHTLCTY
+
+-* 03/10/2017 - DLV - S-31874 - Added routine for ABNHD
+-* 03/30/17 - JEM S-32618 - Updated ABNHD to execute REPORT_3 if output excel so summary and detail are produced.
+-*4/24/2017-JEM-S-33318-updated logic for no records report
+-* 06/26/2017 - RSB - S-32797 Hotel attachment by ticket - ABHTLTK
+-* 08/08/2017 RSB S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                         Added: -SET &FTR_AddlLines = #;
+-**********************************************************************
+-*
+SET ASNAMES = ON
+-RUN
+-*
+-IF '&&SETF.EVAL' EQ 'ABHTLTKT' OR 'ABHTLCTY' OR 'ABNHD' THEN GOTO SKIP_HOTELS;
+-*
+-INCLUDE NOHTLSM
+-RUN
+-*
+-***********
+-SKIP_HOTELS
+-***********
+-IF &&FROMAVRP NE 'Y' GOTO :AVSFS1;
+-INCLUDE AVRP_SUBFOOT
+-:AVSFS1
+  
+-INCLUDE SETECHO
+ 
+
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL'  ELSE &&SMSTY;
+ 
+
+-SET &&DRILLABLE= IF '&&OUTFMT.EVAL' NE 'EXCEL' THEN 'Y' ELSE 'N';
+-RUN
+ 
+ 
+-IF '&&SETF.EVAL' EQ 'ABHTLTKT' THEN GOTO ABHTLTKTS; 
+-IF '&&SETF.EVAL' EQ 'ABHTLCTY' THEN GOTO ABHTLCTYS; 
+-IF '&&SETF.EVAL' EQ 'ABNHD'    THEN GOTO ABNHD; 
+-* 
+-******* 
+-ABNHD
+-******* 
+DEFINE FILE AIRHLD
+ HTL_ATTCH/I9 = IF (HOTEL_FLAG EQ 'Y') THEN STAY ELSE 0;
+ HTL_NOATTCH/I9 = IF (HOTEL_FLAG EQ 'N') THEN STAY ELSE 0;
+ FLAG/A1 = IF NHR_DESC EQ ' ' THEN 'N' ELSE 'Y';
+END
+-*
+TABLE FILE AIRHLD
+PRINT NET_TKT_CNT
+      HOTEL_FLAG
+      STAY
+      HTL_ATTCH
+      HTL_NOATTCH
+      NHR_DESC
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY TKT_NUM
+BY TRN_DATE
+WHERE FLAG EQ 'Y'
+ON TABLE HOLD AS AIRHLDH1
+END
+-RUN
+
+ 
+
+DEFINE FILE AIRHLDH1
+  NHDESC/A40 = NHR_DESC;
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+TABLE FILE AIRHLDH1
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC2;
+"</2"
+-NOSPC2;
+&&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+ 
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+-IF &&FROMAVRP NE 'Y' THEN GOTO NObreak;
+ &&BREAKOPTION
+-NObreak;
+
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+ 
+-*
+-INCLUDE FOOTERSM
+-* 
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ 
+ON TABLE SET STYLE *
+ 
+-INCLUDE &&PASTYS
+ 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+-*
+-*********** 
+-SKIP_DRILL
+-*********** 
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST 
+&&OUTLINE2
+END
+-RUN
+ 
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3N;
+ 
+EX REPORT_3
+ 
+-SKIP_R3N
+-GOTO XXIT;
+-*
+-*********
+-ABHTLTKTS
+-*********
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL'  ELSE &&SMSTY;
+-*
+-* Uncomment to change report title
+-* -SET &&RPT_TTL1 = 'Ticket Summary with Hotel Attachment';
+-*  
+-* Get data for summary report
+DEFINE FILE AIRHLD
+ HTL_ATTCH  /I9 = IF (NET_TKT_CNT GT 0) AND (HOTEL_FLAG EQ 'Y') THEN 1 ELSE 0;
+ HTL_NOATTCH/I9 = IF (NET_TKT_CNT GT 0) AND (HOTEL_FLAG EQ 'N') THEN 1 ELSE 0;
+END
+-*
+TABLE FILE AIRHLD
+PRINT NET_TKT_CNT
+      HOTEL_FLAG
+      STAY
+      HTL_ATTCH
+      HTL_NOATTCH
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY TKT_NUM
+BY TRN_DATE
+WHERE TKT_NUM IN FILE TKT_HOLD;
+ON TABLE HOLD AS AIRHLDH1
+END
+-RUN
+-*
+DEFINE FILE AIRHLDH1
+  NOWTOD/A8 WITH PASSNGR_NAME = HHMMSS (NOWTOD);
+END
+-*
+TABLE FILE AIRHLDH1
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+ 
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+-IF &&FROMAVRP NE 'Y' THEN GOTO SKIPbr;
+ &&BREAKOPTION
+-SKIPbr;
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+-*
+-SET &FTR_AddlLines = 4;
+FOOTING BOTTOM
+" "
+" "
+"Report includes tickets with an overnight stay including one way tickets that could be attached."
+"Hotel Attachment determined by looking at dates of airlines tickets and comparing it with any hotel booked during that date range."
+-* 
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+-* 
+ON TABLE SET STYLE *
+-* 
+-INCLUDE &&PASTYS
+-*  
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+-*
+-***********
+-SKIP_DRILL
+-*********** 
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+-* 
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R4;
+-* 
+EX REPORT_3
+-*
+-********
+-SKIP_R4
+-********
+-GOTO XXIT; 
+-*
+-*********
+-ABHTLCTYS
+-*********
+
+TABLE FILE AIRHLD
+PRINT SEG_HTL_FLAG
+      STOP_CON
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY TKT_NUM
+BY RTE_CTY_NM
+-*WHERE TKT_NUM IN FILE TKT_HOLD;
+WHERE STAY NE 0;
+WHERE TKT_TYPE EQ ' '
+ON TABLE HOLD AS AIRHLDCTYS
+END
+-RUN
+
+ 
+ 
+
+
+-*
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL'   ELSE &&SMSTY;
+-*
+-* Uncomment to change report title
+-* -SET &&RPT_TTL1 = 'Ticket Summary with Hotel Attachment';
+-*  
+DEFINE FILE AIRHLDCTYS
+ TRIPS_BKD/I9 = 1;
+ HTL_STAYS/I9 = IF SEG_HTL_FLAG EQ 'Y' THEN 1 ELSE 0;
+ NOWTOD/A8 WITH PASSNGR_NAME = HHMMSS (NOWTOD);
+END
+-*
+TABLE FILE AIRHLDCTYS
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC3;
+"</2"
+-NOSPC3;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+ 
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+-IF &&FROMAVRP NE 'Y' THEN GOTO SkipBreak;
+ &&BREAKOPTION
+-SkipBreak;
+
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+
+-*
+-SET &FTR_AddlLines = 3;
+FOOTING BOTTOM
+" "
+" "
+"Hotel Attachment determined by looking at dates of airlines tickets and comparing it with any hotel booked during that date range."
+-* 
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+-* 
+ON TABLE SET STYLE *
+-* 
+-INCLUDE &&PASTYS
+-*   
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+-*
+-***********
+-SKIP_DRILL
+-*********** 
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+-* 
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R5;
+-* 
+EX REPORT_3
+-*
+-********
+-SKIP_R5
+-********
+-GOTO XXIT; 
+-*
+
+-NORECORDS
+-SET &INST_KEY = &&IKEY;
+
+TABLE FILE BRPTINST
+PRINT PAIR_DB RPT_GROUP RPT_STREAM GLOBAL_PARM USE_PARM INST_KEY
+WHERE INST_KEY EQ &INST_KEY
+ON TABLE SAVE AS PAIRDB
+END
+-RUN
+
+-READ PAIRDB &PAIRDB.A1. &RPTGRP.A3. &RPTSTREAM.A8. &SETFILE.A8. &VIEW.A8.
+-CLOSE PAIRDB
+ 
+-SET &RPTGRP = '&RPTGRP.EVAL';
+-SET &VIEW = '&VIEW.EVAL';
+-SET &STREAM = '&RPTSTREAM.EVAL';
+
+-SET &HEADER = IF &RPTGRP EQ 'ADD' THEN 'NORECHDRDD' ELSE 'NORECHDR';
+-RUN
+
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN &HEADER ELSE  
+-              IF &RPTGRP EQ 'ADD' THEN 'HDREXLSDD' ELSE 
+-              IF &STREAM EQ 'AIR_BNM' THEN 'HDREXLSDD' ELSE 'HDREXLS';
+
+-RUN
+
+
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE 'NORECSTY';
+
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+-RUN
+
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE &&PAHDR
+PRINT EMPTY AS 'REPORT,MESSAGE'
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+ 
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+ 
+ 
+ 
+ 
+-XXIT;

@@ -1,0 +1,204 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File CVIEW1EX.FEX
+-********************************************************************
+-* MODIFICAIONS:
+-********************************************************************
+-*
+-* This program extracts data for the series of basic car verndor listing
+-* reports.  Based on the user profile selected, one of many report
+-* formats will be produced.  
+-*
+-* DATE      NAME       DESCRIPTION
+-* 1/25/01   SS         Changed STATE_CODE to look at PICK_CTY.
+-* 4/17/01   SS         Added DOD_TYPE.
+-*12/21/04   DV         CHANGED IBOOK DEFINE TO INCLUDE DOD_TYPE 'J'
+-*10/11/05   DV         CHANGED IBOOK DEFINE TO INCLUDE DOD_TYPE 'H'
+-*1/28/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+-*2/5/14 Updated the bookings define to use num_days instead of daily_rate - JK
+-*12/22/15 - DLV - S-13284   Updated to allow reports to sort/subtotal by id-levels
+ 
+
+-********************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-SET HOLDATTR = ON; 
+-RUN
+
+-SET &&IDLEVELBREAK = '';
+-RUN
+
+-SET &CARDATES = &&WEB_PATH || 'CARDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+DEFINE FILE &&EXTRACT
+
+  AVG_DLY_RATE/D9.2 = IF (RENTAL_AMT LT 0) AND (NUM_DAYS LT 0)
+                      THEN ((RENTAL_AMT/NUM_DAYS) * (-1)) 
+                      ELSE RENTAL_AMT/NUM_DAYS;
+BOOKINGS/D12 = IF NUM_DAYS GT 0 THEN 1 ELSE IF NUM_DAYS LT 0 THEN (-1) ELSE 0;
+  LEVEL_DESC1/A60  = &&LDESC;
+  ZEBOOK/D8 = IF (DAILY_RATE GE 0) AND (VENDOR_CODE EQ '&&VENDOR1.EVAL') 
+              THEN 1 
+              ELSE IF (DAILY_RATE LT 0) AND (VENDOR_CODE EQ '&&VENDOR1.EVAL')
+              THEN (-1) ELSE 0;
+  NONZEBOOK/D8 = IF (DAILY_RATE GE 0) AND (VENDOR_CODE NE '&&VENDOR1.EVAL') 
+                 THEN 1 
+                 ELSE IF (DAILY_RATE LT 0) AND (VENDOR_CODE NE '&&VENDOR1.EVAL')
+                 THEN (-1) ELSE 0;
+  MIDBOOK/D8 = IF (DAILY_RATE GE 0) AND 
+                  (CAR_CAT EQ 'INTERMEDIATE' OR 'MIDSIZE' OR 'ECONOMY' 
+                  OR 'COMPACT') THEN 1 
+               ELSE IF (DAILY_RATE LT 0) AND 
+                  (CAR_CAT EQ 'INTERMEDIATE' OR 'MIDSIZE' OR 'ECONOMY' 
+                  OR 'COMPACT') THEN (-1) ELSE 0;
+  NONMIDBOOK/D8 = IF (DAILY_RATE GE 0) AND
+                     (CAR_CAT NE 'INTERMEDIATE' OR 'MIDSIZE' OR 'ECONOMY' 
+                     OR 'COMPACT') THEN 1 
+                  ELSE IF (DAILY_RATE LT 0) AND
+                     (CAR_CAT NE 'INTERMEDIATE' OR 'MIDSIZE' OR 'ECONOMY' 
+                     OR 'COMPACT') THEN (-1) ELSE 0;
+  ZE_AMT/D9.2 = IF (VENDOR_CODE EQ '&&VENDOR1.EVAL') THEN RENTAL_AMT ELSE 0;
+  NONZE_AMT/D9.2 = IF (VENDOR_CODE NE '&&VENDOR1.EVAL') THEN RENTAL_AMT ELSE 0;
+  MID_AMT/D12.2CS = IF (CAR_CAT EQ 'INTERMEDIATE' OR 'MIDSIZE' OR 'ECONOMY' 
+                     OR 'COMPACT') THEN RENTAL_AMT ELSE 0;
+  NONMID_AMT/D9.2 = IF (CAR_CAT NE 'INTERMEDIATE' OR 'MIDSIZE' OR 'ECONOMY' 
+                       OR 'COMPACT') THEN RENTAL_AMT ELSE 0;  
+  CAR/A50 = CAR_TYPE ||' - '||CAR_DESC;	
+  CARD_NUM/A12 = EDIT(CREDIT_CARD, '$$999999999999$$$$');	
+  CARD1_NUM/A4 = EDIT(CREDIT_CARD, '$$$$$$$$$$$$$$9999');	
+  DAY_OF_WK/W = PICKUP_DATE;	
+  DROP_OFF_DT/MDYY = DROP_DATE;	
+  IBOOK/A13 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'INTERNET' ELSE
+              'NON-INTERNET';
+  INV_DATE/MDYY = INVOICE_DATE;
+  INV_MONTH/MT = INVOICE_DATE;	
+  LEV_2/A15 = IF PASSNGR_NAME NE LAST PASSNGR_NAME THEN LEVEL2 ELSE ' ';	
+  NBR_DAYS/D12 = NUM_DAYS;	
+  PICK_UP_DT/MDYY = PICKUP_DATE;	
+  REFUSE_CD/A2 = EDIT(REFUSE_KEY,'$$$$$$$$99');	
+  SPACE/A8 = '        ';
+  XSPACE/A2 = '| ';
+  XPICK_DOW/W   = PICKUP_DATE;
+  XDROP_DOW/W   = DROP_DATE;
+  RENTAL_DAYS/D8 = IF (NUM_DAYS LT 0) AND (NUM_CARS LT 0) THEN
+                   ((NUM_DAYS * NUM_CARS) * (-1)) ELSE NUM_DAYS * NUM_CARS;
+  
+-* ****DEFINES ON PREVIOUS DEFINES****
+
+  PICK_DAY/A3   = DECODE XPICK_DOW (1 'MON' 2 'TUE' 3 'WED'
+                        4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+  DROP_DAY/A3   = DECODE XDROP_DOW (1 'MON' 2 'TUE' 3 'WED'
+                        4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+  CAR_TOT/A58 = SPACE|CAR;
+  ZE_DAYS/D8 = IF (VENDOR_CODE EQ '&&VENDOR1.EVAL') THEN RENTAL_DAYS ELSE 0;
+  NONZE_DAYS/D8 = IF (VENDOR_CODE NE '&&VENDOR1.EVAL') THEN RENTAL_DAYS ELSE 0;
+  MID_DAYS/D8 = IF (CAR_CAT EQ 'INTERMEDIATE' OR 'MIDSIZE' OR 'ECONOMY' 
+                   OR 'COMPACT') THEN RENTAL_DAYS ELSE 0;
+  NONMID_DAYS/D8 = IF (CAR_CAT NE 'INTERMEDIATE' OR 'MIDSIZE' OR 'ECONOMY' 
+                      OR 'COMPACT') THEN RENTAL_DAYS ELSE 0;  
+-INCLUDE IDLEVDEFINE 
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT AIRPORT_CODE	
+  AIRPORT_NAME	
+  ALPHA_RATE	
+  AR_BRANCH
+  AVG_DLY_RATE 	
+  BOOKINGS
+  BR_CL_IDX	
+  CAR
+  CAR_CAT	
+  CAR_DESC	
+  CAR_KEY	
+  CAR_RATE 	
+  CAR_TOT
+  CAR_TYPE 	
+  CARD_NUM	
+  CARD1_NUM	
+  CCR_CONFIRM 	
+  CREDIT_CARD	
+  DAILY_RATE 	
+  DAY_OF_WK
+  DOD_TYPE	
+  DROP_CITY	
+  DROP_CTY.CITY_NAME AS 'DROP_CTY_NAME' 	
+  DROP_DATE 	
+  DROP_DAY
+  DROP_OFF_DT	
+  IBOOK
+  INV_DATE
+  INV_MONTH	
+  INVOICE_DATE	
+  INVOICE_NUM 	
+  LEV_2 	
+  LEVEL_DESC	
+  LEVEL1 	
+  LEVEL2	
+  LEVEL3 	
+  MIDBOOK
+  MID_AMT
+  MID_DAYS
+  NBR_DAYS 
+  NONMIDBOOK
+  NONMID_AMT
+  NONZEBOOK
+  NONMID_DAYS
+  NONZE_AMT
+  NONZE_DAYS	
+  NUM_CARS 	
+  NUM_DAYS	
+  PASSNGR_NAME	
+  PICK_CTY.CITY_NAME AS 'PICK_CTY_NAME'	
+  PICK_DAY
+  PICK_UP_DT	
+  PICKUP_CITY	
+  PICKUP_DATE	
+  PNR_LOCATOR 	
+  REFUSAL_DESC	
+  REFUSE_CD	
+  REFUSE_KEY 	
+  RENTAL_AMT
+  RENTAL_DAYS	
+  RESV_BRANCH	
+  PICK_CTY.STATE_CODE AS 'STATE_CODE'
+  STD_RATE 	
+  TICKET_BRANCH	
+  TKT_NUM	
+  VENDOR_CODE	
+  VENDOR_NAME
+  XSPACE
+  ZE_AMT	
+  ZEBOOK
+  ZE_DAYS
+
+-INCLUDE &CARDATES
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS &&RPT_HOLD
+
+END
+
+-*-EXIT
+
+-*-QUIT
+ 

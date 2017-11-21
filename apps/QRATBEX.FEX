@@ -1,0 +1,154 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Created for the new quarterly review - JK 8/2/05
+-******************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE &&EXTRACT 
+
+FARE_PAID/D12   = SEG_AMT + SEG_TAX;
+  
+NET_TKT_CNT/D8    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (SEG_COUNT EQ 1) AND
+                           (FARE_PAID GE 0) AND
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (SEG_COUNT EQ -1) AND
+                           (EX_FLAG EQ 'F')
+                         THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (SEG_COUNT EQ -1) AND 
+                           (RF_FLAG EQ 'F')
+                         THEN (-1) ELSE 0;
+-*ROLLUP_CODE/A8 = &&ROLLUP;                         
+CLIENTCODE/A8 = '&&ROLLUP.EVAL';   
+-INCLUDE QRFTRANA
+END
+
+TABLEF FILE &&EXTRACT
+PRINT AIR_MAIN.INTL_DOM AS 'INT_DOM'
+      FARE_PAID
+      NET_TKT_CNT
+-*      ROLLUP_CODE
+      CLIENTCODE AS 'ROLLUP_CODE'      
+      YEAR
+      TRAN
+      CURRENT PRIOR PYTD CQ PQ
+WHERE VOID.VOID_DATE EQ 0     
+WHERE (TRN_DATE GE '&&FROMDT.EVAL') AND (TRN_DATE LE '&&TODT.EVAL') OR
+      (TRN_DATE GE '&&FXDATE.EVAL') AND (TRN_DATE LE '&&TXDATE.EVAL')
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RPT_HOLD
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NOBASE;
+
+DEFINE FILE RPT_HOLD
+ DTKTS/D8 = IF (INT_DOM EQ 'D') 
+                THEN NET_TKT_CNT ELSE 0;
+ DFARE/D12 = IF (INT_DOM EQ 'D') 
+                THEN FARE_PAID ELSE 0;
+ ITKTS/D8 = IF  (INT_DOM EQ 'I') 
+                THEN NET_TKT_CNT ELSE 0;
+ IFARE/D12 = IF (INT_DOM EQ 'I') 
+                THEN FARE_PAID ELSE 0; 
+END
+-RUN
+
+TABLE FILE RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+    DFARE
+    DTKTS
+    ITKTS
+    IFARE    
+CURRENT PRIOR PYTD CQ PQ    
+BY ROLLUP_CODE
+BY YEAR
+BY TRAN
+ON TABLE HOLD AS HOLDA
+END
+-RUN
+
+
+
+TABLE FILE HOLDA
+SUM FARE_PAID 
+    NET_TKT_CNT 
+    DFARE 
+    DTKTS 
+    IFARE
+    ITKTS 
+CURRENT PRIOR PYTD CQ PQ    
+BY ROLLUP_CODE
+BY YEAR
+BY TRAN
+ON TABLE HOLD AS HOLDB
+END
+-RUN
+
+
+
+TABLE FILE HOLDB
+PRINT ROLLUP_CODE YEAR TRAN FARE_PAID NET_TKT_CNT DFARE DTKTS IFARE ITKTS CURRENT PRIOR PYTD PQ CQ
+ON TABLE SAVE
+END
+-RUN
+
+MODIFY FILE QRATP4
+FIXFORM ROLLUP_CODE/8 YEAR/4 TRAN/7 FARE_PAID/12 NET_TKT_CNT/8 DFARE/12 DTKTS/8 IFARE/12 ITKTS/8 CURRENT/1 PRIOR/1 PYTD/1 PQ/1 CQ/1
+MATCH ROLLUP_CODE YEAR TRAN
+ON NOMATCH INCLUDE
+DATA ON SAVE
+END
+-RUN
+
+TABLE FILE HOLDA
+SUM
+COMPUTE AVGD/D6 = IF ((DTKTS LT 1) AND (DTKTS GT (-1))) THEN 0 ELSE
+                           (DFARE/DTKTS);
+COMPUTE AVGI/D6 = IF ((ITKTS LT 1) AND (ITKTS GT (-1))) THEN 0 ELSE
+                           (IFARE/ITKTS);
+
+COMPUTE AVGC/D6 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE
+                          (FARE_PAID/NET_TKT_CNT);
+      
+CURRENT PRIOR PYTD PQ CQ      
+BY ROLLUP_CODE
+BY YEAR
+BY TRAN 
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+TABLE FILE HOLD2
+PRINT AVGD
+      AVGI
+      AVGC
+CURRENT PRIOR PYTD PQ CQ      
+BY ROLLUP_CODE
+BY YEAR
+BY TRAN
+ON TABLE SAVE
+END
+-RUN
+
+
+MODIFY FILE QRATP2
+FIXFORM ROLLUP_CODE/8 YEAR/4 TRAN/7 AVGD/6 AVGI/6 AVGC/6 CURRENT/1 PRIOR/1 PYTD/1 PQ/1 CQ/1
+MATCH ROLLUP_CODE YEAR TRAN
+ON NOMATCH INCLUDE
+DATA ON SAVE
+END
+-RUN
+
+-NOBASE;

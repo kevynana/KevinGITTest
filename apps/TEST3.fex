@@ -1,0 +1,119 @@
+-*-INCLUDE SETECHO
+-*APP ENABLE
+-*-*SET TEMPERASE = OFF
+SET PAGE = OFF
+FILEDEF TEST1 DISK  D:\ibi\apps\baseapp\test1.pdf
+
+-*FILEDEF TEST1 DISK D:\IBI\TEST1.PDF
+
+-RUN
+
+-SET &HAVEGRAPH  = 'Y';
+
+TABLE FILE CAR
+"</5 REPORT 1"
+PRINT CAR MODEL SEATS
+BY COUNTRY
+ON TABLE HOLD AS TEST1 FORMAT PDF OPEN
+END
+ 
+TABLE FILE CAR
+PRINT COUNTRY
+ON TABLE SAVE AS XLUSHENG
+END
+-RUN 
+
+TABLE FILE CAR
+"</5 REPORT 2"
+PRINT RCOST DCOST
+ON TABLE HOLD AS TEST1 FORMAT PDF OPEN
+
+END
+-RUN
+
+-IF &HAVEGRAPH EQ 'N' THEN GOTO SKIKGRAPH;
+GRAPH FILE CAR
+SUM RETAIL_COST 
+    DEALER_COST
+ACROSS CAR AS ' '
+ON GRAPH SET LOOKGRAPH VBAR2AX
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET GRAPHSTYLE *
+setSeriesFillColor(0, new Color, 145 207 255));
+setSeriesFillColor(1, new Color, 125 0 0));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setConnectScatterMarkers(true);
+setO1LabelDisplay(true);
+setO1LabelRotate(0);
+setAxisAssignment(0,0);
+setSeriesType(0,1);
+setAxisAssignment(1,1);
+setSeriesType(1,2);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setY2MajorGridDisplay(false);
+setY2MinorGridDisplay(false);
+setTextFormatPreset(getY1Label(),6);
+setTextFormatPreset(getY2Label(),-1);
+setTextFormatPattern(getY2Label(),"#,###");
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setLegendPosition(1);
+setTitleString("International");
+setTextJustHoriz(getTitle(), 1);
+setFontSizeAbsolute(getTitle(),true);
+setFontStyle(getTitle(),0);
+setFontSizeAbsolute(getTitle(),true);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH SAVE AS CARCOST FORMAT SVG
+END
+-RUN
+-SKIKGRAPH
+
+-READ XLUSHENG &CNTRY.A10.
+
+TABLE FILE CAR
+HEADING
+"</5 reading value from save file: &CNTRY"
+"REPORT 3"
+PRINT  CAR MODEL DEALER_COST RETAIL_COST
+WHERE COUNTRY EQ '&CNTRY'
+ON TABLE HOLD AS TEST1 FORMAT PDF CLOSE
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.150000, 
+TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=7, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=FOOTING,FONT=COURIER NEW,$
+TYPE=FOOTING, SIZE=15, LINE=51, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=52, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=53, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=54, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=55, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=56, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=57, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+-IF &HAVEGRAPH EQ 'N' THEN GOTO SKIPGRAPH2;
+TYPE=REPORT,IMAGE=CARCOST.SVG,POSITION=(0.25 2.95), SIZE=(5.5 2.5),$
+-SKIPGRAPH2
+ENDSTYLE
+END
+-RUN

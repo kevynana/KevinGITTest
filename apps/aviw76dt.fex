@@ -1,0 +1,131 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: AIRRPT
+-**************************************************************************
+-*THIS WAS CREATED FOR THE BLACK AND VEATCH FLAT FILE
+-* 5/13/02 JK 
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-* 10/29/02 JK                  ADDED LOCATION DEFINE FOR WATLOW
+-**************************************************************************
+SET ASNAMES = ON
+-RUN
+
+
+DEFINE FILE &&RPT_HOLD
+  DEPT/A15=LEVEL2;
+  LOCATION/A15=LEVEL1;
+  DIVISION/A8=TRVL_AUTH;
+  DPCTY1/A3 = IF SEG_NBR EQ '01' THEN EMBARK ELSE ' ';
+  FARE_PAID/D12.2 = TICKET_AMT + TAX_AMT;
+  EMPLOYEE/A10 = GETTOK (INT_CODE, 36, 1, '-', 10, EMPLOYEE);
+  PROJECT/A10 = GETTOK (LEVEL3, 15, 1, '.', 10, PROJECT);
+  PHASE/A10 = GETTOK (LEVEL3, 15, -1, '.', 10, PHASE);
+  DDATE1/YYMD = DPT_DATE;
+  RDATE1/YYMD = RESV_DATE;
+
+-* DEFINES ON PREVIOUS DEFINES
+ END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT 
+    DDATE1
+    DEPT
+    DIVISION
+    DPCTY1
+    EMPLOYEE
+    FARE_PAID
+    INTL_DOM
+    LOCATION
+    PROJECT
+    PHASE
+    PASSNGR_NAME
+    RDATE1
+    TOT_TNT_FEE
+BY TKT_NUM
+BY SEG_COUNT
+WHERE SEG_NBR EQ '01'
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+
+DEFINE FILE HOLD1
+NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+END
+TABLE FILE HOLD1
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT 
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&DTSTY    
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN

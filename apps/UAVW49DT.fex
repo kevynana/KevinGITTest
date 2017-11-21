@@ -1,0 +1,881 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: UAVW48DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*7/24/06    STEVE          New creation from AVIW48DT due to CCC UDID
+-* 8/23/06 - DEB - Added udid BPAY_AMT BUS_FAR PAY_AMT TIER
+-*1/15/14  - joy - Added PNR_LOCATOR to the TENAS report
+-*2/27/14 - joy - Added EX for Metlife VTC UDID report
+-*1/13/15 - DEB - S-06976 CARRIED THROUGH TRVL_AUTH FOR ABMTGRPT  
+-*06/21/17-JEM-S-35340-Added logic for new report NTOMTGRP
+-**************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES=ON
+-RUN
+
+-INCLUDE RETUDID
+-RUN
+
+
+DEFINE FILE &&RPT_HOLD ADD
+
+COMM/D12.2 = IF VOID_DATE EQ 0 THEN SEG_COM ELSE 0;
+GCOMM/D16.2 = IF VOID_DATE EQ 0 THEN GSEG_COM ELSE 0;
+PAID_FARE/D12.2 = IF VOID_DATE EQ 0 THEN FARE_PAID ELSE 0;
+GPAID_FARE/D16.2 = IF VOID_DATE EQ 0 THEN PAID_FAREX ELSE 0;
+FARE/D12.2 = IF VOID_DATE EQ 0 THEN SEG_AMT ELSE 0;
+GFARE/D16.2 = IF VOID_DATE EQ 0 THEN GSEG_AMT ELSE 0;
+EXEC_FLAG/A4 = IF DOD_TYPE EQ 'J' OR 'K' OR 'L' OR 'M' OR 'N' THEN 'EXEC' ELSE ' ';
+MANI_FLAG/A8 = IF DOD_TYPE EQ 'J' OR 'K' OR 'L' OR 'M' OR 'N' THEN 'EXEC' ELSE 'NON EXEC';
+INTERNET_FLAG/A41 = IF DOD_TYPE EQ 'H' THEN 'AGENT ASSIST' ELSE
+  IF DOD_TYPE EQ 'I' THEN 'ONLINE BOOKINGS' ELSE
+  IF DOD_TYPE EQ 'J' THEN 'EXECUTIVE ONLINE BOOKINGS' ELSE
+  IF DOD_TYPE EQ 'M' THEN 'EXECUTIVE EXCHANGE FROM AN ONLINE BOOKING' ELSE
+  IF DOD_TYPE EQ 'X' THEN 'EXCHANGE FROM AN ONLINE BOOKING' ELSE
+  IF DOD_TYPE EQ 'A' THEN 'AGENCY WEB BOOKINGS' ELSE
+  IF DOD_TYPE EQ 'L' THEN 'EXECUTIVE WEB BOOKINGS' ELSE
+  IF DOD_TYPE EQ 'N' THEN 'EXECUTIVE AGENCY WEB BOOKINGS' ELSE
+  IF DOD_TYPE EQ 'S' THEN 'WEB BOOKINGS' ELSE
+  IF DOD_TYPE EQ 'K' THEN 'EXECUTIVE TRADITIONAL BOOKINGS' ELSE
+  'TRADITIONAL BOOKINGS'; 	
+TAX/D12.2 = IF VOID_DATE EQ 0 THEN SEG_TAX ELSE 0;
+GTAX/D16.2 = IF VOID_DATE EQ 0 THEN GSEG_TAX ELSE 0;
+REFUND/D9CS    = IF (VOID_DATE EQ 0) AND
+                    (SEG_COUNT LE 0) AND
+                    (TKT_SORT NE LAST TKT_SORT) AND
+                    (EMBARK NE 'DT1' OR 'RF1' OR 'FP3') AND
+                    (RF_FLAG NE ' ') THEN 1 ELSE 0;
+EXMCOS/D9 = IF (EX_FLAG NE ' ') AND (DOC_TYPE EQ '1') AND (EXCHG_SALE 
+	NE ' ') THEN 1 ELSE 0;  
+
+
+END
+-RUN
+
+-IF &&CURRENCY NE 'USD' THEN GOTO CHECK1 ELSE GOTO NEXT;
+-CHECK1;
+-IF &&SETF EQ 'ABTRND' OR 'ABTRNDWN' THEN GOTO ABTRND ELSE GOTO CHECK2;
+-CHECK2;
+-IF &&SETF EQ 'ABTRANS1' THEN GO TO ABTRANS1 ELSE GOTO OTHER;
+
+-ABTRND;
+-SET &&SUBHEAD = <NAMEC;
+-SET &GFAR_CUR = 'FARE, (' | &&CURRENCY || ')';
+-SET &GTAX_CUR = 'TAX, (' | &&CURRENCY || ')';
+-SET &GCOM_CUR = 'COMMISSION, (' | &&CURRENCY || ')';
+-SET &&PRINT5= ' GSEG_AMT1/D16.2CS AS ' | '''&GFAR_CUR.EVAL''';
+-SET &&PRINT6= ' GSEG_TAX1/D16.2CS AS ' | '''&GTAX_CUR.EVAL''';
+-SET &&PRINT10= 'GXCOMM/D16.2CS AS ' | '''&GCOM_CUR.EVAL''';
+
+-GOTO NEXT;
+
+-ABTRANS1;
+-SET &&SUBHEAD = <NAMEC;
+-SET &GFAR_CUR = 'FARE, (' | &&CURRENCY || ')';
+-SET &GTAX_CUR = 'TAX, (' | &&CURRENCY || ')';
+-SET &GCOM_CUR = 'COMMISSION, (' | &&CURRENCY || ')';
+-SET &&PRINT5= ' GSEG_AMT1/D16.2CS AS ' | '''&GFAR_CUR.EVAL''';
+-SET &&PRINT6= ' GSEG_TAX1/D16.2CS AS ' | '''&GTAX_CUR.EVAL''';
+-SET &&PRINT10= 'GFEE/D16.2CS AS ' | '''&GCOM_CUR.EVAL''';
+
+-GOTO NEXT;
+
+
+
+-OTHER;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = 'FARE,PAID, (' | &&CURRENCY || ')';
+-SET &&PRINT5='GFARE_AMT/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+
+
+
+-NEXT;
+
+TABLE FILE &&RPT_HOLD
+SUM AMOUNT/D12.2C AS 'NGAMT' 
+    COMM AS 'TCOMM'
+    GCOMM/D16.2CS AS 'GTCOMM'
+    EXCHGS AS 'TEXCH'
+    FARE AS 'TFP'
+    GFARE/D16.2CS AS 'GTFP'
+    PAID_FARE AS 'TFARE'
+    GPAID_FARE/D16.2CS AS 'GTFARE'
+    MCOS AS 'TMCO'
+    EXMCOS AS 'TEXMCO'
+    NET_TKT_CNT1 AS 'TNET'
+    REFUND AS 'TREF'
+    TAX AS 'TTAX'
+    GTAX/D16.2CS AS 'GTTAX'
+    VOIDS AS 'TVOID'
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+
+
+
+
+TABLE FILE &&RPT_HOLD
+PRINT ACCT_FLAG
+      AGENT_NUM
+      AIR_KEY	
+      AIRLINE
+      AIRLINE_FEE
+      AMOUNT
+      AR_BRANCH
+      AROLL_LEV4
+      AROLL_LEV5
+      BKD_ONLINE
+      BR_CL_IDX	
+      C_ITIN
+      CCARD5
+      CLASS_CAT
+      CLIENT_NUM
+      COMM
+      CURR1X
+      DOC_TYPE	
+      DPT_TIME
+      EMAIL_ADDR
+      EMB_APT_CD	
+      EXCHGS
+      EXCHG_SALE
+      EXMCOS
+      EX_FLAG
+      EXEC_FLAG
+      FARE_PAID
+      FST_DPT_DATE
+      GEOAREA
+      GCOMM
+      GFARE
+      GPAID_FARE
+      GTAX	
+      FLIGHT	
+      IDFLAG
+      INT_CODE
+      INTERNET_FLAG	
+      INVOICE_NUM
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      LVL3
+      MANI_FLAG
+      MCOS
+      NAMEC
+      NET_TKT_CNT1
+      NEW_SEG_MILES
+      ONL_FLAG
+      PAID_FARE
+      PASSNGR_NAME
+      PNR_LOCATOR
+      RESV_BRANCH
+      RTE_APT_CD
+      RF_FLAG
+      SEG_COUNT	
+      TICKET_BRANCH
+      TKT_NUM	
+      TKT_TYPE
+      TRAN_MYA	
+      TRIP_PURPOSE
+      TRVL_AUTH
+      TYPE
+      VAL_AIRLINE
+      XDPT_DT	
+      XTRAN_DT
+      DEPT_CD
+      ACCT_CD
+      SOURCE_CD
+      PRJCT_CD
+      OFFICE_CD
+      XFST_DPT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT ACCT_FLAG
+      AGENT_NUM
+      AIR_KEY	
+      AIRLINE
+      AIRLINE_FEE
+      AMOUNT
+      AR_BRANCH
+      AROLL_LEV4
+      AROLL_LEV5
+      BKD_ONLINE
+      BR_CL_IDX	
+      C_ITIN
+      CCARD5
+      CLASS_CAT
+      CLIENT_NUM
+      COMM
+      CURR1X
+      DOC_TYPE	
+      DPT_TIME
+      EMAIL_ADDR
+      EMB_APT_CD	
+      EXCHGS
+      EXCHG_SALE
+      EXMCOS
+      EX_FLAG
+      EXEC_FLAG
+      FARE_PAID	
+      FST_DPT_DATE
+      FLIGHT
+      GEOAREA
+      GCOMM
+      GFARE
+      GPAID_FARE
+      GTAX	
+      IDFLAG	
+      INT_CODE
+      INTERNET_FLAG	
+      INVOICE_NUM
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      MANI_FLAG
+      LVL3
+      MCOS
+      NAMEC
+      NET_TKT_CNT1
+      NEW_SEG_MILES
+      ONL_FLAG
+      PAID_FARE
+      PASSNGR_NAME
+      PNR_LOCATOR
+      RESV_BRANCH
+      RF_FLAG
+      RTE_APT_CD	
+      SEG_COUNT
+      TICKET_BRANCH
+      TRIP_PURPOSE
+      TKT_NUM	
+      TKT_TYPE      
+      TRAN_MYA
+      TRIP_PURPOSE
+      TRVL_AUTH
+      TYPE
+      VAL_AIRLINE
+      XDPT_DT	
+      XTRAN_DT
+      DEPT_CD
+      ACCT_CD
+      SOURCE_CD
+      PRJCT_CD
+      OFFICE_CD
+      XFST_DPT
+      SEG_NBR
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+-* BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT NGAMT
+      GTCOMM
+      GTFARE
+      GTFP
+      GTTAX 
+      TCOMM
+      TEXCH
+      TEXMCO
+      TFARE
+      TFP
+      TMCO
+      TNET
+      TREF
+      TTAX
+      TVOID
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+
+
+DEFINE FILE AIRHOLD2
+FLAG/A1 = IF SEG_NBR EQ '01' OR RF_FLAG EQ 'P' OR EX_FLAG EQ 'P'
+          OR DOC_TYPE EQ '1' THEN 'Y' ELSE 'N';
+END
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT XDPT_DT AS 'ODPT_DT'
+      AIRLINE
+BY LEVEL_DESC
+BY TKT_NUM
+-*IF SEG_NBR EQ '01'
+IF FLAG EQ 'Y'
+-* WHERE XDPT_DT NE ' '
+WHERE AIRLINE NE ' '
+ON TABLE HOLD AS ONEHLD FORMAT ALPHA
+END
+-RUN
+
+MATCH FILE AIRHOLD2
+PRINT ACCT_FLAG
+      AGENT_NUM
+      AIR_KEY
+      AIRLINE
+      AIRLINE_FEE
+      AMOUNT
+      AR_BRANCH
+      AROLL_LEV4
+      AROLL_LEV5
+      BKD_ONLINE
+      BR_CL_IDX
+      C_ITIN
+      CCARD5
+      CLASS_CAT
+      CLIENT_NUM
+      COMM
+      CURR1X
+      DOC_TYPE	
+      DPT_TIME
+      EMAIL_ADDR
+      EMB_APT_CD	
+      EXCHGS
+      EXEC_FLAG
+      EXCHG_SALE
+      EXMCOS
+      FARE_PAID	
+      FLIGHT
+      FST_DPT_DATE
+      GEOAREA
+      GCOMM
+      GFARE
+      GPAID_FARE
+      GTAX
+      GTCOMM
+      GTFARE
+      GTFP
+      GTTAX 	
+      IDFLAG
+      INT_CODE
+      INTERNET_FLAG
+      INVOICE_NUM
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      LVL3
+      MANI_FLAG
+      MCOS
+      NAMEC
+      NET_TKT_CNT1
+      NEW_SEG_MILES
+      NGAMT
+      ONL_FLAG
+      PAID_FARE
+      PASSNGR_NAME
+      PNR_LOCATOR
+      RESV_BRANCH
+      RF_FLAG
+      RTE_APT_CD	
+      SEG_COUNT
+      SEG_NBR
+      TICKET_BRANCH
+      TRIP_PURPOSE
+      TCOMM
+      TEXCH
+      TEXMCO
+      TFARE
+      TFP
+      TMCO
+      TNET
+      TREF
+      TTAX
+      TVOID
+      TKT_SORT
+      TKT_TYPE      
+      TRAN_MYA
+      TRIP_PURPOSE
+      TRN_DATE
+      TRVL_AUTH
+      TYPE
+      VAL_AIRLINE
+      XDPT_DT
+      XPSNGR_NM	
+      XTRAN_DT
+      DEPT_CD
+      ACCT_CD
+      SOURCE_CD
+      PRJCT_CD
+      OFFICE_CD
+      XFST_DPT
+BY LEVEL_DESC
+BY TKT_NUM
+-* ON TABLE HOLD
+RUN
+FILE ONEHLD
+SUM ODPT_DT
+    AIRLINE
+BY LEVEL_DESC
+BY TKT_NUM
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW
+END
+-RUN
+
+
+
+
+
+TABLE FILE XTHREE
+PRINT ACCT_FLAG
+      AGENT_NUM
+      AIRLINE
+      AIRLINE_FEE
+      AIR_KEY
+      AMOUNT
+      AR_BRANCH
+      AROLL_LEV4
+      AROLL_LEV5
+      BKD_ONLINE
+      BR_CL_IDX
+      C_ITIN
+      CCARD5
+      CLASS_CAT
+      CLIENT_NUM
+      COMM
+      CURR1X
+      DOC_TYPE	
+      DPT_TIME
+      EMAIL_ADDR
+      EMB_APT_CD	
+      EXCHGS
+      EXCHG_SALE
+      EXEC_FLAG
+      EXMCOS
+      FARE_PAID	
+      FLIGHT
+      FST_DPT_DATE
+      GEOAREA
+      GCOMM
+      GFARE
+      GPAID_FARE
+      GTAX
+      GTCOMM
+      GTFARE
+      GTFP
+      GTTAX 	
+      IDFLAG
+      INT_CODE
+      INTERNET_FLAG
+      INVOICE_NUM
+      LEVEL_DESC
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      LVL3
+      MANI_FLAG
+      MCOS
+      NAMEC
+      NET_TKT_CNT1
+      NEW_SEG_MILES
+      NGAMT
+      ONL_FLAG
+      PAID_FARE
+      PASSNGR_NAME
+      PNR_LOCATOR
+      RESV_BRANCH
+      RF_FLAG
+      RTE_APT_CD	
+      SEG_COUNT
+      TICKET_BRANCH
+      TRIP_PURPOSE
+      TRVL_AUTH
+      TCOMM
+      TEXCH
+      TEXMCO
+      TFARE
+      TFP
+      TMCO
+      TNET
+      TREF
+      TTAX
+      TVOID
+      TKT_NUM
+      TKT_TYPE
+      
+      TRAN_MYA
+      TRIP_PURPOSE
+      TRN_DATE	
+      TYPE
+      VAL_AIRLINE
+      XDPT_DT
+      XPSNGR_NM	
+      XTRAN_DT
+      DEPT_CD 
+      ACCT_CD
+      SOURCE_CD
+      PRJCT_CD
+      OFFICE_CD
+      ODPT_DT
+      XFST_DPT
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+
+-NEXTSTEP
+
+-JOIN
+JOIN AGENT_NUM IN AIRHOLD3 TO AGENT IN AGENT AS J1
+-RUN
+
+
+TABLE FILE AIRHOLD3
+PRINT ACCT_FLAG
+      AGENT
+      AGENT_NUM
+      AIRLINE
+      AIRLINE_FEE
+      AIR_KEY
+      AMOUNT
+      AR_BRANCH
+      AROLL_LEV4
+      AROLL_LEV5
+      BKD_ONLINE
+      BR_CL_IDX
+      C_ITIN
+      CCARD5
+      CLASS_CAT
+      CLIENT_NUM
+      COMM
+      CURR1X
+      DOC_TYPE	
+      DPT_TIME
+      EMAIL_ADDR
+      EMB_APT_CD	
+      EXCHGS
+      EXCHG_SALE
+      EXEC_FLAG
+      EXMCOS
+      FARE_PAID	
+      FLIGHT
+      GEOAREA
+      GCOMM
+      GFARE
+      GPAID_FARE
+      GTAX
+      GTCOMM
+      GTFARE
+      GTFP
+      GTTAX 	
+      IDFLAG
+      INT_CODE
+      INTERNET_FLAG
+      INVOICE_NUM
+      LEVEL_DESC
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      LVL3
+      MANI_FLAG
+      MCOS
+      NAMEC
+      NET_TKT_CNT1
+      NEW_SEG_MILES
+      NGAMT
+      ONL_FLAG
+      PAID_FARE
+      PASSNGR_NAME
+      PNR_LOCATOR
+      RESV_BRANCH
+      RF_FLAG
+      RTE_APT_CD	
+      SEG_COUNT
+      SEG_NBR
+      TICKET_BRANCH
+      TCOMM
+      TEXCH
+      TEXMCO
+      TFARE
+      TFP
+      TMCO
+      TNET
+      TREF
+      TTAX
+      TVOID
+      TKT_NUM
+      TKT_SORT
+      TKT_TYPE      
+      TRAN_MYA
+      TRIP_PURPOSE
+      TRN_DATE	
+      TRVL_AUTH
+      TYPE
+      VAL_AIRLINE
+      XDPT_DT
+      XPSNGR_NM	
+      XTRAN_DT
+      DEPT_CD 
+      ACCT_CD
+      SOURCE_CD
+      PRJCT_CD
+      OFFICE_CD
+      ODPT_DT
+      XFST_DPT
+BY AIR_KEY
+ON TABLE HOLD AS AIRHOLD4
+END
+-RUN
+
+
+
+
+
+-IF '&&SETF.EVAL' EQ 'ALMTGRPT' THEN GO TO EXALL;
+-IF '&&SETF.EVAL' EQ 'ABMTGRPT' THEN GOTO ABCD;
+-IF '&&SETF.EVAL' EQ 'NTOMTGRP' THEN GOTO NTENDO;
+
+-EXALL
+ 
+EX UDALLFE2
+-RUN
+
+-GOTO CONTINUE;
+
+-ABCD
+
+EX UDMTGRPT
+-RUN
+-GOTO CONTINUE;
+
+-NTENDO;
+
+EX UDNTOMRPT
+-RUN
+
+-GOTO CONTINUE;
+
+
+-CONTINUE 
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD6';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL 
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+
+
+TABLE FILE AIRHOLD6
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+WHERE FLAG2 EQ 'Y'
+
+
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERTR
+-*
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-CongStyle
+
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.100000, RIGHTMARGIN=0.030000, 
+    TOPMARGIN=0.300000, BOTTOMMARGIN=0.050000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+    
+TYPE=REPORT, FONT=ARIAL, SIZE=8, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=HEADING, SIZE=8, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(31 114 164), BACKCOLOR=NONE, $
+TYPE=HEADING, HEADALIGN=BODY, $
+TYPE=HEADING, LINE=1, COLSPAN=3, JUSTIFY=LEFT, $
+TYPE=HEADING, LINE=2, COLSPAN=3, JUSTIFY=LEFT, $
+TYPE=HEADING, LINE=3, COLSPAN=9, SIZE=9, JUSTIFY=CENTER, $
+TYPE=HEADING, LINE=4, COLSPAN=9, SIZE=9,JUSTIFY=CENTER, $
+TYPE=HEADING, LINE=5, COLSPAN=3, JUSTIFY=LEFT, $
+
+-* -GOTO JOY
+
+TYPE=DATA,
+     BORDER-TOP=LIGHT,
+     BORDER-BOTTOM=LIGHT,
+     BORDER-LEFT=LIGHT,
+     BORDER-RIGHT=LIGHT,
+     BORDER-TOP-COLOR='SILVER',
+     BORDER-BOTTOM-COLOR='SILVER',
+     BORDER-LEFT-COLOR='SILVER',
+     BORDER-RIGHT-COLOR='SILVER',
+     SIZE=8,  $
+-*      BACKCOLOR=(RGB(242 242 242) 'WHITE' ),$
+
+     
+
+-JOY
+TYPE=TITLE,
+     BORDER-TOP=LIGHT,
+     BORDER-BOTTOM=LIGHT,
+     BORDER-LEFT=LIGHT,
+     BORDER-RIGHT=LIGHT,
+     BORDER-TOP-STYLE=RIDGE,
+     BORDER-BOTTOM-STYLE=RIDGE,
+     BORDER-LEFT-STYLE=RIDGE,
+     BORDER-RIGHT-STYLE=RIDGE,
+     BORDER-TOP-COLOR='SILVER',
+     BORDER-BOTTOM-COLOR='SILVER',
+     BORDER-LEFT-COLOR='SILVER',
+     BORDER-RIGHT-COLOR='SILVER',
+     SIZE=8,
+     COLOR='WHITE',
+     BACKCOLOR=RGB(31 114 164),
+     STYLE=BOLD,$
+
+
+TYPE=REPORT, COLUMN=N6, WRAP=  2.65,     $
+
+TYPE=REPORT, COLUMN=N7, WRAP= .65,     $
+TYPE=REPORT, COLUMN=N8, WRAP= .75,     $
+
+
+TYPE=REPORT, COLUMN=N9, WRAP= 2.50,     $
+TYPE=REPORT, COLUMN=N10,WRAP= .65, $
+
+TYPE=REPORT, COLUMN=N11, WRAP= 1.0,     $
+
+TYPE=REPORT, COLUMN=N12, WRAP= 1.0,     $
+TYPE=REPORT, COLUMN=N13, WRAP= 1.0,     $
+TYPE=REPORT, COLUMN=N14, WRAP= 1.0,     $ 
+TYPE=REPORT, COLUMN=N15, WRAP= 1.0,      $
+TYPE=REPORT, COLUMN=N16, WRAP= .75,     $
+TYPE=REPORT, COLUMN=N17, WRAP= 1.0,      $ 
+TYPE=REPORT, COLUMN=N18, WRAP= 1.0,      $
+TYPE=REPORT, COLUMN=N19, WRAP= 2.5,     $
+TYPE=REPORT, COLUMN=N20, WRAP= 1.0,      $ 
+TYPE=REPORT, COLUMN=N21, WRAP= 1.0,      $
+TYPE=REPORT, COLUMN=N22, WRAP= 1.0,     $
+TYPE=REPORT, COLUMN=N23, WRAP= 1.0,      $ 
+TYPE=TITLE, JUSTIFY=LEFT, $     
+    
+TYPE=TABFOOTING, FONT=ARIAL, COLOR=GRAY,$
+     
+TYPE=FOOTING, FONT=ARIAL, COLOR=GRAY,$
+
+TYPE=SUBHEAD,
+     STYLE=BOLD,
+$
+
+TYPE=SUBTOTAL, 
+     STYLE=BOLD, 
+     BORDER-TOP=LIGHT,
+     BORDER-BOTTOM=LIGHT,
+     BORDER-LEFT=LIGHT,
+     BORDER-RIGHT=LIGHT,
+     BORDER-TOP-COLOR='SILVER',
+     BORDER-BOTTOM-COLOR='SILVER',
+     BORDER-LEFT-COLOR='SILVER',
+     BORDER-RIGHT-COLOR='SILVER', $
+     
+TYPE=GRANDTOTAL, STYLE=BOLD, $
+
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN

@@ -1,0 +1,432 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*7/26/04    JOY                Added/Changed Norecords logic
+-*  10/10/2016  REJ  S-24432 ER5 Testing updates.
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+-* 07/12/2017 - RSB - S-29908 - Webfocus Upgrade - Reports that do not run in ER5 Sandbox
+ 
+-INCLUDE SETECHO
+ 
+-DEFAULT &&MFLAG ='XXX';
+-DEFAULT &&FIELD = 'XX';
+-DEFAULT &&SETF = 'XX';
+ 
+-SET &&DTSTY = 'DT';
+ 
+-SET &&FIELD = &ROW_LABEL;
+-SET &&MFLAG = &PARM1;
+-***************************************************
+-* CHECK FOR NON-DRILLABLE FIELD
+-***************************************************
+-IF (&&FIELD EQ 'AVERAGE HOTEL NIGHTS')
+- OR (&&FIELD EQ 'AVERAGE HOTEL RATE')
+- THEN GOTO FIRST
+- ELSE GOTO SECOND;
+ 
+-SECOND
+ 
+-**********************************************************************
+-* EX RPTRESET TO RESET PARAMS
+-**********************************************************************
+-SET &&ROLLUP = &ROLUP;
+-* -SET &&UNAME = &UID;
+-SET &&UNAME = &user;
+-**** the following two lines added 10/31/2003 ****
+-DEFAULT &FPARM = ' ';
+-SET &&FIPARM = &FPARM;
+-SET &&DRILLED_RUN = 'Y';
+ 
+EX RPTRESET
+-RUN
+EX RESET
+-RUN
+ 
+-**********************************************************************
+-* CHECK FOR PRESENCE OF ORIGINAL SET FILE
+-*********************************************************************
+-*****  USE VALUE PASSED AS &SETFNM TO DETERMINE FILE NAME
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-SET &&LOCPATH = '&&DATASRV.EVAL' || '\TT\ '|| &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&LOCPATH || &SETFNM || '.FTM';
+-GOTO CHKFILE;
+ 
+-SETWEB
+-SET &&WEBPATH = '&&WEBSRV.EVAL' || '\TTWEB\ ' || &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&WEBPATH || &SETFNM || '.FTM';
+ 
+-CHKFILE
+STATE &FILEXIST
+-RUN
+-IF &RETCODE NE 0 GOTO NOFILE;
+-GOTO CONT;
+ 
+-*
+-*
+-**********************************************************************
+-*
+-**********************************************************************
+-CONT
+ 
+-SET &TMPDRIL = &&WEB_PATH || 'TEMPDRIL.FEX' ;
+COPY &FILEXIST &TMPDRIL
+-SET &&SETF='TEMPDRIL';
+-RUN
+ 
+EX SETDBLS SETFILE=&&SETF
+-RUN
+ 
+-IF &&FROMAVRP EQ '' GOTO :OTER5;
+APP PREPENDPATH REVIEW_50_SHARED REVIEW_50_AVRP ttapps_sql
+-RUN
+-:OTER5
+ 
+-INCLUDE GetForDrillDown
+-RUN
+ 
+-SET &&OUTLINE1 = 'ON TABLE SET ONLINE-FMT';
+-SET &&OUTLINE2 = IF &&OUTLINE2 CONTAINS 'PDF' THEN 'PDF' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXCEL' THEN 'EXCEL' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXL2K' THEN 'EXL2K' ELSE 'PDF';
+ 
+ 
+-****
+-* &&MFLAG WILL EQUAL ONE OF THE FOLLOWING:
+-* JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC, YTD
+-****
+ 
+ 
+-IF &&MFLAG EQ 'JAN' THEN GOTO JAN
+-  ELSE IF &&MFLAG EQ 'FEB' THEN GOTO FEB
+-  ELSE IF &&MFLAG EQ 'MAR' THEN GOTO MAR
+-  ELSE IF &&MFLAG EQ 'APR' THEN GOTO APR
+-  ELSE IF &&MFLAG EQ 'MAY' THEN GOTO MAY
+-  ELSE IF &&MFLAG EQ 'JUN' THEN GOTO JUN
+-  ELSE IF &&MFLAG EQ 'JUL' THEN GOTO JUL
+-  ELSE IF &&MFLAG EQ 'AUG' THEN GOTO AUG
+-  ELSE IF &&MFLAG EQ 'SEP' THEN GOTO SEP
+-  ELSE IF &&MFLAG EQ 'OCT' THEN GOTO OCT
+-  ELSE IF &&MFLAG EQ 'NOV' THEN GOTO NOV
+-  ELSE IF &&MFLAG EQ 'DEC' THEN GOTO DEC
+-  ELSE GOTO YTD;
+ 
+-JAN
+-SET &&MCHK='WHERE TRNM EQ ''JAN''';
+-SET &&SUBHEAD = 'JANUARY';
+-GOTO ENDDATE
+ 
+-FEB
+-SET &&MCHK='WHERE TRNM EQ ''FEB''';
+-SET &&SUBHEAD = 'FEBRUARY';
+-GOTO ENDDATE
+ 
+-MAR
+-SET &&MCHK='WHERE TRNM EQ ''MAR''';
+-SET &&SUBHEAD = 'MARCH';
+-GOTO ENDDATE
+ 
+-APR
+-SET &&MCHK='WHERE TRNM EQ ''APR''';
+-SET &&SUBHEAD = 'APRIL';
+-GOTO ENDDATE
+ 
+-MAY
+-SET &&MCHK='WHERE TRNM EQ ''MAY''';
+-SET &&SUBHEAD = 'MAY';
+-GOTO ENDDATE
+ 
+-JUN
+-SET &&MCHK='WHERE TRNM EQ ''JUN''';
+-SET &&SUBHEAD = 'JUNE';
+-GOTO ENDDATE
+ 
+-JUL
+-SET &&MCHK='WHERE TRNM EQ ''JUL''';
+-SET &&SUBHEAD = 'JULY';
+-GOTO ENDDATE
+ 
+-AUG
+-SET &&MCHK='WHERE TRNM EQ ''AUG''';
+-SET &&SUBHEAD = 'AUGUST';
+-GOTO ENDDATE
+ 
+-SEP
+-SET &&MCHK='WHERE TRNM EQ ''SEP''';
+-SET &&SUBHEAD = 'SEPTEMBER';
+-GOTO ENDDATE
+ 
+-OCT
+-SET &&MCHK='WHERE TRNM EQ ''OCT''';
+-SET &&SUBHEAD = 'OCTOBER';
+-GOTO ENDDATE
+ 
+-NOV
+-SET &&MCHK='WHERE TRNM EQ ''NOV''';
+-SET &&SUBHEAD = 'NOVEMBER';
+-GOTO ENDDATE
+ 
+-DEC
+-SET &&MCHK='WHERE TRNM EQ ''DEC''';
+-SET &&SUBHEAD = 'DECEMBER';
+-GOTO ENDDATE
+ 
+-YTD
+-SET &&MCHK='WHERE TRNY EQ ''YTD''';
+-SET &&SUBHEAD = 'YEAR-TO-DATE';
+-GOTO ENDDATE
+ 
+ 
+-ENDDATE
+ 
+ 
+-FIELDS
+-IF &&FIELD EQ 'HOTEL BOOKINGS' THEN GOTO BOOKINGS
+-  ELSE IF &&FIELD EQ 'HOTEL NIGHTS' THEN GOTO NIGHTS
+-  ELSE IF &&FIELD EQ 'HOTEL COST' THEN GOTO COST
+-  ELSE GOTO BOOKINGS;
+ 
+-GOTO OUTSIDE
+ 
+-BOOKINGS
+-SET &&RPT_TTL1 = '                  HOTEL BOOKINGS DETAIL     ';
+-GOTO OUTSIDE
+ 
+ 
+-NIGHTS
+-SET &&RPT_TTL1 = '                    HOTEL NIGHTS DETAIL     ';
+-GOTO OUTSIDE
+ 
+ 
+-COST
+-SET &&RPT_TTL1 = '                        HOTEL COST DETAIL   ';
+-GOTO OUTSIDE
+ 
+ 
+-OUTSIDE
+ 
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+ 
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-SET &&RPTTYP = ' ';
+-SET &&SMD = 'S';
+EX TS_JAMS2
+-RUN
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :DCA1;
+-SET &&RPTGRP_OVERRIDE='HTL';
+EX CODEGEN
+-RUN
+-:DCA1
+ 
+-INCLUDE SELCATQT
+-RUN
+ 
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+ 
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+ 
+EX HTLUSE
+-RUN
+ 
+-TYPE Before Extract
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF1;
+-INCLUDE AVRP_SUBFOOT
+-:AVSF1
+ 
+-SET &HTLDATES = &&WEB_PATH || 'HTLDATES.fex';
+DEFINE FILE &&EXTRACT
+CITY_ST/A35 = PROP_CITY||(', '| PROP_STATE);
+IN_DATE/MDYY = CHKIN_DATE;
+INV_DT/YYMD = INVOICE_DATE;
+TRNM/MT = IF '&&DATETYPE.EVAL' EQ 'I' THEN INVOICE_DATE ELSE CHKIN_DATE;
+TRNY/A3 = 'YTD';
+NBR_ROOMS/D12 = NUM_ROOMS;
+NBR_DAYS/D12 = NUM_DAYS;
+NEW_ROOM_RATE/D12.2C = ROOM_RATE;
+NEW_TOTAL_AMT/D12.2C = TOTAL_AMT;
+NNROOMS/D12 = IF NBR_DAYS LT 0 AND NUM_ROOMS LT 0 THEN
+              ((NBR_DAYS*NUM_ROOMS) * (-1)) ELSE NBR_DAYS*NUM_ROOMS;
+OUT_DATE/MDYY = CHKOUT_DATE;
+ 
+END
+-RUN
+ 
+TABLEF FILE &&EXTRACT
+PRINT
+  CITY_ST
+  HTL_KEY
+  IN_DATE
+  INV_DT
+  INVOICE_DATE
+  NBR_DAYS
+  NBR_ROOMS
+  NEW_ROOM_RATE
+  NEW_TOTAL_AMT
+  NNROOMS
+  OUT_DATE
+  PASSNGR_NAME
+  PROP_NAME
+  REFUSE_KEY
+ 
+-INCLUDE &HTLDATES
+-***************************************************************
+-* Where statements to select data specified in user profile
+-***************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+ 
+&&MCHK
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RPTHOLD
+END
+-RUN
+ 
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-RUN
+ 
+-TYPE After Extract
+DEFINE FILE RPTHOLD
+NOWTOD/A8 WITH OUT_DATE = HHMMSS (NOWTOD);
+END
+-RUN
+-TYPE Before Report
+ 
+TABLE FILE RPTHOLD
+-INCLUDE HEADSCH
+"&&SUBHEAD"
+"</2"
+-*
+-*******************************************************************
+-* Sum statement with fields passed from the user profile database
+-*******************************************************************
+-*
+SUM
+NNROOMS AS 'NUMBER,NIGHTS'
+NBR_ROOMS AS 'NUMBER,ROOMS'
+NEW_TOTAL_AMT AS 'TOTAL,AMOUNT'
+COMPUTE AVGDR/D12.2CS = IF NEW_TOTAL_AMT LT 0 AND NNROOMS LT 0
+ THEN ((NEW_TOTAL_AMT/NNROOMS) * (-1))
+ ELSE NEW_TOTAL_AMT/NNROOMS; AS 'AVERAGE,DAILY,RATE'
+-*
+-******************************************************************
+-* By statements (one per field)
+-******************************************************************
+-*
+BY PASSNGR_NAME AS 'PASSENGER NAME'
+BY PROP_NAME AS 'HOTEL'
+BY CITY_ST AS 'CITY/STATE'
+BY IN_DATE AS 'CHECKIN,DATE'
+BY OUT_DATE AS 'CHECKOUT,DATE'
+-*
+-******************************************************************
+-* On Table statements for code appropriate to On Table commands
+-******************************************************************
+-*
+ON PASSNGR_NAME SKIP-LINE
+ON PASSNGR_NAME RECOMPUTE AS 'TOTAL FOR'
+-*
+-******************************************************************
+-* Report specific footer(s)
+-******************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+ 
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+-TYPE After Report
+-GOTO XXIT;
+ 
+ 
+-FIRST
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+-NOFILE
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THE REPORT IS NO LONGER DRILLABLE!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+ 
+-NORECORDS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>NO RECORDS FOUND FOR THIS SELECTION!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+ 
+-XXIT

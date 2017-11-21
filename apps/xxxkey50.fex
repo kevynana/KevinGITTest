@@ -1,0 +1,687 @@
+-* File BLDKEY50.FEX
+-*
+-*****   This routine walks through the HIERPROF database looking for
+-*****     unresolved Hierarchy Keys.  (Note: The root level hierarchy levels
+-*****     must have already been seeded by the HIERLOAD.FEX routine).  This
+-*****     routine is executed as many times as there are levels for
+-*****     the customer being loaded - e.g. if the customer's hierarchy is 4 
+-*****     levels deep, then this routine is executed 4 separate times.
+-*****   AUTHOR:  Dave Kuzanek
+-*****   PRODUCTION DATE: 
+
+MAINTAIN FILES HIER50
+  COMPUTE Cnt1/I3 = 1;
+  COMPUTE Cnt2/I3;
+  COMPUTE Cnt3/I3;
+  COMPUTE Sub2/A2;
+  COMPUTE Sub4/A4;
+  COMPUTE Sub6/A6;
+  COMPUTE Sub8/A8;
+  COMPUTE Sub10/A10;
+  COMPUTE Sub12/A12;
+  COMPUTE Sub14/A14;
+  COMPUTE Sub16/A16;
+  COMPUTE Sub18/A18;
+  COMPUTE Sub20/A20;
+  COMPUTE Sub22/A22;
+  COMPUTE Sub24/A24;
+  COMPUTE Sub26/A26;
+  COMPUTE Sub28/A28;
+  COMPUTE Sub30/A30;
+  COMPUTE Sub32/A32;
+  COMPUTE Sub34/A34;
+  COMPUTE Sub36/A36;
+  COMPUTE Sub38/A38;
+  COMPUTE Sub40/A40;
+  COMPUTE Sub42/A42;
+  COMPUTE Sub44/A44;
+  COMPUTE Sub46/A46;
+  COMPUTE Sub48/A48;
+  COMPUTE ZLoc/I2;
+  COMPUTE NxtPos1/I2;
+  COMPUTE NxtPos2/I2;
+  COMPUTE NxtPosA/A1;
+  COMPUTE NxtPosB/A1;
+
+  COMPUTE S1Stat/A8 = ;
+  COMPUTE S2Stat/A8 = ;
+  COMPUTE S3Stat/A8 = ;
+  COMPUTE S4Stat/A8 = ;
+  COMPUTE S5Stat/A8 = ;
+  COMPUTE S6Stat/A8 = ;
+  COMPUTE S7Stat/A8 = ;
+  COMPUTE S8Stat/A8 = ;
+  COMPUTE S9Stat/A8 = ;
+  COMPUTE S1A/I6 = ;
+  COMPUTE S1B/I6 = ;
+  COMPUTE S2A/I6 = ;
+  COMPUTE S2B/I6 = ;
+  COMPUTE S2C/I6 = ;
+  COMPUTE S2D/I6 = ;
+  COMPUTE S3A/I6 = ;
+  COMPUTE S3B/I6 = ;
+  COMPUTE S3C/I6 = ;
+  COMPUTE S3D/I6 = ;
+  COMPUTE S4A/I6 = ;
+  COMPUTE S4B/I6 = ;
+  COMPUTE S4C/I6 = ;
+  COMPUTE S4D/I6 = ;
+  COMPUTE S5A/I6 = ;
+  COMPUTE S5B/I6 = ;
+  COMPUTE S5C/I6 = ;
+  COMPUTE S5D/I6 = ;
+  COMPUTE S6A/I6 = ;
+  COMPUTE S6B/I6 = ;
+  COMPUTE S7A/I6 = ;
+  COMPUTE S7B/I6 = ;
+  COMPUTE S8A/I6 = ;
+  COMPUTE S8B/I6 = ;
+  COMPUTE S9A/I6 = ;
+  COMPUTE S9B/I6 = ;
+  COMPUTE S9C/I6 = ;
+  COMPUTE S9D/I6 = ;
+
+  INFER Roll_Lev Roll_Key INTO HStack
+-*  The Rollup Code specified here targets the customer who's hierarchy is to
+-*    be generated
+
+PERFORM Stat_Init
+-* WINFORM SHOW_INACTIVE HierStat
+
+COMPUTE Cnt3 = 1;
+-* The outside repeat loop is executed for the number of levels in the
+-* target hierarchy
+
+COMPUTE S2B = 7;
+ REPEAT WHILE Cnt3 LE 9
+  COMPUTE S2A = Cnt3;
+  PERFORM Check_Zero
+  IF HStack.FocCount EQ 0 THEN GOTO EXITREPEAT
+  REPOSITION ROLL_LEV
+
+  STACK CLEAR WStack HStack
+  FOR ALL NEXT Roll_Lev Roll_Key INTO HStack
+    WHERE Roll_Key GT '00000000000000000000000000000000000000000000000000'
+  COMPUTE Cnt1 = 1;
+  COMPUTE S2D = HStack.FocCount;
+  REPEAT WHILE Cnt1 LE HStack.FocCount
+      COMPUTE S2C = Cnt1;
+-*      WINFORM REFRESH HierStat
+      REPOSITION Roll_Lev
+-*  Only those records that have not been resolved at a certain level of the
+-*    customer hierarchy are selected for the current generation cycle
+      IF HStack(Cnt1).UPD_FLAG EQ 'R' THEN
+      BEGIN
+        FOR ALL NEXT Roll_Lev Roll_Key INTO WStack
+              WHERE (Level_Boss EQ HStack(Cnt1).Roll_Lev) AND
+                    (Roll_Key EQ 
+                  '00000000000000000000000000000000000000000000000000') AND
+                    (EFF_DATE EQ HStack(Cnt1).EFF_DATE)
+      ENDBEGIN
+      IF HStack(Cnt1).UPD_FLAG EQ 'O' THEN
+      BEGIN
+        FOR ALL NEXT Roll_Lev Roll_Key INTO WStack
+              WHERE (Level_Boss EQ HStack(Cnt1).Roll_Lev) AND
+                    (Roll_Key EQ 
+                  '00000000000000000000000000000000000000000000000000') AND
+                    (EFF_DATE EQ HStack(Cnt1).EFF_DATE)
+      ENDBEGIN
+      IF HStack(Cnt1).UPD_FLAG EQ 'N' THEN
+      BEGIN
+        FOR ALL NEXT Roll_Lev Roll_Key INTO WStack
+              WHERE (Level_Boss EQ HStack(Cnt1).Roll_Lev) AND
+                    (Roll_Key EQ 
+                  '00000000000000000000000000000000000000000000000000') AND 
+                    (Upd_Flag NE 'O')
+      ENDBEGIN
+      IF HStack(Cnt1).UPD_FLAG EQ 'U' THEN
+      BEGIN
+        FOR ALL NEXT Roll_Lev Roll_Key INTO WStack
+              WHERE (Level_Boss EQ HStack(Cnt1).Roll_Lev) AND
+                    (Roll_Key EQ 
+                  '00000000000000000000000000000000000000000000000000')
+      ENDBEGIN
+      IF HStack(Cnt1).UPD_FLAG EQ ' ' THEN
+      BEGIN
+        FOR ALL NEXT Roll_Lev Roll_Key INTO WStack
+              WHERE (Level_Boss EQ HStack(Cnt1).Roll_Lev) AND
+                    (Roll_Key EQ 
+                  '00000000000000000000000000000000000000000000000000')
+      ENDBEGIN
+      IF WStack.FocCount GT 0 THEN
+      BEGIN
+        STACK SORT WStack BY Roll_Lev
+        PERFORM Find_Target
+        COMPUTE Cnt2 = 1;
+        REPEAT WHILE Cnt2 LE WStack.FocCount
+          PERFORM Inc_Key
+          COMPUTE Cnt2 = Cnt2 + 1;
+        ENDREPEAT
+        FOR ALL UPDATE HIER50.Roll_Key FROM WStack
+        COMMIT
+      ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+    STACK CLEAR WStack
+  ENDREPEAT
+  COMPUTE Cnt3 = Cnt3 + 1;
+ENDREPEAT
+-* WINFORM CLOSE
+GOTO END
+
+  CASE Find_Target
+    COMPUTE ZLoc = POSIT(HStack(Cnt1).Roll_Key, 50,'00',2,ZLoc);
+    COMPUTE NxtPos1 = 65;
+    COMPUTE NxtPos2 = 64;
+  ENDCASE
+
+  CASE Inc_Key
+    IF ZLoc EQ 3 THEN PERFORM Upd_L2
+    IF ZLoc EQ 5 THEN PERFORM Upd_L3
+    IF ZLoc EQ 7 THEN PERFORM Upd_L4
+    IF ZLoc EQ 9 THEN PERFORM Upd_L5
+    IF ZLoc EQ 11 THEN PERFORM Upd_L6
+    IF ZLoc EQ 13 THEN PERFORM Upd_L7
+    IF ZLoc EQ 15 THEN PERFORM Upd_L8
+    IF ZLoc EQ 17 THEN PERFORM Upd_L9
+    IF ZLoc EQ 19 THEN PERFORM Upd_L10
+    IF ZLoc EQ 21 THEN PERFORM Upd_L11
+    IF ZLoc EQ 23 THEN PERFORM Upd_L12
+    IF ZLoc EQ 25 THEN PERFORM Upd_L13
+    IF ZLoc EQ 27 THEN PERFORM Upd_L14
+    IF ZLoc EQ 29 THEN PERFORM Upd_L15
+    IF ZLoc EQ 31 THEN PERFORM Upd_L16
+    IF ZLoc EQ 33 THEN PERFORM Upd_L17
+    IF ZLoc EQ 35 THEN PERFORM Upd_L18
+    IF ZLoc EQ 37 THEN PERFORM Upd_L19
+    IF ZLoc EQ 39 THEN PERFORM Upd_L20
+    IF ZLoc EQ 41 THEN PERFORM Upd_L21
+    IF ZLoc EQ 43 THEN PERFORM Upd_L22
+    IF ZLoc EQ 45 THEN PERFORM Upd_L23
+    IF ZLoc EQ 47 THEN PERFORM Upd_L24
+    IF ZLoc EQ 49 THEN PERFORM Upd_L25
+  ENDCASE
+
+  CASE Char_Conv
+    COMPUTE NxtPosA = HEXBYT(NxtPos1,NxtPosA);
+    COMPUTE NxtPosB = HEXBYT(NxtPos2,NxtPosB);
+  ENDCASE
+
+  CASE Upd_L2
+    COMPUTE Sub2 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,2,2,Sub2);
+    IF NxtPos2 EQ 90 THEN
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub2|NxtPosA|NxtPosB|'0000000000000000000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub2|NxtPosA|NxtPosB|'0000000000000000000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE  
+
+  CASE Upd_L3
+    COMPUTE Sub4 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,4,4,Sub4);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub4|NxtPosA|NxtPosB|'00000000000000000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub4|NxtPosA|NxtPosB|'00000000000000000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE  
+
+  CASE Upd_L4
+    COMPUTE Sub6 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,6,6,Sub6);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub6|NxtPosA|NxtPosB|'000000000000000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub6|NxtPosA|NxtPosB|'000000000000000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE  
+
+  CASE Upd_L5
+    COMPUTE Sub8 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,8,8,Sub8);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub8|NxtPosA|NxtPosB|'0000000000000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub8|NxtPosA|NxtPosB|'0000000000000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L6
+    COMPUTE Sub10 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,10,10,Sub10);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub10|NxtPosA|NxtPosB|'00000000000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub10|NxtPosA|NxtPosB|'00000000000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L7
+    COMPUTE Sub12 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,12,12,Sub12);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub12|NxtPosA|NxtPosB|'000000000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub12|NxtPosA|NxtPosB|'000000000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L8
+    COMPUTE Sub14 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,14,14,Sub14);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub14|NxtPosA|NxtPosB|'0000000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub14|NxtPosA|NxtPosB|'0000000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L9
+    COMPUTE Sub16 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,16,16,Sub16);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub16|NxtPosA|NxtPosB|'00000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub16|NxtPosA|NxtPosB|'00000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L10
+    COMPUTE Sub18 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,18,18,Sub18);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub18|NxtPosA|NxtPosB|'000000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub18|NxtPosA|NxtPosB|'000000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L11
+    COMPUTE Sub20 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,20,20,Sub20);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub20|NxtPosA|NxtPosB|'0000000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub20|NxtPosA|NxtPosB|'0000000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L12
+    COMPUTE Sub22 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,22,22,Sub22);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub22|NxtPosA|NxtPosB|'00000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub22|NxtPosA|NxtPosB|'00000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L13
+    COMPUTE Sub24 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,24,24,Sub24);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub24|NxtPosA|NxtPosB|'000000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub24|NxtPosA|NxtPosB|'000000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L14
+    COMPUTE Sub26 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,26,26,Sub26);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub26|NxtPosA|NxtPosB|'0000000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub26|NxtPosA|NxtPosB|'0000000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L15
+    COMPUTE Sub28 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,28,28,Sub28);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub28|NxtPosA|NxtPosB|'00000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub28|NxtPosA|NxtPosB|'00000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L16
+    COMPUTE Sub30 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,30,30,Sub30);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub30|NxtPosA|NxtPosB|'000000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub30|NxtPosA|NxtPosB|'000000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L17
+    COMPUTE Sub32 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,32,32,Sub32);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub32|NxtPosA|NxtPosB|'0000000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub32|NxtPosA|NxtPosB|'0000000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L18
+    COMPUTE Sub34 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,34,34,Sub34);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub34|NxtPosA|NxtPosB|'00000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub34|NxtPosA|NxtPosB|'00000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L19
+    COMPUTE Sub36 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,36,36,Sub36);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub36|NxtPosA|NxtPosB|'000000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub36|NxtPosA|NxtPosB|'000000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L20
+    COMPUTE Sub38 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,38,38,Sub38);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub38|NxtPosA|NxtPosB|'0000000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub38|NxtPosA|NxtPosB|'0000000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L21
+    COMPUTE Sub40 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,40,40,Sub40);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub40|NxtPosA|NxtPosB|'00000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub40|NxtPosA|NxtPosB|'00000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L22
+    COMPUTE Sub42 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,42,42,Sub42);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub42|NxtPosA|NxtPosB|'000000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub42|NxtPosA|NxtPosB|'000000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L23
+    COMPUTE Sub44 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,44,44,Sub44);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub44|NxtPosA|NxtPosB|'0000';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub44|NxtPosA|NxtPosB|'0000';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L24
+    COMPUTE Sub46 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,46,46,Sub46);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub46|NxtPosA|NxtPosB|'00';
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub46|NxtPosA|NxtPosB|'00';
+      ENDBEGIN
+  ENDCASE
+
+  CASE Upd_L25
+    COMPUTE Sub48 = SUBSTR(50,HStack(Cnt1).Roll_Key,1,48,48,Sub48);
+    IF NxtPos2 EQ 90 THEN 
+      BEGIN
+        COMPUTE NxtPos1 = NxtPos1 + 1;
+        COMPUTE NxtPos2 = 65;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub48|NxtPosA|NxtPosB;
+      ENDBEGIN 
+    ELSE 
+      BEGIN
+        COMPUTE NxtPos2 = NxtPos2 + 1;
+        PERFORM Char_Conv
+        COMPUTE WStack(Cnt2).Roll_Key = 
+    Sub48|NxtPosA|NxtPosB;
+      ENDBEGIN
+  ENDCASE  
+
+CASE Check_Zero
+  REPOSITION ROLL_LEV
+  STACK CLEAR HStack
+  FOR 1 NEXT Roll_Lev Roll_Key INTO HStack
+      WHERE Roll_Key EQ '00000000000000000000000000000000000000000000000000'
+ENDCASE
+
+CASE Stat_Init
+  COMPUTE S1Stat = 'Completed';
+  COMPUTE S2Stat = 'Working';
+  COMPUTE S3Stat = 'Pending';
+  COMPUTE S4Stat = 'Pending';
+  COMPUTE S5Stat = 'Pending';
+  COMPUTE S6Stat = 'Pending';
+  COMPUTE S7Stat = 'Pending';
+  COMPUTE S8Stat = 'Pending';
+  COMPUTE S9Stat = 'Pending';
+endcase
+case Winform_HierStat
+-*   Winform show HierStat
+endcase
+
+END

@@ -1,0 +1,166 @@
+-INCLUDE SETECHO
+-*SET TEMPERASE = OFF
+-* Focexec is used to help debug problems with the eTTek Review
+-* reports.  This focexec will simulate the code that is executed
+-* through Report Caster for jobs that are scheduled in a 'Run Now'
+-* state.  Once the variables are supplied this job can be executed 
+-* multiple times without having to log back into the User Interface
+-* of the application and reschedule the report(s).
+-*
+-*
+-* Changable variables
+-*
+-*   &&ROLLUP - Company you are running for
+-SET &&ROLLUP='ABCD-R';
+-*
+-*   &&USERID - Userid of person running reports
+-SET &&USERID='steve';
+-*
+-*   &&OUTFMT - Output Format of Reports
+-SET &&OUTFMT='PDF';
+-*
+-*   &&OUTTO - Ouput destination 
+-SET &&OUTTO='TC';
+-*
+-*   &&RP_PM - Report Group type
+-SET &&RP_PM='STS';
+-*
+-*   &&RT_PM - Report name 
+-SET &&RT_PM='Travel Summary';
+-*
+-*   &&SE_PM - Set file name
+-SET &&SE_PM='TSABCD';
+-*
+-*   &&SK_PM - Set Key
+-SET &&SK_PM='ABCD-R  ABCD  ma20001206142416';
+                                    
+-*
+-*   &&SN_PM - Set name
+-SET &&SN_PM='ABCD Travel Summary Set';
+-*
+-*   &&ST_PM - Stream
+-SET &&ST_PM='TRVLSUMA';
+-*
+-SET &&IX_PM='ABCD  jo20010727132934';
+
+-*   &&IN_PM - Instance Key
+-SET &&IN_PM=
+-'ABCD-R  ABCD  ma20001206142416STSMaster           ABCD  jo20010727132934';
+-*JHA-R   JHA   st20020715072201STSMaster           JHA   st20020715072218
+  
+-SET &&FM_PM='';
+-SET &&FX_PM='';
+-SET &&TO_PM='';
+-SET &&TX_PM='';
+-SET &&CMFM='11/01/2002';
+-SET &&CMTO='11/30/2002';
+-SET &&PMFM='11/01/2001';
+-SET &&PMTO='11/30/2001';
+-SET &&CYFM='01/01/2002';
+-SET &&CYTO='11/30/2002';
+-SET &&PYFM='01/01/2001';
+-SET &&PYTO='11/30/2001';
+-*
+TABLE FILE ROLLUP
+ON TABLE SET PAGE-NUM OFF
+PRINT  ROLLUP_CODE COMP UPD_STAT CLSELECT
+WHERE ROLLUP_CODE EQ '&&ROLLUP.EVAL'
+ON TABLE NOTOTAL
+ON TABLE HOLD AS HOLDPASS
+END
+-RUN
+-READ HOLDPASS &X.8 &COMP.6 &USTAT.1 &CLSEL.1
+-RUN
+-SET &COMPID = 'd:\TNT\TTRACKER\DATA\AL' || &COMP || '.FOC AS HIER50';
+USE ADD
+&COMPID.EVAL
+END
+-RUN
+
+CREATE FILE CONTROL
+-RUN
+
+-TYPE Before first Control MODIFY
+MODIFY FILE CONTROL
+FIXFORM ROLLUP_CODE/A8
+FIXFORM COMP/A6
+FIXFORM UPD_STAT/A1
+FIXFORM CL_SEL/A1
+COMPUTE CONTROL_ID/A3  =  'PGM';
+COMPUTE USER_ID/A20 = '&&USERID.EVAL';
+COMPUTE SECURITY_LEVEL/I1 = 9;
+COMPUTE WEB_RUN/A1 = 'Y';
+COMPUTE WDOMAIN/A50 = 'https://www.etraveltracker.com/asp/';
+MATCH CONTROL_ID
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON HOLDPASS
+END
+-RUN
+CREATE FILE CATEGORY
+JOIN ROLLUP_CODE IN CONTROL TO ROLLUP_CODE IN CLIENT AS AA
+TABLE FILE CLIENT
+BY CATEGORY NOPRINT
+SUM CATEGORY
+WHERE ROLLUP_CODE EQ '&&ROLLUP.EVAL'
+ON TABLE HOLD AS HOLDCAT
+END
+-RUN
+MODIFY FILE CATEGORY
+FIXFORM CATLIST/A15
+MATCH CATLIST
+ON NOMATCH INCLUDE
+ON MATCH INCLUDE
+DATA ON HOLDCAT
+END
+JOIN CLEAR AA
+-RUN
+
+DEFINE FILE RPT_INST
+E_FLAG/A1 WITH INST_KEY ='N';
+R_SERVER/A20 WITH INST_KEY ='&&USERID.EVAL';
+END
+TABLE FILE RPT_INST
+PRINT E_FLAG AS EXECUTE_FLAG 
+      R_SERVER AS RPT_SERVER
+BY INST_KEY
+WHERE INST_KEY EQ 
+'&&IN_PM.EVAL'
+WHERE RECORDLIMIT EQ 1
+ON TABLE HOLD AS HOLD1
+ON TABLE SET ASNAMES ON
+END
+MODIFY FILE RPT_INST
+FIXFORM FROM HOLD1
+MATCH INST_KEY
+  ON NOMATCH REJECT
+  ON MATCH UPDATE EXECUTE_FLAG RPT_SERVER
+DATA ON HOLD1
+END
+-RUN
+
+? PATH
+-RUN
+
+EX WRUNINDV outfmt='&&OUTFMT.EVAL',
+outto='&&OUTTO.EVAL',
+rp_pm='&&RP_PM.EVAL',
+rt_pm='&&RT_PM.EVAL',
+se_pm='&&SE_PM.EVAL',
+sk_pm='&&SK_PM.EVAL',
+sn_pm='&&SN_PM.EVAL',
+st_pm='&&ST_PM.EVAL',
+ix_pm='&&IX_PM.EVAL',
+fm1_pm1='&&FM_PM.EVAL',
+to1_pm1='&&TO_PM.EVAL',
+fx_pm='&&FX_PM.EVAL',
+tx_pm='&&TX_PM.EVAL',
+cmfm='&&CMFM.EVAL',
+cmto='&&CMTO.EVAL',
+pmfm='&&PMFM.EVAL',
+pmto='&&PMTO.EVAL', 
+cyfm='&&CYFM.EVAL',
+cyto='&&CYTO.EVAL',
+pyfm='&&PYFM.EVAL',
+pyto='&&PYTO.EVAL', 
+in_pm='&&IN_PM.EVAL'

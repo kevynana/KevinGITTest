@@ -1,0 +1,279 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*  FOCEXEC: AVIW27DT
+-* File PASSNGRS.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-**********************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-RUN
+
+
+
+TABLE FILE &&RPT_HOLD
+SUM PASSNGR_NAME
+-*     TKT_NUM
+    TKT_PURCH
+-*     FARE_PAID
+BY PNR_LOCATOR
+BY TRAN_MONTH
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+
+DEFINE FILE HOLD1
+PNR_CNT/D9CS =IF TKT_PURCH GT 1 THEN 1 ELSE 0;
+END
+
+
+TABLE FILE HOLD1
+SUM PASSNGR_NAME
+    PNR_CNT
+BY PNR_LOCATOR
+BY TRAN_MONTH
+WHERE PNR_CNT NE 0
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    PASSNGR_NAME
+    C_ITIN
+    ADIR_ALL
+BY PNR_LOCATOR
+BY TRAN_MONTH
+BY TKT_NUM
+BY AIRLINE
+BY XTRAN_DT
+BY TKT_TYPE
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+
+-IF &&SETF EQ 'NYPNRCNT' THEN GOTO NYL;
+-IF &&SETF EQ 'CGPNRCTD' THEN GOTO CONG;
+
+
+MATCH FILE HOLD3
+PRINT PASSNGR_NAME
+      FARE_PAID
+      C_ITIN
+      ADIR_ALL
+BY PNR_LOCATOR
+BY TRAN_MONTH
+BY TKT_NUM
+BY TKT_TYPE
+BY XTRAN_DT
+ON TABLE HOLD
+RUN
+FILE HOLD2
+PRINT PASSNGR_NAME
+    PNR_CNT
+BY PNR_LOCATOR
+BY TRAN_MONTH
+AFTER MATCH HOLD AS HOLD4 OLD-AND-NEW
+END
+-RUN
+
+-GOTO FinishRpt;
+
+-NYL
+
+
+TABLE FILE &&RPT_HOLD
+PRINT DPT
+BY PNR_LOCATOR
+BY PASSNGR_NAME
+BY TKT_NUM
+WHERE DPT NE ' '
+ON TABLE HOLD AS HOLDDPT
+END
+-RUN
+
+MATCH FILE HOLD3
+PRINT PASSNGR_NAME
+      FARE_PAID
+      C_ITIN
+      ADIR_ALL
+BY PNR_LOCATOR
+BY TRAN_MONTH
+BY TKT_NUM
+BY TKT_TYPE
+BY XTRAN_DT
+ON TABLE HOLD
+RUN
+FILE HOLD2
+PRINT PASSNGR_NAME
+    PNR_CNT
+BY PNR_LOCATOR
+BY TRAN_MONTH
+AFTER MATCH HOLD AS MATCHONE OLD-AND-NEW
+END
+-RUN
+
+MATCH FILE MATCHONE
+PRINT FARE_PAID
+      C_ITIN
+      ADIR_ALL
+      PNR_CNT
+      TRAN_MONTH
+      TKT_TYPE
+      XTRAN_DT
+ BY PNR_LOCATOR
+ BY PASSNGR_NAME
+ BY TKT_NUM
+ ON TABLE HOLD
+ RUN
+ FILE HOLDDPT
+ SUM DPT
+ BY PNR_LOCATOR
+ BY PASSNGR_NAME
+ BY TKT_NUM
+ AFTER MATCH HOLD AS HOLD4 OLD-AND-NEW
+ END
+ -RUN
+ 
+ -GOTO FinishRpt;
+
+ 
+ -CONG
+ 
+ 
+ 
+ MATCH FILE HOLD3
+ PRINT PASSNGR_NAME
+       FARE_PAID
+       C_ITIN
+       ADIR_ALL
+       AIRLINE
+       TKT_TYPE
+       TKT_NUM
+       XTRAN_DT
+ BY PNR_LOCATOR
+ BY TRAN_MONTH
+ ON TABLE HOLD
+ RUN
+ FILE HOLD2
+ PRINT PASSNGR_NAME
+     PNR_CNT
+ BY PNR_LOCATOR
+ BY TRAN_MONTH
+ AFTER MATCH HOLD AS HOLD4 OLD-AND-NEW
+ END
+ -RUN
+ 
+ 
+-FinishRpt
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+DEFINE FILE HOLD4
+NOWTOD/A8 WITH PNR_LOCATOR = HHMMSS (NOWTOD);  
+END
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD4';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+
+TABLE FILE HOLD4
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&PRINT1
+    &&PRINT2
+    &&PRINT3
+    &&PRINT4
+    &&PRINT5
+    &&PRINT6
+    &&PRINT7
+    &&PRINT8
+    &&PRINT9
+    &&PRINT10
+-*BY
+   &&BY1 
+   &&BY2
+   &&BY3
+   &&BY4
+   &&BY5
+   &&BY6
+   &&BY7
+   &&BY8
+   &&BY9
+   &&BY10   
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+-*ON
+   &&ONTABLE1
+   &&ONTABLE2
+   &&ONTABLE3
+   &&ONTABLE4
+   &&ONTABLE5
+   &&ONTABLE6
+   &&ONTABLE7
+   &&ONTABLE8
+   &&ONTABLE9
+   &&ONTABLE10
+-INCLUDE FOOTERDT
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&DTSTY
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN

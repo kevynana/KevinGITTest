@@ -1,0 +1,59 @@
+-**************************************************************************************************
+-* ResetBreakBy.fex
+-*    The value of the field BREAKBY in RPT_INST could mean different things, and it depends on
+-*    what break by options checked in ROLLSET table. The interpretation should match the rules
+-*    in RI_PARM.
+-*
+-*    This program should be included in codegen after reading THE VALUE TO &&BREAKBY, and
+-*    this variable should have value 1: subtotal; 2: page break; 3: report break
+-*
+-*  03/31/2015  REJ  S-05681 Changes for Available Reports.  Adding code so that the
+-*                           program will run in current Review and in Available Reports.
+-*  09/19/2016  REJ  S-24432 Changes for ER5 testing.  Added -DEFAULTs for 3 variables.
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+-*  05/23/2017 LSI S-11741 edit hotel reports in adhoc - fix test defects to allow to use break option in adhoc 
+-*
+-**************************************************************************************************
+-DEFAULT &STBK='';
+-DEFAULT &PAGEBK='';
+-DEFAULT &RPTBK='';
+-DEFAULT &&USEBRK = 'N';
+-DEFAULT &STBK = 'N';
+-DEFAULT &PAGEBK = 'N';
+-DEFAULT &RPTBK = 'N';
+-DEFAULT &&BREAKOPTION = '';
+
+-*-IF &&STREAM EQ 'ADHOCRPT' THEN GOTO :BLNotUsed;
+ 
+JOIN GLOBAL_PARM IN ROLLSET_MASTER TO GLOBAL_PARM IN ROLLSET AS J1
+ 
+TABLE FILE ROLLSET_MASTER
+PRINT USE_BREAKLVL BL_SUBTOTAL BL_PAGEBREAK BL_REPORTBREAK
+WHERE ROLLUP_CODE EQ '&&ROLLUP.EVAL'
+WHERE ROLLSET.GLOBAL_PARM EQ '&SETFILE.EVAL'
+ON TABLE SAVE AS BREAKBYF
+END
+-RUN
+-READ BREAKBYF &&USEBRK.1. &STBK.1. &PAGEBK.1. &RPTBK.1.
+ 
+-IF '&&USEBRK.EVAL' EQ 'N' AND &&STREAM NE 'ADHOCRPT' THEN GOTO :BLNotUsed;
+-IF '&STBK.EVAL' EQ 'Y' AND '&PAGEBK.EVAL' EQ 'Y' AND '&RPTBK.EVAL' EQ 'Y' THEN GOTO NoResetBL;
+-IF '&STBK.EVAL' EQ 'N' AND '&PAGEBK.EVAL' EQ 'N' AND '&RPTBK.EVAL' EQ 'N' THEN GOTO NoResetBL;
+-IF '&STBK.EVAL' EQ ' ' AND '&PAGEBK.EVAL' EQ ' ' AND '&RPTBK.EVAL' EQ ' ' THEN GOTO NoResetBL;
+ 
+-SET &&BREAKBY = IF '&STBK.EVAL' EQ 'Y' AND '&PAGEBK.EVAL' EQ 'N' AND '&RPTBK.EVAL' EQ 'Y' AND &&BREAKBY EQ 2 THEN 3
+-           ELSE IF '&STBK.EVAL' EQ 'N' AND '&PAGEBK.EVAL' EQ 'Y' AND '&RPTBK.EVAL' EQ 'Y' THEN (&&BREAKBY+1)
+-           ELSE IF '&STBK.EVAL' EQ 'N' AND '&PAGEBK.EVAL' EQ 'Y' AND '&RPTBK.EVAL' EQ 'N' AND &&BREAKBY EQ 1 THEN 2
+-           ELSE IF '&STBK.EVAL' EQ 'N' AND '&PAGEBK.EVAL' EQ 'N' AND '&RPTBK.EVAL' EQ 'Y' AND &&BREAKBY EQ 1 THEN 3
+-           ELSE &&BREAKBY;
+ 
+-NoResetBL
+ 
+-SET &&BREAKOPTION = IF &&BREAKBY EQ 1 AND &&STREAM EQ 'ADHOCRPT' THEN 'ON LEVEL_DESC RECOMPUTE MULTILINES AS ''TOTAL FOR '''
+-  ELSE IF &&BREAKBY EQ 2 AND &&STREAM EQ 'ADHOCRPT' THEN 'ON LEVEL_DESC PAGE-BREAK '
+-  ELSE IF &&BREAKBY EQ 1 AND '&&SETFILE.EVAL' EQ 'ABHRC' THEN 'ON AROLL_LEV RECOMPUTE MULTILINES AS ''TOTAL FOR '''
+-  ELSE IF &&BREAKBY EQ 1 AND '&&SETFILE.EVAL' EQ 'ABAIRDTL' OR 'ABHTLDTL' THEN 'ON LEVEL_DESC RECOMPUTE AS ''TOTAL FOR'''
+-  ELSE IF &&BREAKBY EQ 1 THEN 'ON LEVEL_DESC RECOMPUTE MULTILINES AS ''TOTAL FOR '''
+-  ELSE IF &&BREAKBY EQ 2 THEN 'ON LEVEL_DESC PAGE-BREAK ' ELSE '';
+ 
+-:BLNotUsed

@@ -1,0 +1,23 @@
+-*defined fields to be included
+-* Steve - 06/03/2003 - Added VOID_DATE NE 0 to EX_RF_FLAG define
+-* Joy - 12/13/04  - Changed EX_RF_Flag to not exclude DT1
+-* DEB - 5/23/14  - ADDED EX5 TO EX_RF_FLAG DEFINE 
+
+EX_RF_FLAG/A1 = IF VOID_DATE NE 0 
+  THEN ' '
+  ELSE IF (((RF_FLAG EQ 'F' OR 'P') AND
+    (EMBARK NE 'EX1' OR 'FP2' OR 'EX5') AND (SEG_COUNT LE 0)) OR (EMBARK EQ 'RF1'))
+  THEN 'R'
+  ELSE IF (((EXSALE NE ' ') AND (SEG_COUNT GE 0)) OR
+-*     ((EMBARK NE 'DT1') AND (EX_FLAG EQ 'F' OR 'P') AND 
+       ((EX_FLAG EQ 'F' OR 'P') AND
+    (SEG_COUNT LE 0) AND (RF_FLAG EQ ' ')))
+  THEN 'E'
+  ELSE ' ';
+  
+SALES_FLAG/A1 = IF RF_FLAG EQ ' ' AND EX_FLAG EQ ' '  AND VOID_DATE EQ 0
+  THEN 'S' 
+  ELSE IF RF_FLAG EQ ' ' AND EX_FLAG EQ ' '  AND VOID_DATE NE 0
+  THEN 'V' ELSE ' ';
+  
+

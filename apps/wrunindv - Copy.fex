@@ -1,0 +1,496 @@
+-*  02/05/2015  REJ  S-05681 Changes for Available Reports.  Adding code so that the
+-*                           program will run in current Review and in Available Reports.
+-* 11/30/15 JM S-13286 defaulted &&IDLEVELBREAK to blank to allow reports to sort/subtotal by id-levels
+
+-INCLUDE SETECHO
+ 
+-*SET TEMPERASE=OFF
+-*File WRUNINDV.FEX
+-DEFAULT &dateType='';
+-DEFAULT &fm1_pm1='';
+-DEFAULT &in_pm=;
+-DEFAULT &to1_pm1='';
+-DEFAULT &fx_pm='';
+-DEFAULT &tx_pm='';
+-DEFAULT &cmfm='';
+-DEFAULT &cmto='';
+-DEFAULT &pmfm='';
+-DEFAULT &pmto='';
+-DEFAULT &cyfm='';
+-DEFAULT &cyto='';
+-DEFAULT &pyfm='';
+-DEFAULT &pyto='';
+-DEFAULT &sk_pm='';
+-DEFAULT &outfmt='';
+-DEFAULT &outto='';
+-DEFAULT &level='';
+-DEFAULT &member='';
+-DEFAULT &user='default';
+-DEFAULT &&BURST = 'N';
+-DEFAULT &BENCHDRILL='N';
+-DEFAULT &DASHDRILL='N';
+-DEFAULT &FROMAVRP='N';
+-DEFAULT &wrrun='';
+-DEFAULT &intime='';
+-DEFAULT &orientation='';
+ 
+-DEFAULT &ELINKS='N';
+-DEFAULT &DSTSCHEDID='';
+-DEFAULT &PUSHNAME='';
+ 
+-DEFAULT &&LEVEL='';
+-DEFAULT &&MEMBER='';
+-DEFAULT &&LOOPCOUNTER='';
+-DEFAULT &FROMAVRP='';
+-DEFAULT &&IDLEVELBREAK='';
+ 
+-SET &&FROMAVRP=&FROMAVRP;
+-DEFAULT &ER5_ADHOC = '';
+-SET &&ER5_ADHOC = &ER5_ADHOC; 
+ 
+-IF &&FROMAVRP EQ '' GOTO :AVRP1;
+-DEFAULT &gparm='';
+ 
+-SET &in_pm=1;
+-SET &sk_pm=1;
+ 
+APP PREPENDPATH REVIEW_50_SHARED REVIEW_50_AVRP ttapps_sql
+-:AVRP1
+ 
+ 
+-SET &&UNAME=&user;
+ 
+-SET &&SETZIP= 'N';
+-SET &&DRILLED_RUN = 'N';
+-SET &&DRILLSTREAM = 'N';
+-SET &&ITIME = IF &intime EQ '' THEN 'WRUNINDV' ELSE &intime;
+-SET &&WRRUN = IF &&ITIME EQ 'WRUNINDV' THEN 'Y' ELSE
+-              IF &wrrun EQ '' THEN 'N' ELSE 'Y';
+-SET &&HFTP = 'N';
+ 
+-SET &&ELINKS=&ELINKS;
+-SET &&SCHED=&DSTSCHEDID;
+-SET &&PUSHNAME=&PUSHNAME;
+ 
+-* THESE VARIABLES ARE BEING PASSED FROM ASP
+-SET &&IKEY=&in_pm;
+-SET &&SKEY=&sk_pm;
+-SET &&OUTFMT=IF &outfmt EQ '' THEN 'PDF' ELSE &outfmt;
+-SET &&OUTTO=&outto;
+-SET &&FM_PM=&fm1_pm1;
+-SET &&TO_PM=&to1_pm1;
+-SET &&FX_PM=&fx_pm;
+-SET &&TX_PM=&tx_pm;
+-SET &&CMFM=&cmfm;
+-SET &&CMTO=&cmto;
+-SET &&PMFM=&pmfm;
+-SET &&PMTO=&pmto;
+-SET &&CYFM=&cyfm;
+-SET &&CYTO=&cyto;
+-SET &&PYFM=&pyfm;
+-SET &&PYTO=&pyto;
+-SET &&DATETYPE= '&dateType.EVAL';
+-SET &&ORIENTATION = SUBSTR(15, '&orientation.EVAL',1,1,1,'A1');
+ 
+-IF '&&BURST.EVAL' NE 'Y' THEN GOTO NoBurst;
+-SET &&LEVEL='&level.EVAL';
+-SET &&MEMBER='&member.EVAL';
+-SET &&LOOPCOUNTER='&member.EVAL';
+-NoBurst
+ 
+ 
+ 
+-IF &&FROMAVRP EQ '' GOTO :AVRP2;
+-INCLUDE REVIEW_50_MDB/GET_CURRENT_ROLLUP
+ 
+EX REVIEW_50_SHARED/UPDATE_EXECUTION_LOG UID='&USERID',RID='&ROLLUP',PID='&gparm',AID='AVRP'
+-RUN
+-:AVRP2
+ 
+-**************************************************************************
+-* Assign Date ranges automatically if &fm1_pm1 = 'MTD' OR 'YTD' OR 'QTD' OR 'WTD'
+-* Also looks at &fx_pm and if it contains 'PMTD' the previous range
+-* is set to the month before current range otherwise it is a year
+-* before the current range.
+-* Added this for the NYL-R Push Reports - REJ 03/20/2008
+-* Added 'WTD' for Weekly selections for UP reports - REJ 03/31/2010
+-**************************************************************************
+-IF &fm1_pm1 EQ 'MTD' OR 'YTD' OR 'QTD' OR 'WTD' GOTO AUTO_DATES;
+-GOTO CONT_DATE;
+ 
+-AUTO_DATES
+ 
+JOIN CLEAR *
+ 
+-IF &&FROMAVRP EQ '' GOTO :AVRP3;
+JOIN GLOBAL_PARM IN ROLLSET_MASTER TO GLOBAL_PARM IN ROLLSET AS J1
+JOIN ROLLUP_CODE IN ROLLSET_MASTER TO ROLLUP_CODE IN ROLLUP_SQL AS J2
+-GOTO :AVRP3_CONT;
+-:AVRP3
+JOIN ROLLUP_CODE IN RPT_INST TO ROLLUP_CODE IN ROLLUP AS J1
+-:AVRP3_CONT
+-RUN
+ 
+-SET &WMASTER=IF &&FROMAVRP EQ '' THEN 'RPT_INST' ELSE 'ROLLSET_MASTER';
+ 
+DEFINE FILE &WMASTER
+TDATE1/YYMD=&YYMD;
+P_MONTH/MDYY=DATEADD(TDATE1, 'M', (-1));
+P_BOM/MDYY=DATEMOV(P_MONTH, 'BOM');
+P_EOM/MDYY=DATEMOV(P_MONTH, 'EOM');
+P_BOY/MDYY=DATEMOV(P_MONTH, 'BOY');
+ 
+TDATE1W/YYMD=END_DATE + 1;
+W_MONTH/MDYY=TDATE1W;
+P_BOW/MDYY=DATEMOV(W_MONTH, 'BOW');
+P_EOW/MDYY=DATEMOV(W_MONTH, 'EOW');
+ 
+-* RUN_EOM is the End of Month we are executing.
+RUN_EOM/M=P_EOM;
+ 
+-* Determine End of Quarters for Rollups
+RFY/M=IF ROLLUP.ROLL_FY EQ '' OR '1' OR 'X' THEN 1 ELSE EDIT(ROLLUP.ROLL_FY);
+Q1B/M=RFY;
+Q1E/M=IF (RFY + 3) - 1 LT 12 THEN (RFY + 3) - 1 ELSE (RFY + 3) - 1 - 12;
+Q2B/M=IF (RFY + 3) GT 12 THEN (RFY + 3) - 12 ELSE (RFY + 3);
+Q2E/M=IF (RFY + 6) - 1 LT 12 THEN (RFY + 6) - 1 ELSE (RFY + 6) - 1 - 12;
+Q3B/M=IF (RFY + 6) GT 12 THEN (RFY + 6) - 12 ELSE (RFY + 6);
+Q3E/M=IF (RFY + 9) - 1 LT 12 THEN (RFY + 9) - 1 ELSE (RFY + 9) - 1 - 12;
+Q4B/M=IF (RFY + 9) GT 12 THEN (RFY + 9) - 12 ELSE (RFY + 9);
+Q4E/M=IF (RFY + 12) - 1 LT 12 THEN (RFY + 12) - 1 ELSE (RFY + 12) - 1 - 12;
+ 
+-* Determine End of Year Month for Rollups
+ANNUAL/M=Q4E;
+ANNUAL_YY/YY=P_EOM;
+ANNUAL_YY1/YY=IF RUN_EOM GT Q4E THEN ANNUAL_YY + 1 ELSE ANNUAL_YY;
+ANNUAL_A8MDYY/A8MDYY=EDIT(Q4E) | '01' | EDIT(ANNUAL_YY1);
+ANNUAL_MONTH/MDYY=ANNUAL_A8MDYY;
+ANNUAL_END/MDYY=DATEMOV(ANNUAL_MONTH, 'EOM');
+ 
+Q4_END/MDYY=ANNUAL_END;
+Q4_BEGIN/MDYY=DATEMOV(DATEADD(Q4_END, 'M', (-2)), 'BOM');
+Q3_END/MDYY=Q4_BEGIN - 1;
+Q3_BEGIN/MDYY=DATEMOV(DATEADD(Q3_END, 'M', (-2)), 'BOM');
+Q2_END/MDYY=Q3_BEGIN - 1;
+Q2_BEGIN/MDYY=DATEMOV(DATEADD(Q2_END, 'M', (-2)), 'BOM');
+Q1_END/MDYY=Q2_BEGIN - 1;
+Q1_BEGIN/MDYY=DATEMOV(DATEADD(Q1_END, 'M', (-2)), 'BOM');
+ 
+CUR_QTR/A1=IF P_EOM FROM Q1_BEGIN TO Q1_END THEN '1' ELSE
+           IF P_EOM FROM Q2_BEGIN TO Q2_END THEN '2' ELSE
+           IF P_EOM FROM Q3_BEGIN TO Q3_END THEN '3' ELSE
+           IF P_EOM FROM Q4_BEGIN TO Q4_END THEN '4' ELSE '0';
+ 
+-* Determine Weekly dates
+W_CM_FM/MDYY=DATEADD(P_BOW, 'D', (-7));
+W_CM_TO/MDYY=DATEADD((P_EOW + 2), 'D', (-7));
+ 
+W_CM_FM/MDYY=IF W_CM_TO GT END_DATE THEN
+        DATEADD(W_CM_FM, 'D', (-7)) ELSE W_CM_FM;
+W_CM_TO/MDYY=IF W_CM_TO GT END_DATE THEN
+        DATEADD(W_CM_TO, 'D', (-7)) ELSE W_CM_TO;
+ 
+FM_DATE/MDYY=IF '&fm1_pm1' EQ 'MTD' THEN P_BOM ELSE
+             IF '&fm1_pm1' EQ 'YTD' THEN P_BOY ELSE
+             IF '&fm1_pm1' EQ 'WTD' THEN W_CM_FM ELSE
+             IF CUR_QTR EQ '1' THEN Q1_BEGIN ELSE
+             IF CUR_QTR EQ '2' THEN Q2_BEGIN ELSE
+             IF CUR_QTR EQ '3' THEN Q3_BEGIN ELSE Q4_BEGIN;
+ 
+TO_DATE/MDYY=IF '&fm1_pm1' EQ 'WTD' THEN W_CM_TO ELSE P_EOM;
+FX_DATE/MDYY=IF '&fx_pm' EQ 'PMTD' THEN DATEADD(FM_DATE, 'M', (-1)) ELSE DATEADD(FM_DATE, 'Y', (-1));
+TX_DATE0/MDYY=IF '&fx_pm' EQ 'PMTD' THEN DATEADD(TO_DATE, 'M', (-1)) ELSE DATEADD(TO_DATE, 'Y', (-1));
+TX_DATE/MDYY=DATEMOV(TX_DATE0, 'EOM');
+ 
+FM_DATE1/A8MDYY=FM_DATE;
+TO_DATE1/A8MDYY=TO_DATE;
+FX_DATE1/A8MDYY=FX_DATE;
+TX_DATE1/A8MDYY=TX_DATE;
+ 
+FM_DATE2/A10=EDIT(FM_DATE1,'99/99/9999');
+TO_DATE2/A10=EDIT(TO_DATE1,'99/99/9999');
+FX_DATE2/A10=EDIT(FX_DATE1,'99/99/9999');
+TX_DATE2/A10=EDIT(TX_DATE1,'99/99/9999');
+END
+TABLE FILE &WMASTER
+PRINT FM_DATE2 TO_DATE2 FX_DATE2 TX_DATE2
+BY ROLLUP_CODE NOPRINT
+ 
+-IF &&FROMAVRP EQ '' GOTO :AVRP4;
+WHERE ROLLUP_CODE EQ '&ROLLUP'
+WHERE GLOBAL_PARM EQ '&gparm'
+-GOTO :AVRP4_CONT;
+-:AVRP4
+WHERE INST_KEY EQ &&IKEY
+-:AVRP4_CONT
+ 
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE SAVE AS HADATES
+WHERE RECORDLIMIT EQ 1
+END
+-RUN
+-READ HADATES &&FM_PM.A10, &&TO_PM.A10, &&FX_PM.A10, &&TX_PM.A10
+ 
+JOIN CLEAR *
+-RUN
+ 
+-GOTO CONT_DATE;
+ 
+-CONT_DATE
+-********************************************************************
+ 
+EX RESET
+-RUN
+ 
+-INCLUDE HOLDDATAPATH
+-RUN
+ 
+ 
+-IF &&FROMAVRP NE '' GOTO :AVRP5;
+
+-INCLUDE WRBATCH
+-RUN
+-INCLUDE LOADBINS
+-RUN
+
+EX WRRIUPD
+-RUN
+ 
+-IF &BENCHDRILL NE 'Y' GOTO :NOBENCH;
+-INCLUDE BENCHMARK_TO_REVIEW_UPDATES
+-RUN
+-:NOBENCH
+-IF &DASHDRILL NE 'Y' GOTO :NODASH;
+-INCLUDE DASHBOARD_TO_REVIEW_UPDATES
+-RUN
+-:NODASH
+-IF &FROMAVRP NE 'Y' GOTO :NOAVRP;
+-INCLUDE REVIEW_50_AVRP/AVAILABLE_REPORTS_UPDATES
+-RUN
+-:NOAVRP
+ 
+-GOTO :AVRP5_CONT;
+-:AVRP5
+JOIN CLEAR *
+JOIN GLOBAL_PARM IN ROLLSET_MASTER TO GLOBAL_PARM IN ROLLSET AS J1
+JOIN ROLLUP_CODE IN ROLLSET_MASTER TO ROLLUP_CODE IN ROLLUP_SQL AS J2
+-RUN
+ 
+CREATE FILE BRPT_QUE
+-RUN
+DEFINE FILE ROLLSET_MASTER
+  INST_KEY/I7=1;
+  SET_KEY/I7=1;
+  INTIME/A18 = 'WRUNINDV_AVRP';
+  RPT_NAME/A50=EDIT(DESC1,'99999999999999999999999999999999999999999999999999');
+END
+TABLE FILE ROLLSET_MASTER
+PRINT INST_KEY INTIME ROLLUP_CODE RPT_NAME SET_KEY
+WHERE ROLLUP_CODE EQ '&ROLLUP'
+WHERE GLOBAL_PARM EQ '&gparm'
+ON TABLE HOLD AS HLDRI
+WHERE RECORDLIMIT EQ 1
+END
+-RUN
+ 
+MODIFY FILE BRPT_QUE
+FIXFORM FROM HLDRI
+MATCH INST_KEY INTIME
+ ON MATCH REJECT
+ ON NOMATCH INCLUDE
+DATA ON HLDRI
+END
+-RUN
+ 
+-INCLUDE LOADBINS_AVRP
+-RUN
+ 
+JOIN CLEAR *
+-RUN
+ 
+ 
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET
+TABLE FILE BRPTINST
+PRINT RPT_STREAM GLOBAL_PARM RPT_TYPE RPT_NAME SET_NAME
+WHERE GLOBAL_PARM EQ '&gparm'
+ON TABLE SAVE
+END
+ 
+-RUN
+-READ SAVE &&STREAM.8. &&SETF.8. &&RPTTYP.3. &&RN.50.  &&RS.40.
+ 
+-SET &&IDKEY = &&IKEY;
+-SET &&FOOTR = '&&SETF.EVAL' || '/' | 'AVRP';
+-RUN
+ 
+-INCLUDE REVIEW_50_AVRP/AVAILABLE_REPORTS_UPDATES
+-RUN
+ 
+-:AVRP5_CONT
+ 
+EX RPTRESET
+-RUN
+ 
+-IF &&STREAM EQ 'xxxxxxxx' THEN GOTO XXIT;
+ 
+-INCLUDE GLOBAL_LOGO_CHECK
+ 
+-SET &&NOW_CYC = 'NOW';
+-*-SET &&RN = LJUST(50, &&RN, &&RN);
+-*-SET &&RS = LJUST(40, &&RS, &&RS);
+ 
+-*-SET &&INSTID = SUBSTR(72, &&IKEY, 51, 72, 22, 'A22');
+-SET &&INSTID = &&IDKEY;
+-*-SET &&VARFILE = 'D:\tnt\TTRACKER\SETFILES\' || '&&SETF.EVAL' || '.FEX';
+-SET &&VARFILE = '&&DATASRV.EVAL' || '\tnt\TTRACKER\SETFILES\' || '&&SETF.EVAL' || '.FEX';
+ 
+ 
+-SET &&VARFWEB = &&WEB_PATH || &&SETF || '.FEX';
+-SET &&READSET = &&WEB_PATH || 'READSET.FTM';
+FILEDEF READSET DISK &&READSET
+FILEDEF OLDSET DISK &&VARFWEB
+-RUN
+ 
+-* Verify Set File does exists.
+STATE &&VARFILE
+-RUN
+-IF &RETCODE NE 0 GOTO NOSFILE;
+ 
+-* WORKAROUND TO PROBLEM WITH -READ AND (MAINTAIN AND FIX FILES)
+ 
+COPY &&VARFILE &&READSET
+-RUN
+ 
+TABLE FILE READSET
+PRINT *
+ON TABLE HOLD AS READSET FORMAT ALPHA
+END
+-RUN
+-* END OF WORKAROUND
+ 
+FILEDEF READSET CLEAR
+FILEDEF OLDSET CLEAR
+FILEDEF OUTFILE DISK &&VARFWEB
+FILEDEF READSET DISK &&READSET
+-RUN
+
+EX VARSETS
+-RUN
+ 
+-* IBIRJ TEST CODE
+-*-SET &&TESTSETF='D:\TEMP\' || &&SETF || '.FEX';
+-*COPY &&VARFWEB &&TESTSETF
+-*-RUN
+ 
+FILEDEF READSET CLEAR
+FILEDEF OUTFILE CLEAR
+-RUN
+ 
+-*Generate the screening conditions
+EX CODEGEN
+-RUN
+ 
+EX SELDESC2
+-RUN
+
+-SET &&NOW_CYC = 'NOW';
+-TYPE Executing &&STREAM
+-RUN
+ 
+EX &&STREAM
+-RUN
+
+-*-IF &&UNAME NE 'lusheng' THEN GOTO NOQUITCAP;
+-*-TYPE &&STREAM
+-*-TYPE &&SAVSUM
+-*-SET &HFILE=&&WEB_PATH || 'SAVREP' || &&OUTFMTX;
+
+-*-QUIT
+-NOQUITCAP
+ 
+EX SETRSRN
+-RUN
+-SET &&SET_DONE = 'Y';
+-SET &&RS = LJUST(40, &&RS, &&RS);
+ 
+-SET &&HFTP=IF EDIT(&&OUTTO,'9') EQ 'F ' THEN 'Y'
+- ELSE '&&HFTP.EVAL';
+ 
+EX SETDONE
+-RUN
+ 
+-GOTO XEXIT;
+-XXIT
+ 
+-HTMLFORM BEGIN
+<html>
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>New Page 1</title>
+</head>
+<body><p align="center"><b>No report selected to run.</b></p>
+</body>
+</html>
+-HTMLFORM END
+-GOTO XEXIT;
+ 
+-NOSFILE
+-IF &&OUTTO EQ 'XB' GOTO SONLINE;
+-SET &&RPTTYPE='';
+-INCLUDE SetParmtime
+-SET &&RPTSUF='Errors';
+-INCLUDE FDEFRPTS
+-RUN
+ 
+TABLE FILE ROLLUP
+BY ROLLUP_CODE NOPRINT
+HEADING CENTER
+"Report - &&RN.EVAL "
+" "
+"The Setfile to run this report was not found - &&SETF.EVAL"
+" "
+"Contact us at eTTekReviewHelp@tandt.com for help."
+WHERE RECORDLIMIT EQ 1
+ON TABLE HOLD AS SAVREP FORMAT &&OUTFMT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.250000,
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON,
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=7, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=HEADING, SIZE=12, COLOR=BLACK, $
+ENDSTYLE
+END
+-GOTO XEXIT;
+-SONLINE
+-HTMLFORM BEGIN
+<html>
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 4.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>eTTek Review Error</title>
+</head>
+<img src="/asp/asp3banner2.jpg" alt="eTTek Review" width="785" height="86" style="position:absolute; top:0; left:0;">
+<body>
+<br><br><br><br><br>
+<table width="785">
+<tr>
+ <td align="center">The Setfile to run this report was not found - <b>&&SETF.EVAL</b></td>
+</tr>
+<tr>
+ <td align="center"></td>
+</tr>
+<tr>
+ <td align="center">Contact us at eTTekReviewHelp@tandt.com for help.</td>
+</tr>
+</table>
+</body>
+</html>
+-GOTO XEXIT;
+ 
+-XEXIT

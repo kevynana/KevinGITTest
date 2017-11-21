@@ -1,0 +1,248 @@
+-* File PSNGRCNT.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-*5/21/01      TANDT-SS               ADDED DEFINE TO NORECORDS SO MESSAGE
+-*                                    "NO RECORDS FOUNDS FOR THIS SELECTION" 
+-*                                    WILL APPEAR IN EXCEL 97
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-**********************************************************************
+
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+-TYPE &&OUTPUTDEST
+-IF &&OUTLINE2 EQ 'OFFLINE' THEN GOTO XOFFLINE ELSE GOTO XONLINE;
+
+-XONLINE
+-TYPE Before ONLINE
+ONLINE
+-TYPE After ONLINE
+-RUN
+-GOTO CONT
+
+-XOFFLINE
+-SET &&OUTLINE2 = '';
+-TYPE Before OFFLINE
+OFFLINE
+-TYPE After OFFLINE
+-RUN
+-GOTO CONT
+
+-CONT
+-SET &&RPT_HOLD = 'RPTHOLD';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-INCLUDE SELCATQT
+-RUN
+
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+
+EX AIRUSE
+-RUN
+
+EX &&EXPARM
+-RUN
+
+EX SELDESC2
+-RUN
+
+-IF &RECORDS GT 0 THEN GOTO DOIT;
+
+-NORECORDS
+-SET &&RPTSUF = 'MSG';
+-INCLUDE FDEFRPTS
+-RUN
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE HEADAIR
+PRINT EMPTY AS 'REPORT,MESSAGE' 
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT
+
+-DOIT
+
+
+TABLE FILE &&RPT_HOLD
+SUM COMM_SEG
+    CP_FARE_PD AS 'FARE'
+    MILES
+    NET_COMM
+    NET_TKT_CNT
+    TOTAL_FARE
+BY LEVEL_DESC
+BY ORGDST
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM NET_TKT_CNT
+BY LEVEL_DESC 
+BY ORGDST
+BY XPSNGR_NM
+ON TABLE HOLD AS XHOLD1
+END
+-RUN
+
+DEFINE FILE XHOLD1
+  PSNGR_CNT/P9=IF NET_TKT_CNT GE 1 THEN 1 ELSE 0;
+END
+-RUN
+
+TABLE FILE XHOLD1
+SUM PSNGR_CNT
+BY LEVEL_DESC
+BY ORGDST
+ON TABLE HOLD AS XHOLD2
+END
+-RUN
+
+MATCH FILE XHOLD2
+SUM PSNGR_CNT
+BY LEVEL_DESC
+BY ORGDST
+ON TABLE HOLD
+RUN
+FILE HOLD1
+SUM COMM_SEG
+    FARE
+    MILES
+    NET_COMM
+    NET_TKT_CNT
+    TOTAL_FARE
+BY LEVEL_DESC
+BY ORGDST
+AFTER MATCH HOLD AS XHOLD3 OLD-AND-NEW
+END
+-RUN
+
+TABLE FILE XHOLD3
+PRINT COMM_SEG
+      FARE
+      MILES
+      NET_COMM
+      PSNGR_CNT
+      TOTAL_FARE
+BY LEVEL_DESC
+RANKED BY HIGHEST NET_TKT_CNT
+BY ORGDST
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+DEFINE FILE HOLD2
+  ORG_LIMIT/I2 = &&ORLMT ;
+  OLIMIT/A2    = EDIT(ORG_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  ORG_VALUE/A6 = IF ORG_LIMIT EQ 0 THEN BRANK ELSE
+                 IF RANK GT ORG_LIMIT THEN 'OTHER' ELSE BRANK;
+  ORG_PRINT/A50 =IF ORG_VALUE LT (OLIMIT) THEN ORGDST ELSE 'ALL OTHER';
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 = HHMMSS (NOWTOD);
+END
+-RUN
+
+TABLE FILE HOLD2
+-INCLUDE HEADER
+"&&SUBHEAD </1"
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-INCLUDE FOOTERSM
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&SMSTY   
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT
+
+-* REJ EX RESTART 
+-*-EXIT
+

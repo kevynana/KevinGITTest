@@ -1,0 +1,65 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+-* File HEADER.FEX
+-********************************************************************
+-* MODIFICATIONS:
+-* 5/22/1998 ADDED THE FOLLOWING SET COMMANDS - LP
+-* 8/28/1998 CHANGED BRANCH INFO TO ROLLUP INFO - LP
+-*2/06/17-JEM-S-29460-Adding code for ER5 to use &&ROLLEMAIL in heading when GT ' '
+
+-********************************************************************
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+-SET &FXM=EDIT(&&FXDATE,'$$$$$$99');
+-SET &FXD=EDIT(&&FXDATE,'$$$$$$$$$99');
+-SET &FXY=EDIT(&&FXDATE,'$9999');
+-SET &TXM=EDIT(&&TXDATE,'$$$$$$99');
+-SET &TXD=EDIT(&&TXDATE,'$$$$$$$$$99');
+-SET &TXY=EDIT(&&TXDATE,'$9999');
+-:HDA1_CONT
+-SET &&SP = '|';
+-SET &&SP1A = IF &&ROLLNME EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP1 = IF &&ROLLCS EQ ' ' THEN ' ' ELSE &&SP1A;
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLPA = IF &&RCNCT.EVAL GE 10 OR &&CSL.EVAL GE 10 THEN 60 ELSE 68;
+-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN 78 ELSE &&CSLPA;
+-SET &&ROLLCS11 = TRUNCATE(&&ROLLCS);
+-SET &&RCNCT1 = TRUNCATE(&&ROLLCNCT);
+-SET &&BLANK = ' ';
+ 
+-IF &&ROLLEMAIL GT ' ' THEN GOTO EMLHDR;
+ 
+ 
+-********************************************************************
+-*
+-* Standard Page Header Routine places client information, TandT
+-* branch information, report date, date range selection, etc.
+-*
+-********************************************************************
+-NOP;
+"&&ROLLNME &&SP1 &&ROLLCS11 &&SP3 &&RCNCT1 &&SP4 &&ROLLPHN"
+"&&DTDESC  Period1: &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  Period2: &FXM/&FXD/&FXY - &TXM/&TXD/&TXY"
+"&&RPT_TTL1"
+"&&RPT_TTL2"
+
+
+-GOTO HDRXXIT;
+
+
+-EMLHDR;
+"&&ROLLNME &&SP1 &&ROLLCS11 &&SP3 &&RCNCT1 &&SP4 &&ROLLEMAIL"
+"&&DTDESC  Period1: &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  Period2: &FXM/&FXD/&FXY - &TXM/&TXD/&TXY"
+"&&RPT_TTL1"
+"&&RPT_TTL2"
+
+
+
+
+-HDRXXIT;

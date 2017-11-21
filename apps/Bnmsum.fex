@@ -1,0 +1,396 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Removed Conagra Special from here so that they could have the standard
+-* report as well as their specialized version JK 10/16/03
+-* Changed online bookings % header to say domestic JK 12/12/03
+-* CHANGED % ONLINE DOMESTIC BOOKINGS TO USE CDONLP DV 8/30/04
+-* ADDED CODE FOR GLOBAL CURENCY - DEB - 1/24/05
+-* CHANGED HEADER ON CTLSV AND CTLS PER PATTI - DEB 5/6/05
+-* CARRIED THRU CBVSV - JOY 3/31/14
+-*  03/31/2015  REJ  S-05681 Changes for Available Reports.  Adding code so that the
+-*                           program will run in current Review and in Available Reports.
+-*12/29/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-* 02/24/2017 - DLV - S-22486 CHANGED ettek Review to Post-trip Reporting
+-* 07/06/2017 - RSB - S-36531 Reports that do not use a view to be updated with standard footer (part 2)
+-* 08/28/2017 - RSB - S-39056 Footer changes to be backed out of story S-36531
+-*
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL'   ELSE &&DTSTY;
+-*  
+ 
+-INCLUDE SETECHO
+  
+ 
+SET ASNAMES=ON
+ 
+-SET &&RPTSUF = 'BENCHMARK';
+ 
+-IF &&FROMAVRP EQ 'Y' GOTO :BNSM1;
+-SET &FMM=EDIT(&&FROMDT,'$$$$$99$');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$99$');
+-SET &FMY=EDIT(&&FROMDT,'9999$');
+-SET &TOM=EDIT(&&TODT,'$$$$$99$');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$99$');
+-SET &TOY=EDIT(&&TODT,'9999$');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$99$');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$99$');
+-SET &FXMY=EDIT(&&FXDATE,'9999$');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$99$');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$99$');
+-SET &TXOY=EDIT(&&TXDATE,'9999$');
+-GOTO :BNSM1_CONT;
+-:BNSM1
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99$');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99$');
+-SET &FMY=EDIT(&&FROMDT,'$9999$');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99$');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99$');
+-SET &TOY=EDIT(&&TODT,'$9999$');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$$99$');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$$99$');
+-SET &FXMY=EDIT(&&FXDATE,'$9999$');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$$99$');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$$99$');
+-SET &TXOY=EDIT(&&TXDATE,'$9999$');
+-:BNSM1_CONT
+ 
+ 
+-SET &&SP = '|';
+-SET &&SP1A = IF &&ROLLNME EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP1 = IF &&ROLLCS EQ ' ' THEN ' ' ELSE &&SP1A;
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLPA = IF &&RCNCT.EVAL GE 10 OR &&CSL.EVAL GE 10 THEN 60 ELSE 68;
+-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN 78 ELSE &&CSLPA;
+-SET &&ROLLCS11 = TRUNCATE(&&ROLLCS);
+-SET &&RCNCT1 = TRUNCATE(&&ROLLCNCT);
+-SET &&BLANK = ' ';
+-INCLUDE FDEFRPTS
+-RUN
+ 
+ 
+JOIN TRANTWO.LEVEL_DESC IN TRANTWO TO TRANTHREE.LEVEL_DESC IN TRANTHREE AS J1
+JOIN TRANTWO.LEVEL_DESC IN TRANTWO TO CARTHREE.LEVEL_DESC IN CARTHREE AS J2
+JOIN TRANTWO.LEVEL_DESC IN TRANTWO TO HTLHLD3.LEVEL_DESC IN HTLHLD3 AS J3
+END
+-RUN
+ 
+ 
+ 
+ 
+DEFINE FILE TRANTWO
+NOWTOD/A8 WITH CAVOL = HHMMSS (NOWTOD);
+BLANK/A1 = ' ';
+END
+-RUN
+ 
+-IF &&SETF EQ 'ABBNMD' THEN GOTO DOM;
+ 
+-IF &&SETF EQ 'ABBNMI' AND &&CURRENCY EQ 'USD' THEN GOTO INTL;
+ 
+-IF &&SETF EQ 'ABBNMI' AND &&CURRENCY NE 'USD' THEN GOTO GLOBALI;
+ 
+ 
+-IF &&SETF EQ 'ABBNM' OR 'ABBNMD' AND &&CURRENCY NE 'USD' THEN GOTO GLOBAL;
+ 
+-IF &&SETF EQ 'BABNM' THEN GOTO BAIRD;
+ 
+-IF &&SETF EQ 'MXBNM' GOTO METX;
+ 
+ 
+TABLE FILE TRANTWO
+SUM CAVOL AS 'Total,Volume'
+PCT.CAVOL AS '% of,Total,Volume'
+CAVAR1 AS 'Volume,Variance %'
+CNTKT AS 'Net,Tickets'
+CLSAV AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CTLSV AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CVSAV AS 'Contract Savings'
+CAVGT AS 'Average,Ticket,Price'
+AAVGV1 AS 'Average,Ticket Price,Variance %'
+CADVP1 AS '% of, Net Tickets Purchased,0-6 Days'
+CADVP2 AS '% of, Net Tickets Purchased,7-13 Days'
+CADVP5 AS '% of, Net Tickets Purchased,14-20 Days'
+CADVP6 AS '% of, Net Tickets Purchased,21+ Days'
+-* CONLP AS '%,Domestic of Online Bookings'
+CDONLP AS '%,Domestic of Online Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost,Per,Mile'
+PCTNOMID AS '%,of Cars Larger,Than Mid-size'
+AVGMID AS 'Average Midsize Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+-IF &&SETF NE 'BVBNM' GOTO NOSV;
+CBVSV AS 'A/P/R/T,Savings'
+-NOSV;
+-* BY TRAN_MY AS ' '
+BY LEVEL_DESC AS ' '
+ 
+ 
+-GOTO HEAD
+ 
+ 
+ 
+-INTL
+TABLE FILE TRANTWO
+SUM CAVOL AS 'Total,Volume'
+PCT.CAVOL AS '% of,Total,Volume'
+CAVAR1 AS 'Volume,Variance %'
+CNTKT AS 'Net,Tickets'
+CLSAV AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total,Lost Savings to, Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CTLSV AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CVSAV AS 'Contract Savings'
+CAVGT AS 'Average,Ticket,Price'
+AAVGV1 AS 'Average,Ticket Price,Variance %'
+CADVP1 AS '% of, Net Tickets Purchased,0-6 Days'
+CADVP2 AS '% of, Net Tickets Purchased,7-13 Days'
+CADVP5 AS '% of, Net Tickets Purchased,14-20 Days'
+CADVP6 AS '% of, Net Tickets Purchased,21+ Days'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOMID AS '%,of Cars Larger,Than Mid-size'
+AVGMID AS 'Average Midsize Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+BY LEVEL_DESC AS ' '
+-GOTO HEAD;
+ 
+-GLOBAL;
+ 
+ 
+TABLE FILE TRANTWO
+SUM GCAVOL AS 'Total,Volume,(&&CURRENCY)'
+PCT.GCAVOL AS '% of,Total,Volume'
+GCAVAR1 AS 'Volume,Variance %'
+CNTKT AS 'Net,Tickets'
+GCLSAV AS 'TOTAL $,Lost Savings,(&&CURRENCY)'
+GCTLS AS '% of,Total,Lost Savings to, Total Air Volume'
+GCCLS2 AS '% of,Lost Savings Due to,Time Specified'
+GCCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+GCCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+GCCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+GCCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+GCTLSV AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+GCVSAV AS 'Contract Savings,(&&CURRENCY)'
+GCAVGT AS 'Average,Ticket,Price,(&&CURRENCY)'
+GAAVGV1 AS 'Average,Ticket Price,Variance %'
+CADVP1 AS '% of, Net Tickets Purchased,0-6 Days'
+CADVP2 AS '% of, Net Tickets Purchased,7-13 Days'
+CADVP5 AS '% of, Net Tickets Purchased,14-20 Days'
+CADVP6 AS '% of, Net Tickets Purchased,21+ Days'
+CDONLP AS '%,Domestic of Online Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPKILO AS 'Cost Per Kilometer'
+PCTNOMID AS '%,of Cars Larger,Than Mid-size'
+GAVGMID AS 'Average Midsize Car, Rate,(&&CURRENCY)'
+GAVGRATE AS 'Average,Hotel,Cost Per,Night,(&&CURRENCY)'
+BY LEVEL_DESC AS ' '
+ 
+-GOTO CONTINUE;
+ 
+-GLOBALI;
+TABLE FILE TRANTWO
+SUM GCAVOL AS 'Total,Volume,(&&CURRENCY)'
+PCT.GCAVOL AS '% of,Total,Volume'
+GCAVAR1 AS 'Volume,Variance %'
+CNTKT AS 'Net,Tickets'
+GCLSAV AS 'TOTAL $,Lost Savings,(&&CURRENCY)'
+GCTLS AS '% of,Total,Lost Savings to, Total Air Volume'
+GCCLS2 AS '% of,Lost Savings Due to,Time Specified'
+GCCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+GCCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+GCCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+GCCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+GCTLSV AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+GCVSAV AS 'Contract Savings,(&&CURRENCY)'
+GCAVGT AS 'Average,Ticket,Price,(&&CURRENCY)'
+GAAVGV1 AS 'Average,Ticket Price,Variance %'
+CADVP1 AS '% of, Net Tickets Purchased,0-6 Days'
+CADVP2 AS '% of, Net Tickets Purchased,7-13 Days'
+CADVP5 AS '% of, Net Tickets Purchased,14-20 Days'
+CADVP6 AS '% of, Net Tickets Purchased,21+ Days'
+CNRP AS '%,of NonRefundable Tickets'
+CPKILO AS 'Cost Per Kilometer'
+PCTNOMID AS '%,of Cars Larger,Than Mid-size'
+GAVGMID AS 'Average Midsize Car, Rate,(&&CURRENCY)'
+GAVGRATE AS 'Average,Hotel,Cost Per,Night,(&&CURRENCY)'
+BY LEVEL_DESC AS ' '
+ 
+ 
+ 
+ 
+-GOTO CONTINUE;
+ 
+ 
+ 
+ 
+-DOM;
+ 
+ 
+ 
+TABLE FILE TRANTWO
+SUM CAVOL AS 'Total,Volume'
+PCT.CAVOL AS '% of,Total,Volume'
+CAVAR1 AS 'Volume,Variance %'
+CNTKT AS 'Net,Tickets'
+CLSAV AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CTLSV AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CVSAV AS 'Contract Savings'
+CAVGT AS 'Average,Ticket,Price'
+AAVGV1 AS 'Average,Ticket Price,Variance %'
+CADVP1 AS '% of, Net Tickets Purchased,0-6 Days'
+CADVP2 AS '% of, Net Tickets Purchased,7-13 Days'
+CADVP5 AS '% of, Net Tickets Purchased,14-20 Days'
+CADVP6 AS '% of, Net Tickets Purchased,21+ Days'
+-* CONLP AS '%,Domestic of Online Bookings'
+CDONLP AS '%,Domestic of Online Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOMID AS '%,of Cars Larger,Than Mid-size'
+AVGMID AS 'Average Midsize Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+CTOT_TRANS AS 'Total Domestic,Air Transaction,Count'
+PCTEXCH AS '% of, Exchanges to Total, Domestic Transactions'
+PCTVOID AS '% of, Voids to Total, Domestic Transactions'
+PCTREF AS '% of, Refunds to Total, Domestic Transactions'
+-* BY TRAN_MY AS ' '
+BY LEVEL_DESC AS ' '
+-GOTO HEAD
+ 
+ 
+ 
+-BAIRD
+ 
+TABLE FILE TRANTWO
+SUM CAVOL AS 'Current,Volume'
+    PAVOL AS 'Prior,Volume'
+    CNTKT AS 'Current,Net Tickets'
+    PDTKT AS 'Prior,Net Tickets'
+    CAVAR1 AS 'Volume,Variance %'
+ 
+BY LEVEL_DESC AS ' '
+-GOTO HEAD;
+ 
+ 
+-METX;
+TABLE FILE TRANTWO
+SUM CAVOL AS 'Total,Volume'
+PCT.CAVOL AS '% of,Total,Volume'
+CAVAR1/D12.2C AS 'Volume,Variance %'
+CNTKT AS 'Net,Tickets'
+CLSAV AS 'TOTAL $,Lost Savings'
+-* CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+-* CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+-* CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+-* CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+-* CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+-* CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+-* CTLSV AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CVSAV AS 'Contract Savings'
+CDAVGT AS 'Domestic,Average,Ticket Price'
+CIAVGT AS 'International,Average,Ticket Price'
+CAVGT AS 'Average,Ticket,Price'
+AAVGV1 AS 'Average,Ticket Price,Variance %'
+CADVP1 AS '% of, Net Tickets Purchased,0-6 Days'
+CADVP2 AS '% of, Net Tickets Purchased,7-13 Days'
+CADVP5 AS '% of, Net Tickets Purchased,14-20 Days'
+CADVP6 AS '% of, Net Tickets Purchased,21+ Days'
+-* CONLP AS '%,Domestic of Online Bookings'
+CDONLP AS '%,Domestic of Online Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOMID AS '%,of Cars Larger,Than Mid-size'
+AVGMID AS 'Average Midsize Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+-* BY TRAN_MY AS ' '
+BY LEVEL_DESC AS ' '
+ 
+ 
+ 
+-GOTO HEAD
+ 
+-CONTINUE;
+-SET &&SUBHEAD = <NAMEC;
+ 
+ 
+-HEAD
+HEADING
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-INCLUDE FOOTERDT
+-*
+ON TABLE SET PAGE-NUM OFF
+ON TABLE NOTOTAL
+
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ 
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ 
+TYPE=GRANDTOTAL, STYLE=BOLD, $
+ 
+    TYPE=REPORT, COLUMN=N2, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N3, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N4, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N5, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N6, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N7, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N8, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N9, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N10, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N11, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N12, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N13, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N14, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N15, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N16, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N17, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N18, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N19, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N20, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N21, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N22, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N23, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N24, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N25, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N26, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N27, WRAP= 1.0,$
+ 
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+-*
+END
+-RUN
+ 
+ 
+ 
+ 
+ 
+ 
+ 

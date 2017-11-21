@@ -1,0 +1,147 @@
+-****************************************************************************
+-* QRSETBDB.FEX
+-* When Peer Group is selected, the program needs to re-allocate the 
+-* databases required for each rollup code in the Peer Group. 
+-****************************************************************************
+-INCLUDE SETECHO
+SET ASNAME=ON
+
+-SET &&AUSEPASS = &&WEB_PATH || 'AUSEINCL.FTM';
+-SET &&CUSEPASS = &&WEB_PATH || 'CUSEINCL.FTM';
+-SET &&HUSEPASS = &&WEB_PATH || 'HUSEINCL.FTM';
+-SET &&LUSEPASS = &&WEB_PATH || 'LUSEINCL.FTM';
+
+FILEDEF AUSEINCL CLEAR
+FILEDEF CUSEINCL CLEAR
+FILEDEF HUSEINCL CLEAR
+FILEDEF LUSEINCL CLEAR
+-RUN
+
+-TYPE Before first Rollup query
+TABLE FILE ROLLUPX
+ON TABLE SET PAGE-NUM OFF
+PRINT ROLL_NAME AND COMP AND UPD_ENABLE AND QTR_ENABLE AND RKEY_LEN AND
+ROLL_CONTACT AND ROLL_CITY AND ROLL_STATE AND ROLL_PHONE 
+ON TABLE NOTOTAL
+WHERE ROLLUP_CODE EQ '&&ROLLUP.EVAL'
+ON TABLE SAVE AS TABLPASS
+END
+-RUN
+
+-TYPE Before READ on Tablepass
+-READ TABLPASS &&ROLLNME.25 &&COMPNY.6 &&UPDENB.1 &&QTRENAB.1 &&RKYLEN.3,
+-, &&ROLLCNCT.25 &&ROLLCTY.15 &&ROLLSTA.2 &&ROLLFON.11 
+
+-INCLUDE SETCOPYRIGHT
+-RUN
+-*-SET &&CRIGHT = 'Copyright(c) 2006';
+
+-DBSETS
+-SET &&AIR_DB = 'A_' || &&COMPNY || '.FOC';
+-SET &&CAR_DB = 'C_' || &&COMPNY || '.FOC';
+-SET &&HTL_DB = 'H_' || &&COMPNY || '.FOC';
+-SET &&SEG_DB = 'S_' || &&COMPNY || '.FOC';
+-SET &&MRK_DB = 'M_' || &&COMPNY || '.FOC';
+-SET &&DST_DB = 'D_' || &&COMPNY || '.FOC';
+-SET &&TKT_DB = 'T_' || &&COMPNY || '.FOC';
+-SET &&LIM_DB = 'L_' || &&COMPNY || '.FOC';
+-SET &&AH_DB = 'AL' || &&COMPNY || '.FOC';
+-SET &&CH_DB = 'AL' || &&COMPNY || '.FOC';
+-SET &&HH_DB = 'AL' || &&COMPNY || '.FOC';
+-SET &&HIER = 'AL' || &&COMPNY || '.FOC';
+-SET &&XHIER = 'AL' || &&COMPNY || '.FOC';
+
+DEFINE FILE CONTROL
+  ROLL/A8='&&ROLLUP.EVAL';
+  COMPID/A6 = '&&COMPNY.EVAL';
+END
+TABLE FILE CONTROL
+PRINT CONTROL_ID ROLL AS 'ROLLUP_CODE' COMPID AS 'COMP'
+ON TABLE HOLD
+END
+MODIFY FILE CONTROL 
+FIXFORM FROM HOLD
+  MATCH CONTROL_ID 
+    ON MATCH UPDATE ROLLUP_CODE COMP
+DATA ON HOLD
+END
+-RUN
+
+-***************************************
+-*RESET TEMP FILE DBCONCAT
+-***************************************
+DEFINE FILE CONTROL
+IN_KEY/I7= &&IKEY;
+
+FM_DATE/YYMD='&&FROMDT.EVAL';
+TO_DATE/YYMD='&&TODT.EVAL';
+FXDATE/YYMD='&&FXDATE.EVAL';
+TXDATE/YYMD='&&TXDATE.EVAL';
+CMFMDT/YYMD='&&CMFMDT.EVAL';
+CMTODT/YYMD='&&CMTODT.EVAL';
+PMFMDT/YYMD='&&PMFMDT.EVAL';
+PMTODT/YYMD='&&PMTODT.EVAL';
+CYFMDT/YYMD='&&CYFMDT.EVAL';
+CYTODT/YYMD='&&CYTODT.EVAL';
+PYFMDT/YYMD='&&PYFMDT.EVAL';
+PYTODT/YYMD='&&PYTODT.EVAL';
+RPTTYPE/A8='&&RPTTYP';
+END
+TABLE FILE CONTROL
+PRINT IN_KEY 
+      FM_DATE
+      TO_DATE
+      CMFMDT
+      CMTODT
+      PMFMDT
+      PMTODT
+      CYFMDT
+      CYTODT
+      PYFMDT
+      PYTODT
+      RPTTYPE
+      FXDATE
+      TXDATE
+BY USER_ID
+BY ROLLUP_CODE
+ON TABLE HOLD AS DBCONCAT
+END
+-RUN
+-***************************************
+-*BRPTINST IS UPDATED IN QRCONTROL
+-***************************************
+TABLE FILE BROLLUP
+PRINT *
+ON TABLE HOLD
+END
+-RUN
+MODIFY FILE BROLLUP
+FIXFORM FROM HOLD
+  MATCH ROLLUP_CODE
+    ON MATCH DELETE ROLLUP_CODE
+    ON MATCH COMPUTE ROLLUP_CODE = '&&ROLLUP.EVAL';
+             COMPUTE COMP = '&&COMPNY.EVAL';
+             COMPUTE QTR_ENABLE = '&&QTRENAB';
+    ON MATCH INCLUDE
+DATA ON HOLD
+END
+-RUN
+
+-***************************************************
+-* reset dates and report type in control file
+-***************************************************
+-*-INCLUDE QRCONTROL
+EX QRCONTROL
+-RUN
+-***************************************************
+-* generate include file for database allocation
+-***************************************************
+FILEDEF AUSEINCL DISK &&AUSEPASS
+FILEDEF CUSEINCL DISK &&CUSEPASS
+FILEDEF HUSEINCL DISK &&HUSEPASS
+FILEDEF LUSEINCL DISK &&LUSEPASS
+
+-RUN
+-*-INCLUDE CATQTR
+EX CATQTR
+-RUN

@@ -1,0 +1,42 @@
+-***************************************************************************
+-* File:      GetForDrillDown.fex
+-* Functions: This program is used to set up for drilldown reports 
+-* Date:      02/28/2008
+-****************************************************************************
+-INCLUDE SETECHO
+
+-INCLUDE HOLDDATAPATH
+-RUN
+
+-INCLUDE GetBDBsForDrill
+-RUN
+
+TABLE FILE BRPTINST
+PRINT PAIR_DB RPT_GROUP RPT_STREAM GLOBAL_PARM USE_PARM 
+ON TABLE SAVE AS RPTGROUP
+END
+-RUN
+-READ RPTGROUP &&PAIRDB.A1. &&RPTGRP.A3. &&RPTSTREAM.A8. &&SETFILE.A8. &&VIEW.A8.
+
+-INCLUDE CODEGEN2
+-RUN
+-INCLUDE OTHPARMS
+-RUN
+
+EX SELDESC2
+-RUN
+
+-SET &&FROMDT='''&&FROMDT.EVAL''';
+-SET &&TODT='''&&TODT.EVAL''';
+-SET &&CMFMDT='''&&CMFMDT.EVAL''';
+-SET &&CMTODT='''&&CMTODT.EVAL''';
+
+-SET &&PMFMDT='''&&PMFMDT.EVAL''';
+-SET &&PMTODT='''&&PMTODT.EVAL''';
+-SET &&CYFMDT='''&&CYFMDT.EVAL''';
+-SET &&CYTODT='''&&CYTODT.EVAL''';
+
+-SET &&PYFMDT='''&&PYFMDT.EVAL''';
+-SET &&PYTODT='''&&PYTODT.EVAL''';
+-SET &&FXDATE='''&&FXDATE.EVAL''';
+-SET &&TXDATE='''&&TXDATE.EVAL''';

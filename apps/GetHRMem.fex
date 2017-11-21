@@ -1,0 +1,14 @@
+-**************************************************************
+-* The program is called from codegen and seldesc2 to generate
+-* the hierarchy member descriptions selected from GUI.
+-* Date: 11/04/03
+-**************************************************************
+
+TABLE FILE HIERORG
+PRINT DEPTNAME
+WHERE ROLLUP_CODE EQ '&&ROLLUP.EVAL' AND 
+  LEVEL EQ '&LEVEL.EVAL'
+WHERE ROLL_LEV IN FILE ORGMEM1
+ON TABLE SAVE AS MEMBER1
+END
+-RUN

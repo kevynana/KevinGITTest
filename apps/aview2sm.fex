@@ -1,0 +1,286 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File APSMRY.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-*1/22/02      TANDT-DB             CARRIED THROUGH VAL_AIRLINE
+-*6/17/02      STEVE                ADDED TTLBDAYS - ADVANCE BOOKING DAYS
+-*6/19/02      STEVE                ADDED REC_CNT TO CORRECT AVERAGE
+-*                                  BOOKING DAYS AND PURCHASE DAYS
+-*6/25/02      STEVE                REC_CNT DOES NOT INCLUDE REFUNDS/EXCHANGES
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*07/31/02     DEB                  CARRIED THROUGH IFLAG
+-*4/16/04    Joy                Carried Through KW_ADV_PURCH Define
+-*8/18/04    Joy                Carried through trip_purpose
+-* 11/30/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-* 04/20/2017 - RSB - S-32536 Code report style sheet for Position to be variable instead of hard coded
+-*                     Set position for &&FTR_DATEPOS containing text, date/time stamp and procedures.
+-*                     '3.75 8.35' is for landscape and '3.10 10.625 is for portrait orientation. 
+-* 08/24/2017 CA S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                       Backed out changes for S-33570 
+
+
+-**********************************************************************
+
+SET ASNAMES = ON
+
+ 
+
+
+-IF &&SETF EQ 'GCADVPUR' AND &&CURRENCY NE 'USD' THEN GOTO GCADV  
+-ELSE GOTO NEXT;
+
+-GCADV;
+-SET &&SUBHEAD = <NAMEC;
+-SET &FPAID_CUR = 'FARE PAID, (' | &&CURRENCY || ')';
+-SET &GDISV_CUR= 'LOST,SAVINGS, (' | &&CURRENCY || ')';
+-SET &AVGT_CUR = 'AVG TKT,COST, (' | &&CURRENCY || ')';
+-SET &&S_SUBJ4='PAID_FARE1/D16.2CS AS ' | '''&FPAID_CUR.EVAL''' ;
+-SET &&S_SUBJ5='PCTGFARE AS ''% OF, FARE''';
+-SET &&S_SUBJ6='DISSAVE1/D16.2S AS ' | '''&GDISV_CUR.EVAL''';
+-SET &&S_SUBJ7='PCTGDSAVE AS ''% OF,LOST SVGS'' TTLDAYS NOPRINT ';
+-SET &&S_SUBJ9='COMPUTE AVG/D16.2CS= IF ((NET_TKT_CNT LT 1) AND';
+-SET &&S_SUBJ10='(NET_TKT_CNT GT (-1))) THEN 0 ELSE ';
+-SET &&S_SUBJ11='PAID_FARE1/NET_TKT_CNT;';
+-SET &&S_SUBJ12='AS ' | '''&AVGT_CUR.EVAL''';
+
+-NEXT;
+
+
+
+TABLE FILE ADVP1
+SUM 
+    DISSAVINGS AS 'DISSAV'
+    DISSAVE1/D16.2CS AS 'GDSAVE'
+    FARE_PAID/D12.2CS AS 'TFARE'
+    NET_TKT_CNT AS 'NTTKT'
+    REF_EXCH_CNT AS 'TRFEX'
+    SAVINGS AS 'TSAVE'
+    SAVINGS1 AS 'GTSAVE'
+    TKT_PURCH AS 'TTKT'
+    PAID_FARE1/D16.2CS AS 'GFARE'
+BY LEVEL_DESC    
+ON TABLE HOLD AS HOLDONE
+END
+-RUN
+
+TABLE FILE ADVP1
+PRINT
+  BKD_ONLINE
+  CLIENT_NAME
+  DISSAVINGS
+  DISSAVE1
+  FARE_PAID
+  FLAG
+  IFLAG
+  LEVEL1
+  LEVEL2
+  LEVEL3
+  NAMEC
+  KM_DAYS
+  KM_ADV_PUR
+  KW_ADV_PUR
+  MC_ADV_BOOK
+  MRK_TKT_CNT	
+  MX_ADV_PUR
+  MC_DAYS	
+  MX_DAYS
+  NET_TKT_CNT
+  NONREF_FLAG
+  PAID_FARE1	
+  REF_EXCH_CNT	
+  RTE_APT_NM
+  SEG_AMT
+  SAVINGS
+  SAVINGS1
+  TKT_PURCH
+  TRIP_PURPOSE	
+  UP_ADV_PUR	
+  UP_DAYS
+  VAL_AIRLINE	
+  XPSNGR_NM
+BY LEVEL_DESC
+BY NEW_ADV_PURCH
+BY GRP_ADV_PUR
+BY NEW_ADV_BOOK
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+
+MATCH FILE XTWO
+PRINT
+  BKD_ONLINE 
+  CLIENT_NAME 
+  DISSAVINGS
+  DISSAVE1
+  FARE_PAID	
+  FLAG
+  GRP_ADV_PUR
+  IFLAG 
+  KM_DAYS
+  KM_ADV_PUR	
+  KW_ADV_PUR
+  LEVEL1
+  LEVEL2
+  LEVEL3
+  NAMEC
+  NONREF_FLAG
+  MC_ADV_BOOK
+  MRK_TKT_CNT
+  MX_ADV_PUR
+  MC_DAYS	
+  MX_DAYS
+  NET_TKT_CNT	
+  NEW_ADV_BOOK
+  NEW_ADV_PURCH
+  PAID_FARE1	
+  REF_EXCH_CNT	
+  RTE_APT_NM
+  SAVINGS
+  SAVINGS1	
+  SEG_AMT
+  TKT_PURCH
+  TRIP_PURPOSE	
+  UP_ADV_PUR	
+  UP_DAYS
+  VAL_AIRLINE	
+  XPSNGR_NM
+BY LEVEL_DESC
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM GDSAVE
+    GTSAVE
+    GFARE
+    TTKT
+    TRFEX
+    NTTKT
+    DISSAV
+    TSAVE
+    TFARE
+BY LEVEL_DESC
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW 
+END
+-RUN
+
+DEFINE FILE XTHREE
+  PCTDSAVE/D8.1 =  IF ((DISSAV LT 1) AND (DISSAV GT (-1))) THEN 0
+                   ELSE ((DISSAVINGS/DISSAV)*100);
+  PCTGDSAVE/D8.1S= IF ((GDSAVE LT 1) AND (GDSAVE GT (-1))) THEN 0
+                   ELSE ((DISSAVE1/GDSAVE)*100);	
+  PCTFARE/D8.1S =  IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0 
+                   ELSE ((FARE_PAID/TFARE)*100);
+  PCTGFARE/D8.1S = IF ((GFARE LT 1) AND (GFARE GT (-1))) THEN 0
+                   ELSE ((PAID_FARE1/GFARE)*100);	
+  PCTNETTKT/D8.1S = IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0
+                  ELSE ((NET_TKT_CNT/NTTKT)*100);	
+  PCTRFEX/D8.1S = IF ((TRFEX LT 1) AND (TRFEX GT (-1))) THEN 0
+                  ELSE ((REF_EXCH_CNT/TRFEX)*100);	
+  PCTSAVE/D8.1 = IF ((TSAVE LT 1) AND (TSAVE GT (-1))) THEN 0
+                  ELSE ((SAVINGS/TSAVE)*100);	
+  PCTTKT/D8.1S = IF ((TTKT LT 1) AND (TTKT GT (-1))) THEN 0
+                 ELSE ((TKT_PURCH/TTKT)*100);
+-*   REC_CNT/D8CS = IF NET_TKT_CNT NE 0 THEN 1 ELSE 0;
+  REC_CNT/D8CS = IF NET_TKT_CNT EQ 1 THEN 1 ELSE 0;
+  TTLDAYS/D8 = NEW_ADV_PURCH*REC_CNT;
+  TTLBDAYS/D8 = NEW_ADV_BOOK*REC_CNT;
+   
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);	
+
+END
+TABLE FILE XTHREE
+-INCLUDE HEADER
+"&&SUBHEAD"
+"</2"
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    &&S_SUBJ11
+    &&S_SUBJ12
+    &&S_SUBJ13
+    &&S_SUBJ14
+    &&S_SUBJ15
+    &&S_SUBJ16
+    &&S_SUBJ17
+    &&S_SUBJ18
+    &&S_SUBJ19
+    &&S_SUBJ20
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+&&BREAKOPTION
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&SMSTY
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+-*TYPE=FOOTING, LINE=4, STYLE=BOLD,POSITION=(&FTR_DATEPOS),$ 
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3

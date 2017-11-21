@@ -1,0 +1,820 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File VARSETS.FEX
+-*
+-*****   This routine reads the Report Instance DB looking for all instances
+-*****     flagged for execution.  The hightest priority instance is then
+-*****     converted to a -SET file to be used by the generic report stream
+-*****     for launching the Report Instance. If the Report Type is "SPC" it
+-*****     re-writes a pre-existing -SET file, changing only the FROM and
+-*****     TO date range
+-*****   AUTHOR:  Dave Kuzanek
+-*****   PRODUCTION DATE:
+-*****
+-*****   05/23/2001 - ADDED XDATE1 & XDATE2 COMPUTES TO CONVERT MDYYYY
+-*****                BACK TO YYYYMD FORMAT AFTER INPUT FROM RPT_SET.WFM
+-************************************************************************
+-*DATE          NAME            DESCRIPTION
+-*9/23/00     KASSOC-DK         ADDED CODE FOR &TNTPIC AND &ROLLPIC
+-*9/23/00     KASSOC-DK         EXPANDED TESTING FOR BLANKS OR NON-BLANKS
+-*                                AROUND EQUAL SIGNS
+-*09/20/00    ibistl_jyn	added update code for ex_flag in rpt_que table
+-*10/3/2000   IBISTL-RJ         CHANGED *_DEST FIELDS TO BLANK FOR WEBFOCUS
+-*10/4/2000   IBISTL-RJ         CHANGED THE OUT_LINE1 & 2 LINES FOR WEBFOCUS
+-*10/20/2000  KASSOC-DK         ADDED CODE FOR GENERIC STYLESHEET
+-*                                SIZE and POSITION VARIABLES
+-* 10/25/00   IBISTL-RJ         changed the code to allow for wildcard
+-*                              character in roll_key
+-*10/30/00	ibistl_rj	added for style sheet changes
+-*03/19/01     TANDT-SS          ADDED CHANGES FOR DUAL DATE RANGE PER
+-*                              DAVE KUZANEK CHANGES TO FOCUS6 ENVIRONMENT
+-*10/20/03    LS - Made changes according to new su database stuctures.
+-*01/04/11    GSE               Added code for output format of EXL2KON
+-*                              and to write SET BYDISPLAY to Setfile
+-*                              based on output format.
+-***********************************************************************
+MAINTAIN FILE BRPTINST AND BROLLUP AND CONTROL AND READSET AND BRPT_QUE
+
+CASE TOP
+COMPUTE XDATE1/YYMD= ;
+COMPUTE XDATE2/YYMD= ;
+COMPUTE ZDATE1/YYMD =;
+COMPUTE ZDATE2/YYMD =;
+COMPUTE CMFM_DATE1/YYMD=;
+COMPUTE CMTO_DATE1/YYMD=;
+COMPUTE PMFM_DATE1/YYMD=;
+COMPUTE PMTO_DATE1/YYMD=;
+COMPUTE CYFM_DATE1/YYMD=;
+COMPUTE CYTO_DATE1/YYMD=;
+COMPUTE PYFM_DATE1/YYMD=;
+COMPUTE PYTO_DATE1/YYMD=;
+COMPUTE Inst_Parm/I7 = ;
+COMPUTE SETTXT/A6  = '-SET &';
+COMPUTE SETTXT2/A7 = '-SET &&';
+COMPUTE Temp_Desc/A30 = '';
+COMPUTE Temp_T2/A60 = ;
+COMPUTE Temp_X1/A60 = ;
+COMPUTE Temp_X2/A60 = ;
+COMPUTE Temp_X3/A60 = ;
+COMPUTE Temp_Yr/I4 = ;
+COMPUTE PQ_Yr/I4 = ;
+COMPUTE Temp_Date/A10 = ;
+COMPUTE Temp_Date8/A8 = ;
+COMPUTE Cnt1/I3 = ;
+COMPUTE Line_Compare/I1 = ;
+
+COMPUTE Key_Pos/I2 = ;
+COMPUTE Key_PosX/I2 = ;
+COMPUTE OutLine1/A72 = ;
+COMPUTE OutLine2/A72 = ;
+COMPUTE OutLineF/A72 =;
+COMPUTE Hold_Line/A72 = ;
+COMPUTE Temp_Logo/A12 =;
+COMPUTE Temp_Ldesc/A13 =;
+COMPUTE Temp_LVL/D3=;
+COMPUTE SqX/A2 = HEXBYT(39, SqX) || HEXBYT(39, SqX);
+COMPUTE DqX/A2 = HEXBYT(34, DqX);
+COMPUTE SpX/A1 = HEXBYT(64, SpX);
+
+INFER BROLLUP.ROLLUP_CODE INTO Roll_Stack
+INFER BRPTINST.INST_KEY SETTINGS.ID INTO RI_Stack
+INFER READSET.SET_LINE INTO RSet_Stack
+INFER CONTROL.CONTROL_ID INTO Ctl_Stack
+-**********************************************************************
+-*09/20/00	ibistl_jyn	create the questack
+-***********************************************************************
+INFER BRPT_QUE.INST_KEY INTO QueStack
+
+REPOSITION CONTROL.CONTROL_ID
+STACK CLEAR Ctl_Stack
+NEXT CONTROL.CONTROL_ID INTO Ctl_Stack
+
+REPOSITION BRPTINST.INST_KEY SETTINGS.ID
+STACK CLEAR RI_Stack
+NEXT BRPTINST.INST_KEY SETTINGS.ID INTO RI_Stack WHERE 
+  BRPTINST.INST_KEY EQ Ctl_Stack(1).INST_KEY
+COMPUTE Inst_Parm = RI_Stack(1).INST_KEY;
+
+-*commented out 10/20/03
+-*REPOSITION I_SUMM.INST_KEY
+-*STACK CLEAR HL_Stack
+-*NEXT I_SUMM.INST_KEY INTO HL_Stack
+-*   WHERE I_SUMM.INST_KEY EQ Inst_Parm ;
+-**********************************************************************
+-*09/20/00	ibistl_jyn	get the data to questack
+-***********************************************************************
+REPOSITION BRPT_QUE.INST_KEY
+  STACK CLEAR QueStack
+  NEXT BRPT_QUE.INST_KEY INTO QueStack WHERE
+    BRPT_QUE.INST_KEY EQ RI_STACK(1).INST_KEY
+-**********************************************************************
+-*10/30/00	ibistl_rj	added for style sheet changes
+-***********************************************************************
+  REPOSITION BROLLUP.ROLLUP_CODE
+  NEXT BROLLUP.ROLLUP_CODE INTO Roll_Stack
+    WHERE BROLLUP.ROLLUP_CODE EQ RI_Stack(1).ROLLUP_CODE
+-* ADDED 'SPD' CODE FOR DUAL DATE RANGE
+-*IF RI_STACK(1).RPT_TYPE EQ 'SPC' OR
+-*   RI_STACK(1).RPT_TYPE EQ 'STS' OR
+-*   RI_STACK(1).RPT_TYPE EQ 'SPD' OR
+-*   RI_STACK(1).RPT_TYPE EQ 'ETS' THEN
+BEGIN
+  PERFORM SPC_WRITE
+  GOTO END RESET
+ENDBEGIN
+ENDCASE
+
+CASE SPC_WRITE
+  REPOSITION READSET.SET_LINE
+  STACK CLEAR RSet_Stack
+  FOR ALL NEXT READSET.SET_LINE INTO RSet_Stack
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE RSet_Stack.FocCount
+
+-************************************************************************
+-*10/06/02     IBI-REJ          ADDED CODE FOR &LDESC
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'LDESC', 5, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      COMPUTE Temp_LVL = IF RI_STACK(1).ROLLUP_CODE EQ 'TOTAL-R' THEN 1
+                         ELSE RI_Stack(1).SELECT_LEV;
+      COMPUTE Temp_Ldesc = 'AROLL_DSC' || FTOA(Temp_LVL,'(D3)',Temp_LVL);
+      TYPE ON OUTFILE "<SETTXT <7 LDESC = '<Temp_Ldesc ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*9/23/00     KASSOC-DK         ADDED CODE FOR &TNTPIC
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTPIC', 6, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      COMPUTE Temp_Logo = Roll_Stack(1).LOGO_2 || '.GIF';
+      TYPE ON OUTFILE "<SETTXT <7 TNTPIC = '<Temp_Logo ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*9/23/00     KASSOC-DK         ADDED CODE FOR &ROLLPIC
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLLPIC', 7, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      COMPUTE Temp_Logo = Roll_Stack(1).LOGO_1 || '.GIF';
+      TYPE ON OUTFILE "<SETTXT <7 ROLLPIC = '<Temp_Logo ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &TNTCVPOS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTCVPOS', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 TNTCVPOS = '<Roll_Stack(1).TNTCOV_POS ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &TNTCVSIZ
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTCVSIZ', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 TNTCVSIZ = '<Roll_Stack(1).TNTCOV_SIZ ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &ROLCVPOS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLCVPOS', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 ROLCVPOS = '<Roll_Stack(1).ROLCOV_POS ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &ROLCVSIZ
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLCVSIZ', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 ROLCVSIZ = '<Roll_Stack(1).ROLCOV_SIZ ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &TNTDTPOS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTDTPOS', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 TNTDTPOS = '<Roll_Stack(1).TNTDET_POS ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &TNTDTSIZ
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTDTSIZ', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 TNTDTSIZ = '<Roll_Stack(1).TNTDET_SIZ ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &ROLDTPOS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLDTPOS', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 ROLDTPOS = '<Roll_Stack(1).ROLDET_POS ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &ROLDTSIZ
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLDTSIZ', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 ROLDTSIZ = '<Roll_Stack(1).ROLDET_SIZ ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &TNTSMPOS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTSMPOS', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 TNTSMPOS = '<Roll_Stack(1).TNTSUM_POS ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &TNTSMSIZ
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTSMSIZ', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 TNTSMSIZ = '<Roll_Stack(1).TNTSUM_SIZ ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &ROLSMPOS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLSMPOS', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 ROLSMPOS = '<Roll_Stack(1).ROLSUM_POS ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &ROLSMSIZ
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLSMSIZ', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 ROLSMSIZ = '<Roll_Stack(1).ROLSUM_SIZ ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &TNTTRPOS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTTRPOS', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 TNTTRPOS = '<Roll_Stack(1).TNTTRN_POS ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &TNTTRSIZ
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TNTTRSIZ', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 TNTTRSIZ = '<Roll_Stack(1).TNTTRN_SIZ ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &ROLTRPOS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLTRPOS', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 ROLTRPOS = '<Roll_Stack(1).ROLTRN_POS ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*10/20/00     KASSOC-DK         ADDED CODE FOR &ROLTRSIZ
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'ROLTRSIZ', 8, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 ROLTRSIZ = '<Roll_Stack(1).ROLTRN_SIZ ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'I1=', 3, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'I1 =', 4, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      PERFORM SPC_RollKey
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'I2=', 3, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'I2 =', 4, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+-* 10/25/00   IBISTL-RJ  changed the code to allow for wildcard
+-*                       character in roll_key
+      IF (RSet_Stack(Cnt1).SET_LINE CONTAINS 'IF') OR
+         (RSet_Stack(Cnt1).SET_LINE CONTAINS 'WHERE')
+        BEGIN
+          TYPE ON OUTFILE RSet_Stack(Cnt1).SET_LINE;
+        ENDBEGIN
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PQFRMDT', 7, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      COMPUTE Temp_Date8 = RI_Stack(1).FM_DATE;
+      COMPUTE PQ_Yr = SUBSTR(Temp_Date8, 1, 4);
+      COMPUTE Temp_Yr = PQ_Yr - 1;
+      COMPUTE Temp_Date = Temp_Yr || '/01/01';
+      TYPE ON OUTFILE "<SETTXT2 <8 PQFRMDT = '''<Temp_Date ''';"
+      COMPUTE Temp_Date = Temp_Yr || '/12/31';
+      TYPE ON OUTFILE "<SETTXT2 <8 PQTODT = '''<Temp_Date ''';"
+      COMPUTE Cnt1 = Cnt1 + 2;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PQTODT', 6, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'F1 =', 4, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'F1=', 3, Key_Posx);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 F1 = '<RI_Stack(1).RPT_FOOT1 ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'F2 =', 4, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'F2=', 3, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 F2 = '<RI_Stack(1).RPT_FOOT2 ';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CMFMDT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CMFMDT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE CMFM_DATE1 = RI_STACK(1).CMFM_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 CMFMDT = '''<CMFM_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CMTODT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CMTODT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+    COMPUTE CMTO_DATE1 = RI_STACK(1).CMTO_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 CMTODT = '''<CMTO_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PMFMDT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PMFMDT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+    COMPUTE PMFM_DATE1 = RI_STACK(1).PMFM_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 PMFMDT = '''<PMFM_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PMTODT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PMTODT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE PMTO_DATE1 = RI_STACK(1).PMTO_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 PMTODT = '''<PMTO_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CYFMDT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CYFMDT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE CYFM_DATE1 = RI_STACK(1).CYFM_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 CYFMDT = '''<CYFM_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CYTODT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CYTODT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE CYTO_DATE1 = RI_STACK(1).CYTO_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 CYTODT = '''<CYTO_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PYFMDT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PYFMDT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE PYFM_DATE1 = RI_STACK(1).PYFM_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 PYFMDT = '''<PYFM_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PYTODT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'PYTODT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE PYTO_DATE1 = RI_STACK(1).PYTO_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 PYTODT = '''<PYTO_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/29/00     KASSOC-DK         ADDED CODE FOR DUAL DATE RANGE (non Web)
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'YFMDT =', 7, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'YFMDT=', 6, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE PYFM_DATE1 = RI_STACK(1).PYFM_DATE ;
+      TYPE ON OUTFILE "<SETTXT2 <8 YFMDT = '''<PYFM_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/29/00     KASSOC-DK         ADDED CODE FOR DUAL DATE RANGE (non Web)
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'YTODT =', 7, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'YTODT=', 6, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE PYTO_DATE1 = RI_STACK(1).PYTO_DATE ;
+      TYPE ON OUTFILE "<SETTXT2 <8 YTODT = '''<PYTO_DATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'FROMDT =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'FROMDT=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE XDATE1 = RI_STACK(1).FM_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 FROMDT = '''<XDATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*9/23/00     KASSOC-DK         EXPANDED SPACE TESTING AROUND EQUAL SIGNS
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TODT =', 6, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TODT=', 5, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE XDATE2 = RI_STACK(1).TO_DATE ;
+      TYPE ON OUTFILE "<SETTXT <7 TODT = '''<XDATE2 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*5/23/01       WTORRES         FROM DUAL DATE FUNCTION
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'FXDATE =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'FXDATE=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE ZDATE1 = RI_STACK(1).FXDATE ;
+      TYPE ON OUTFILE "<SETTXT <7 FXDATE = '''<ZDATE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-************************************************************************
+-*5/23/01       WTORRES         TO DUAL DATE FUNCTION
+-************************************************************************
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TXDATE =', 8, Key_Pos);
+    COMPUTE Key_PosX =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'TXDATE=', 7, Key_PosX);
+    IF (Key_Pos GT 0) OR (Key_PosX GT 0) THEN
+    BEGIN
+      COMPUTE ZDATE2 = RI_STACK(1).TXDATE ;
+      TYPE ON OUTFILE "<SETTXT <7 TXDATE = '''<ZDATE2 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+-*====================================================================
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'CVSTY', 5, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 CVSTY = '''<RI_Stack(1).STYLE1 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'SMSTY', 5, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 SMSTY = '''<RI_Stack(1).STYLE2 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'DTSTY', 5, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 DTSTY = '''<RI_Stack(1).STYLE3 ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'USEPARM', 7, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+      TYPE ON OUTFILE "<SETTXT <7 USEPARM = '''<RI_Stack(1).USE_PARM ''';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'OUTPUT_DEST', 11, Key_Pos);
+    IF Key_Pos GT 0
+    BEGIN
+-*  10/3/2000  IBISTL-RJ   CHANGED *_DEST FIELDS TO BLANK FOR WEBFOCUS
+      TYPE ON OUTFILE "<SETTXT <7 OUTPUT_DEST = '';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'COVER_DEST', 10, Key_Pos);
+    IF Key_Pos GT 0
+    BEGIN
+-*  10/3/2000  IBISTL-RJ   CHANGED *_DEST FIELDS TO BLANK FOR WEBFOCUS
+      TYPE ON OUTFILE "<SETTXT <7 COVER_DEST = '';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'SUMM_DEST', 9, Key_Pos);
+    IF Key_Pos GT 0
+    BEGIN
+-*  10/3/2000  IBISTL-RJ   CHANGED *_DEST FIELDS TO BLANK FOR WEBFOCUS
+      TYPE ON OUTFILE "<SETTXT <7 SUMM_DEST = '';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'RANK_DEST', 9, Key_Pos);
+    IF Key_Pos GT 0
+    BEGIN
+-*  10/3/2000  IBISTL-RJ   CHANGED *_DEST FIELDS TO BLANK FOR WEBFOCUS
+      TYPE ON OUTFILE "<SETTXT <7 RANK_DEST = '';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'OUT_LINE1', 9, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+-*  10/4/2000   IBISTL-RJ   CHANGED THE OUT_LINE1 & 2 LINES FOR WEBFOCUS
+      IF MASK(RI_Stack(1).DISTRB_FLAG,'$9') EQ 'B' AND
+         RI_Stack(1).OUTPUT_FORMAT EQ 'EXCEL' THEN
+          TYPE ON OUTFILE "<SETTXT <7 OUT_LINE1 = 'ON TABLE PCHOLD';"
+      ELSE
+          IF MASK(RI_Stack(1).DISTRB_FLAG,'$9') EQ 'B' THEN
+              TYPE ON OUTFILE
+-*               "<SETTXT <7 OUT_LINE1 = 'ON TABLE SET ONLINE-FMT';"
+               "<SETTXT <7 OUT_LINE1 = 'ON TABLE PCHOLD';"
+          ELSE
+          IF MASK(RI_Stack(1).DISTRB_FLAG,'9') EQ 'F' THEN
+              TYPE ON OUTFILE
+               "<SETTXT <7 OUT_LINE1 = 'ON TABLE PCHOLD';"
+          ELSE           
+             TYPE ON OUTFILE
+               "<SETTXT <7 OUT_LINE1 = 'ON TABLE SAVE AS SAVREP';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    COMPUTE Key_Pos =
+      POSIT(RSet_Stack(Cnt1).SET_LINE, 80, 'OUT_LINE2', 9, Key_Pos);
+    IF Key_Pos GT 0 THEN
+    BEGIN
+    IF (MASK(RI_Stack(1).DISTRB_FLAG,'$9') EQ 'B') AND
+      RI_Stack(1).OUTPUT_FORMAT EQ 'PDF'  THEN
+      BEGIN
+       TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = 'FORMAT PDF';"
+       TYPE ON OUTFILE "SET BYDISPLAY = OFF"
+      ENDBEGIN
+    ELSE
+      IF (MASK(RI_Stack(1).DISTRB_FLAG,'$9') EQ 'B') AND
+         RI_Stack(1).OUTPUT_FORMAT EQ 'EXL2K'  THEN
+         BEGIN
+          TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = 'FORMAT EXL2K';"
+          TYPE ON OUTFILE "SET BYDISPLAY = OFF"
+         ENDBEGIN
+        ELSE
+            IF RI_Stack(1).OUTPUT_FORMAT = 'EXCEL' THEN
+             BEGIN
+              TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = 'FORMAT EXCEL ';"
+              TYPE ON OUTFILE "SET BYDISPLAY = OFF"
+             ENDBEGIN
+            ELSE
+              IF RI_Stack(1).OUTPUT_FORMAT = 'PDF' THEN
+               BEGIN
+                TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = 'FORMAT PDF ';"
+                TYPE ON OUTFILE "SET BYDISPLAY = OFF"
+               ENDBEGIN
+              ELSE
+                IF RI_Stack(1).OUTPUT_FORMAT = 'EXL2K' THEN
+                 BEGIN
+                  TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = 'FORMAT EXL2K';"
+                  TYPE ON OUTFILE "SET BYDISPLAY = OFF"
+                 ENDBEGIN
+                ELSE
+                 IF RI_Stack(1).OUTPUT_FORMAT = 'EXL2KON' THEN
+                  BEGIN
+		   TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = 'FORMAT EXL2K';"
+		   TYPE ON OUTFILE "SET BYDISPLAY = ON"
+		  ENDBEGIN
+                ELSE
+                 IF RI_Stack(1).OUTPUT_FORMAT = 'COMT' THEN
+                  BEGIN
+		   TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = 'FORMAT COMT';"
+		   TYPE ON OUTFILE "SET BYDISPLAY = OFF"
+		  ENDBEGIN
+                ELSE  
+                  IF RI_Stack(1).OUTPUT_FORMAT = 'PPT' THEN
+                    TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = 'FORMAT PPT';"
+                   ELSE
+                    IF RI_Stack(1).OUTPUT_FORMAT = ' ' THEN
+                      TYPE ON OUTFILE "<SETTXT <7 OUT_LINE2 = '';"
+      COMPUTE Cnt1 = Cnt1 + 1;
+      GOTO ENDREPEAT
+    ENDBEGIN
+
+    TYPE ON OUTFILE "<RSet_Stack(Cnt1).SET_LINE"
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+endcase
+
+-*this is a dead case
+CASE Strip_OutLine
+  COMPUTE Hold_Line = OutLineF;
+  COMPUTE OutLineF = CTRAN(72, Hold_Line, 64, 32, OutLineF);
+endcase
+
+CASE SPC_RollKey
+    TYPE ON OUTFILE "<SETTXT <7 I1=' ';"
+    TYPE ON OUTFILE "<SETTXT <7 I2=' ';"
+endcase
+
+-*Changed to initialize these varialbes 10/20/03
+CASE Rank_Sets
+   TYPE ON OUTFILE "<SETTXT <7 RANKLIM=' ';"
+           "<SETTXT <7 RANKMETH=' ';"
+           "<SETTXT <7 RANKORD=' ';"
+           "<SETTXT <7 RANKSUB=' ';"
+           "<SETTXT <7 RANKTGT=' ';"
+           "<SETTXT <7 RANKAS= ' ';"
+
+endcase
+
+END

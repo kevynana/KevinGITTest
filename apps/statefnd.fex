@@ -1,0 +1,34 @@
+JOIN AIR_KEY IN A3UNVM TO ALL AIR_KEY IN S3UNVM
+-RUN
+
+
+DEFINE FILE A3UNVM  
+LEV1/A2 = EDIT(LEVEL1, '99');
+UNVM_SF/A1 = IF LEV1 EQ '21' OR '31' OR '41' OR '51' OR '91' THEN 'Y' ELSE 'N';
+  FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;  
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  
+END
+-RUN
+
+
+
+TABLE FILE A3UNVM
+SUM FARE_PAID NET_TKT_CNT
+BY AROLL_LEV2
+WHERE VOID_DATE EQ 0
+WHERE TRN_DATE GE '20100701' AND TRN_DATE LE '20100731'
+WHERE UNVM_SF EQ 'Y'
+-* WHERE AROLL_LEV2 EQ 'UNVMB'
+END
+-RUN

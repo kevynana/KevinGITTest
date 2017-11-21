@@ -1,0 +1,169 @@
+-* 11/10/15 - DLV - S-12670 - ADDED GOTO FOR ABPASSP TO AVOID
+-*                            REPORT FAILED MSG ON NO RECORDS 
+-* 3/30/16-JEM-S-11606-Added Greg's &&OVERSD logic so users can choose summary, detail, both in ER5 (reports that have smry_dtl 'b' in rollmaster)
+-INCLUDE SETECHO
+
+-**********
+-DEFAULT &&OVERRSD = 'X';
+-**********
+
+
+-* File DRILRPT2.FEX
+-*SET TEMPERASE = OFF
+-TYPE TESTING
+
+-**********************************************************************
+-* Produce a summary report if the user has requested
+-**********************************************************************
+-*
+-SUMMARY_RPT
+
+-*-SET &&RN = 'TEST';
+-SET &&XTN = IF (&&OUTLINE2 CONTAINS 'PDF') THEN '.pdf'
+- ELSE IF (&&OUTLINE2 CONTAINS 'EXCEL') THEN '.xls'
+- ELSE IF (&&OUTLINE2 CONTAINS 'EXL2K') THEN '.xls' ;
+-SET &&PATH = &&WEBPATH;
+-SET &RPTLEN = ARGLEN(50, &&RN, 'I2');
+
+-SET &&RPTNM = CTRAN(&RPTLEN, &&RN, 32, 95, 'A&RPTLEN.EVAL');
+-SET &&DTLRPT = 0;
+
+-TYPE SMPARM &&SMPARM &&DRILLED_RUN
+
+-IF &&DRILLED_RUN EQ 'Y' THEN GOTO DETAIL_RPT;
+
+-IF '&&SETF.EVAL' EQ 'ABPASSP' THEN GOTO SKIPfdef;
+
+-********
+-IF &&OVERRSD EQ 'D' THEN GOTO DETAIL_RPT;
+-********
+
+-SET &&RPTSUF = 'SMY';
+-INCLUDE FDEFRPTS
+-RUN
+
+-SKIPfdef;
+-IF &&SUMFLAG EQ 'N' THEN GOTO DETAIL_RPT;
+-*
+-IF &&REPTTYPE EQ 'AIR' THEN GOTO SMRYAIR;
+-IF &&REPTTYPE EQ 'CAR' THEN GOTO SMRYCAR;
+-IF &&REPTTYPE EQ 'HTL' THEN GOTO SMRYHTL;
+-RUN
+-SMRYAIR
+-TYPE SMPARM &&SMPARM
+
+EX &&SMPARM
+-RUN
+
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&SMPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO SUMFLAG
+
+-SMRYCAR
+EX &&SMPARM
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&SMPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO SUMFLAG
+
+-SMRYHTL
+EX &&SMPARM
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&SMPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-RUN
+-GOTO SUMFLAG
+
+-SUMFLAG
+-IF (&&SUMONLY EQ 'Y') AND (&&DRILLED_RUN NE 'Y') GOTO XXIT;
+
+-********
+-IF &&OVERRSD EQ 'S' GOTO XXIT;
+-********
+
+-IF &&UNAME EQ 'sample' GOTO XXIT; 
+
+-**********************************************************************
+-* Produce a detail report if the user has requested
+-**********************************************************************
+-*
+-DETAIL_RPT
+-**********************************************************************
+-* CHECK IF OUTPUT GOING TO BROWSER OR TO A FILE
+-* END PROCESSING IF GOING TO BROWSER; CREATE DETAIL IF GOING TO FILE
+-**********************************************************************
+-*
+-*****END PROCESSING IF GOING TO BROWSER
+-******
+-IF &&OVERRSD EQ 'D' GOTO SKIPDTLCHK;
+-******
+-IF (&&OUTLINE1 CONTAINS 'ONLINE-FMT' OR 'PCHOLD') AND
+-   (&&DRILLED_RUN EQ 'N') GOTO XXIT;
+
+-******
+-SKIPDTLCHK
+-******
+
+-IF &&DRILLED_RUN EQ 'Y' GOTO SKPSVSUM;
+-SET &&RPTSUF = 'DTL';
+-INCLUDE FDEFRPTS
+-RUN
+
+-SKPSVSUM
+
+-* -TYPE &&DTLRPT &&SUMONLY &&REPTTYPE &&DTPARM
+
+-IF (&&DRILLED_RUN EQ 'Y') AND (&&DTLRPT EQ 1) GOTO XXIT;
+-IF (&&SUMONLY EQ 'Y') AND (&&DRILLED_RUN NE 'Y') GOTO XXIT;
+-*
+
+-IF &&REPTTYPE EQ 'AIR' THEN GOTO AIR;
+-IF &&REPTTYPE EQ 'CAR' THEN GOTO CAR;
+-IF &&REPTTYPE EQ 'HTL' THEN GOTO HTL;
+-IF &&REPTTYPE EQ 'CP'  THEN GOTO CP;
+-GOTO XXIT
+-*
+-AIR
+EX &&DTPARM
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&DTPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO XXIT
+-*
+-CAR
+EX &&DTPARM
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&DTPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO XXIT
+-*
+-HTL
+EX &&DTPARM
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&DTPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO XXIT
+-*
+-CP
+EX CPRPT
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='CPRPT';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO XXIT
+-*
+-XXIT
+
+
+-*-EXIT

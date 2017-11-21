@@ -1,0 +1,520 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: AIRRPT 
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*6/10/13        Joy                Added logic for no records 
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in 
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*7/21/16 S-20630 DLV - Carried through EMP_ID for HDTOPLHB
+-*                      commented out UDHDREMPDT
+-*03/17/17 S-31790 DLV - Changed to use new hotel attachment logic
+-*4/24/2017-JEM-S-33318-updated logic for no records report
+-* 08/08/2017 RSB S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                         Added: -SET &FTR_AddlLines = #;
+-**************************************************************************
+SET ASNAMES=ON
+-RUN
+-INCLUDE SETECHO
+ 
+
+-*-INCLUDE LOHTLDT
+-*-RUN
+
+
+-IF '&&SETF.EVAL' NE 'HDTOPLHB' THEN GOTO NEXTset;
+
+-SET &&RANK_LIMIT = 200;
+-SET &&RANK_METH = HBPCT;
+-SET &WHERE1 = 'WHERE TNHATT GE 3';
+
+-GOTO EXTRACT
+
+
+-NEXTset
+-SET &&RANK_LIMIT = 100;
+-SET &&RANK_METH = HBPCT;
+-SET &WHERE1 = ' ';
+
+-EXTRACT
+DEFINE FILE &&RPT_HOLD
+ HTL_ATTCH  /I9S = IF (NET_TKT_CNT GT 0) AND (HOTEL_FLAG EQ 'Y') THEN 1 ELSE 0;
+ HTL_NOATTCH/I9S = IF (NET_TKT_CNT GT 0) AND (HOTEL_FLAG EQ 'N') THEN 1 ELSE 0;
+END
+TABLE FILE &&RPT_HOLD
+PRINT AIRLINE  
+      DPT_TIME  
+      EMB_APT_NM
+      EMP_ID
+      FARE_PAID
+      FLIGHT
+      HOTEL_FLAG
+      HTL_ATTCH
+      HTL_NOATTCH
+      INVOICE_NUM
+      LEVEL_DESC    
+      NET_TKT_CNT
+      NOHR_KEY
+      NOHTL_KEY
+      PASSNGR_NAME
+      REFUSE_CODE
+      RTE_APT_NM
+      RTE_CTY_NM
+      SEG_NBR
+      STAY  
+      TKT_NUM   
+      TKT_SORT  
+      TKT_TYPE  
+      TRN_DATE  
+      XARR_DT   
+      XDPT_DT   
+      XPSNGR_NM 
+      XFST_DPT
+      XTKT_SRT
+      XTRAN_DT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+TABLE FILE AIRHOLD1
+SUM HTL_ATTCH AS 'THATT'
+    HTL_NOATTCH AS 'TNHATT'
+    NET_TKT_CNT  
+    FARE_PAID AS 'TFARE'
+COMPUTE TOT_ATTCH/I9 = HTL_ATTCH+HTL_NOATTCH;
+COMPUTE HBPCT/F6%= IF HTL_ATTCH EQ 0 THEN 0 ELSE
+                  IF HTL_NOATTCH EQ 0 THEN 100 ELSE ((((HTL_ATTCH+HTL_NOATTCH) 
+                   - HTL_NOATTCH))) / (HTL_ATTCH + HTL_NOATTCH) * 100;
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY EMP_ID
+ON TABLE HOLD AS AIRHOLD2
+END
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT THATT
+      TNHATT
+      TFARE
+      NET_TKT_CNT
+      TOT_ATTCH
+      HBPCT
+      LEVEL_DESC
+      PASSNGR_NAME
+      EMP_ID
+RANKED BY LOWEST &&RANK_METH
+RANKED BY HIGHEST TNHATT
+WHERE HBPCT GE 0
+&WHERE1
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+
+DEFINE FILE RNKHLD2
+  DRANK/D9 = RANK;
+  ARANKX/A11 = FTOA(DRANK, '(D9)', 'A11');
+  ARANK/A9 = EDIT(ARANKX,'$$999999999');
+  LIST/D9 = (LAST LIST + 1);
+  CRANKX/A11 = FTOA(LIST, '(D9)', 'A11');
+  CRANK/A9 = EDIT(CRANKX,'$$999999999');
+  RANK_VALUE/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE 
+                  IF LIST GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE 
+                  CRANK;
+  RANK_VAL/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE
+                IF RANK GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE
+                ARANK;
+  RANK_LABEL1/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL1
+                      ELSE ' ';
+  RANK_LABEL2/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL2
+                      ELSE ' ';
+  RANK_LABEL3/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL3
+                      ELSE ' ';
+  NOWTOD/A8 WITH RANK_VALUE = HHMMSS (NOWTOD);
+END
+-RUN
+
+
+TABLE FILE RNKHLD2
+SUM THATT
+      TNHATT
+      TFARE
+      NET_TKT_CNT
+      TOT_ATTCH
+      LEVEL_DESC
+      PASSNGR_NAME
+      EMP_ID 
+COMPUTE THBPCT/F6%= IF THATT EQ 0 THEN 0 ELSE
+                  IF TNHATT EQ 0 THEN 100 ELSE ((((THATT+TNHATT) 
+                   - TNHATT))) / (THATT + TNHATT) * 100;
+
+BY RANK_VALUE
+BY RANK_LABEL1
+BY RANK_LABEL2
+BY RANK_LABEL3
+ON TABLE HOLD AS RNKHLD3
+ END
+-RUN
+
+
+DEFINE FILE AIRHOLD1
+NHDESC/A40 = NOHTL_KEY;
+END
+TABLE FILE AIRHOLD1
+PRINT AIRLINE  
+      DPT_TIME  
+      EMB_APT_NM
+      EMP_ID
+      FARE_PAID
+      FLIGHT
+      HOTEL_FLAG
+      HTL_ATTCH
+      HTL_NOATTCH
+      INVOICE_NUM
+      LEVEL_DESC    
+      NET_TKT_CNT
+      NOHR_KEY
+      NHDESC
+      PASSNGR_NAME
+      REFUSE_CODE
+      RTE_APT_NM
+      RTE_CTY_NM
+      SEG_NBR
+      STAY  
+      TKT_NUM   
+      TKT_SORT  
+      TKT_TYPE  
+      TRN_DATE  
+      XARR_DT   
+      XDPT_DT   
+      XPSNGR_NM 
+      XFST_DPT
+      XTKT_SRT
+      XTRAN_DT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY EMP_ID
+ON TABLE HOLD AS AIRHOLD5
+END
+-RUN
+
+MATCH FILE AIRHOLD5
+PRINT AIRLINE  
+      DPT_TIME  
+      EMB_APT_NM
+      FARE_PAID
+      FLIGHT
+      HOTEL_FLAG
+      HTL_ATTCH
+      HTL_NOATTCH
+      INVOICE_NUM
+      NET_TKT_CNT
+      NOHR_KEY
+      NHDESC
+      REFUSE_CODE
+      RTE_APT_NM
+      RTE_CTY_NM
+      SEG_NBR
+      STAY  
+      TKT_NUM   
+      TKT_SORT  
+      TKT_TYPE  
+      TRN_DATE  
+      XARR_DT   
+      XDPT_DT   
+      XPSNGR_NM 
+      XFST_DPT
+      XTKT_SRT
+      XTRAN_DT
+BY LEVEL_DESC    
+BY PASSNGR_NAME
+BY EMP_ID
+ON TABLE HOLD  
+RUN
+FILE RNKHLD3
+SUM THATT
+      TNHATT
+      TFARE
+      NET_TKT_CNT
+      TOT_ATTCH
+      THBPCT
+      RANK_VALUE
+      RANK_LABEL1
+      RANK_LABEL2
+      RANK_LABEL3 
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY EMP_ID 
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW
+END
+-RUN
+
+
+TABLE FILE XTHREE
+PRINT AIRLINE  
+      DPT_TIME  
+      EMB_APT_NM
+      EMP_ID
+      FARE_PAID
+      FLIGHT
+      HOTEL_FLAG
+      HTL_ATTCH
+      HTL_NOATTCH
+      INVOICE_NUM
+      LEVEL_DESC
+      NET_TKT_CNT
+      NOHR_KEY
+      NHDESC
+      PASSNGR_NAME
+      RANK_VALUE
+      RANK_LABEL1
+      RANK_LABEL2
+      RANK_LABEL3       
+      REFUSE_CODE
+      RTE_APT_NM
+      RTE_CTY_NM
+      SEG_NBR
+      STAY  
+      TKT_NUM   
+      TKT_SORT  
+      TKT_TYPE
+      TOT_ATTCH
+      THBPCT
+      TRN_DATE  
+      XARR_DT   
+      XDPT_DT   
+      XPSNGR_NM 
+      XFST_DPT
+      XTKT_SRT
+      XTRAN_DT
+      THATT
+      TNHATT
+      TFARE
+BY TKT_SORT
+BY SEG_NBR
+&WHERE1
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+
+ 
+
+ 
+
+DEFINE FILE XTHREE
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+HTL_FLG    /A1 = IF NET_TKT_CNT GT 0 THEN HOTEL_FLAG ELSE ' ';
+REASON_CD/A2 =  IF TKT_NUM NE LAST TKT_NUM THEN REFUSE_CODE ELSE ' ';
+XT_DTE/A8 = EDIT(TRN_DATE);
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;
+NOHTL_RSN/A40 = IF NHDESC EQ ' ' THEN 'NONE GIVEN' ELSE NHDESC;
+ MDYY_DPT_DPT/MDYY  = XDPT_DT;
+ A8DPT_DPT   /A8MDYY= MDYY_DPT_DPT; 
+ XDPT_DTA    /A10   = IF A8DPT_DPT NE ' ' THEN EDIT(A8DPT_DPT,'99/99/9999') ELSE ' ';
+ MDYY_TRN_TRN/MDYY  = XTRAN_DT;
+ A8TRN_TRN   /A8MDYY= MDYY_TRN_TRN; 
+ XTRN_DTA    /A10   = IF A8TRN_TRN NE ' ' THEN EDIT(A8TRN_TRN,'99/99/9999') ELSE ' ';
+-******************************************************************
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A100 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+TKT_NMBR/A10 = IF SRT_DT NE LAST SRT_DT THEN TKT_NUM ELSE '';
+
+
+FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+XTS_FLAG/A1 = IF XTKT_SRT NE LAST XTKT_SRT THEN 'Y' ELSE 'N';
+
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'XTHREE';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE XTHREE
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+BY XTS_FLAG NOPRINT
+
+-* WHERE NOHOTEL NE 0
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+-*&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-SET &FTR_AddlLines = 3;
+FOOTING BOTTOM
+" "
+" "
+"The report includes only tickets with an overnight stay"
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT;
+
+-NORECORDS
+-SET &INST_KEY = &&IKEY;
+
+TABLE FILE BRPTINST
+PRINT PAIR_DB RPT_GROUP RPT_STREAM GLOBAL_PARM USE_PARM INST_KEY
+WHERE INST_KEY EQ &INST_KEY
+ON TABLE SAVE AS PAIRDB
+END
+-RUN
+
+-READ PAIRDB &PAIRDB.A1. &RPTGRP.A3. &RPTSTREAM.A8. &SETFILE.A8. &VIEW.A8.
+-CLOSE PAIRDB
+ 
+-SET &RPTGRP = '&RPTGRP.EVAL';
+-SET &VIEW = '&VIEW.EVAL';
+-SET &STREAM = '&RPTSTREAM.EVAL';
+
+-SET &HEADER = IF &RPTGRP EQ 'ADD' THEN 'NORECHDRDD' ELSE 'NORECHDR';
+-RUN
+
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN &HEADER ELSE  
+-              IF &RPTGRP EQ 'ADD' THEN 'HDREXLSDD' ELSE 
+-              IF &STREAM EQ 'AIR_BNM' THEN 'HDREXLSDD' ELSE 'HDREXLS';
+
+-RUN
+
+
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE 'NORECSTY';
+
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+-RUN
+
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE &&PAHDR
+PRINT EMPTY AS 'REPORT,MESSAGE'
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+ 
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+
+
+-XXIT;
+
+ 

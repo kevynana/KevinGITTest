@@ -1,0 +1,69 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File HEADER.FEX
+-********************************************************************
+-* MODIFICATIONS:
+-* 5/22/1998 ADDED THE FOLLOWING SET COMMANDS - LP
+-* 8/28/1998 CHANGED BRANCH INFO TO ROLLUP INFO - LP
+-*03/25/16 - JEM - S-17133 Updated to fix error when running report CG07D
+-*  09/12/2016  REJ  S-24432 Changes for ER5 testing.
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+-*2/07/17-JEM-S-29460-Adding code for ER5 to use &&ROLLEMAIL in heading when GT ' '
+
+-********************************************************************
+-IF &&FROMAVRP EQ 'Y' GOTO :HDA1;
+-SET &FMM=EDIT(&&FROMDT,'$$$$$99');
+
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'9999');
+-GOTO :HDA1_CONT;
+-:HDA1
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+
+-:HDA1_CONT
+-SET &&SP = '|';
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLP = IF &&RCNCT.EVAL GE 10 OR &&CSL.EVAL GE 10 THEN 60 ELSE 68;
+
+-IF &&ROLLEMAIL GT ' ' THEN GOTO EMLHDR;
+
+
+-********************************************************************
+-*
+-* Standard Page Header Routine places client information, TandT
+-* branch information, report date, date range selection, etc.  
+-*
+-********************************************************************
+-NOP;
+"</3"
+"&&DTDESC &FMM/&FMD/&FMY - &TOM/&TOD/&TOY <&&CSLP &&ROLLNME <+0> &&SP <+0> &&ROLLCS <+0> &&SP3 <+0> &&ROLLCNCT <+0> &&SP4 <+0> &&ROLLPHN"
+"Page:<TABPAGENO"
+" "
+"<35 &&RPT_TTL1"
+"<35 &&RPT_TTL2"
+
+-GOTO HDRXXIT;
+
+
+-EMLHDR
+"</3"
+"&&DTDESC &FMM/&FMD/&FMY - &TOM/&TOD/&TOY <&&CSLP &&ROLLNME <+0> &&SP <+0> &&ROLLCS <+0> &&SP3 <+0> &&ROLLCNCT <+0> &&SP4 <+0> &&ROLLEMAIL"
+"Page:<TABPAGENO"
+" "
+"<35 &&RPT_TTL1"
+"<35 &&RPT_TTL2"
+
+
+-HDRXXIT;
+

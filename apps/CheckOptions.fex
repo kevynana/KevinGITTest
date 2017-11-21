@@ -1,0 +1,49 @@
+-******************************************************************************
+-* CheckOptions.fex
+-* This query should be called from the report program which contains optional
+-* display row/column/section in the final report.
+-******************************************************************************
+-*  03/31/2015  REJ  S-05681 Changes for Available Reports.  Adding code so that the
+-*                           program will run in current Review and in Available Reports.
+-* 07/14/17 - DLV - S-37203  Temporarily hiding ettek performance until new java program extract
+-*                           is implemented
+-* 08/22/17 - DLV - S-36929  Updated to include eTTek performance data
+
+ 
+-SET &OP1 = 0;
+-SET &OP2 = 0;
+-SET &OP3 = 0;
+-SET &OP4 = 0;
+-SET &OP5 = 0;
+-SET &OP6 = 0;
+ 
+-IF &&FROMAVRP EQ 'Y' GOTO :CO1;
+ 
+TABLE FILE BRPTFLDS
+PRINT SEG.OPTIONS.OPTION1
+BY INST_KEY
+ON TABLE SAVE
+END
+-RUN
+-IF &LINES EQ 0 THEN GOTO SKIPREADOPTS;
+-READ SAVE &INSTKEY.7. &OP1.1. &OP2.1. &OP3.1. &OP4.1. &OP5.1. &OP6.1.
+-GOTO SKIPREADOPTS;
+ 
+-:CO1
+ 
+TABLE FILE BRPT_FLDS_HIDE_OPTIONS
+PRINT OPTION1 OPTION2 OPTION3 OPTION4 OPTION5 OPTION6 
+BY INST_KEY
+ON TABLE SAVE
+END
+-RUN
+
+
+-IF &LINES EQ 0 THEN GOTO SKIPREADOPTS;
+-READ SAVE &INSTKEY.11. &OP1.6. &OP2.6. &OP3.6. &OP4.6. &OP5.6. &OP6.6.
+ 
+ 
+- SKIPREADOPTS
+
+
+ 

@@ -1,0 +1,48 @@
+-* File LOAD_IT.FEX
+-*****************************************************************
+-***********************************************************************
+-* DATE          NAME                DESCRIPTION
+-* 8/29/00     IBISTL-KR             MODIFIED CODE TO REFLECT FIXED
+-*                                   KEY LENGTH OF 50.
+-*                                   CHANGED 'INLENGTH' OF AGRLEN FROM
+-*                                   18 TO 50.
+-*                                   CHANGED HIER18 TO HIER50, 
+-*                                           XHIER18 TO XHIER50,
+-*                                           INST_a18 TO INST_a50. 
+-*********************************************************************** 
+
+-SET &&NOW_CYC = 'NOW';
+
+-INCLUDE GETDNLD
+-IF &&ZIP EQ 'No Data' GOTO XXIT;
+-INCLUDE SETECHO
+-WINFORM MAIN ALTER PWAIT SHOW TRUE
+-SET &&RPTTX = 'Running: Importing Updated Data Files';
+-WINFORM MAIN ALTER RPTNM TEXT &&RPTTX
+-WINFORM MAIN ALTER RPTNM SHOW TRUE
+
+-DEFAULT &&FLZIP = '                                                  ';
+-SET &&FLZIP = '''' || &&DNL_PATH || &&ZIP || '.EXE' || '''';
+-SET &FLLEN = ARGLEN(50, &&FLZIP, 'I2') - 2;
+-SET &RCODE = CALLDOS(&FLLEN, &&FLZIP.EVAL, 'I1');
+
+-MSGBOX Did the files extract successfully?, Confirm Extract ,+
++YESNO+ICONQUESTION+DEFBUTTON1
+-IF &MSGRETURN EQ 'NO' GOTO XXIT;
+
+
+-KEY50
+USE ADD
+  &&USE_HIER AS HIER50
+  &&USE_XHIER AS XHIER50
+END
+-RUN
+EX INST_a50
+-RUN
+-GOTO XXIT
+
+
+
+-XXIT
+-* REJ EX RESTART 
+-*-EXIT

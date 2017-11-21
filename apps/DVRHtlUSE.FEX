@@ -1,0 +1,55 @@
+-*******************************************************************************
+-INCLUDE SETECHO
+-* File DVRHTLUSE.FEX
+-* To join pro fee file to HR_50 to get required information
+-*3/21/2017 REJ S-31975 Added the UDID file into the USE statements
+-*******************************************************************************
+USE CLEAR *
+-RUN
+
+-SET &DATAPATH = 'D:\TNT\TTRACKER\DATA\';
+
+-IF (&&QTRENAB NE 'X') THEN GOTO USEHSingle;
+
+-SET &Q0  = &DATAPATH | 'H0' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q1  = &DATAPATH | 'H1' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q2  = &DATAPATH | 'H2' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q3  = &DATAPATH | 'H3' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q4  = &DATAPATH | 'H4' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q5  = &DATAPATH | 'H5' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q6  = &DATAPATH | 'H6' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q7  = &DATAPATH | 'H7' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q8  = &DATAPATH | 'H8' || &&COMPNY || '.FOC AS HR_50';
+-SET &Q9  = &DATAPATH | 'H9' || &&COMPNY || '.FOC AS HR_50';
+-SET &QY  = &DATAPATH | 'HY' || &&COMPNY || '.FOC AS HR_50';
+-SET &QZ  = &DATAPATH | 'HZ' || &&COMPNY || '.FOC AS HR_50';
+-SET &UF1  = &DATAPATH | 'UH' || &&COMPNY || '.FOC AS HTLUDID';
+
+USE 
+&Q0
+&Q1
+&Q2
+&Q3
+&Q4
+&Q5
+&Q6
+&Q7
+&Q8
+&Q9
+&QY
+&QZ
+&UF1
+END
+-RUN
+-GOTO DVRHUSEEXIT;
+
+-USEHSingle
+-SET &DB  = &DATAPATH | 'H_' || &&COMPNY || '.FOC AS HR_50';
+-SET &UF1  = &DATAPATH | 'UH' || &&COMPNY || '.FOC AS HTLUDID';
+USE
+&DB
+&UF1
+END
+-RUN
+
+-DVRHUSEEXIT

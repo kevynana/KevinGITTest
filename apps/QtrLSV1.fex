@@ -1,0 +1,383 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* ADDED TRANTYPE INCLUDE - JK 12/30/14 STORY ID S-06492
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-SET &RECFOUND = &RECORDS;
+-RUN
+
+DEFINE FILE SR_50  
+  FARE_PAID/D12 = SEG_AMT + SEG_TAX;
+  NET_TKT_CNT/D8CS  =   IF (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) THEN 1 ELSE 
+                        IF (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') AND (SEG_COUNT EQ -1)
+				   THEN (-1) ELSE 
+                        IF (DOC_TYPE NE '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') AND
+				   (SEG_COUNT EQ -1)
+				   THEN (-1) ELSE 0;
+
+-* Defines on Previous Defines
+   DISSAVINGS/D12 = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+-*    BITMAPL/A12 WITH NET_TKT_CNT = 'LSVRC.GIF';
+-INCLUDE TRANTYPE
+  
+END
+-RUN
+
+TABLEF FILE SR_50
+PRINT DISSAVINGS
+  FARE_PAID	
+  NET_TKT_CNT
+  TKT_NUM
+  TRN_DATE
+  REFUSE_CODE
+  VOID_DATE 	
+
+WHERE (TRN_DATE GE &&FROMDT.EVAL) AND (TRN_DATE LE &&TODT.EVAL) OR
+      (TRN_DATE GE &&FXDATE.EVAL) AND (TRN_DATE LE &&TXDATE.EVAL)
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS LSV
+END
+-RUN
+
+DEFINE FILE LSV
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+FLAG/A1 = 'A';
+END
+
+TABLE FILE LSV
+PRINT 
+  CURRENT
+  DISSAVINGS
+  FARE_PAID
+  NET_TKT_CNT
+  PRIOR	
+  REFUSE_CODE
+  VOID_DATE 
+BY FLAG
+ON TABLE HOLD AS LSV1
+END
+-RUN
+
+DEFINE FILE LSV1
+CLSV/D15 = IF (CURRENT EQ 'Y') AND (VOID_DATE EQ 0) THEN DISSAVINGS ELSE 0;
+PLSV/D15 = IF (PRIOR EQ 'Y') AND (VOID_DATE EQ 0) THEN DISSAVINGS ELSE 0;
+END
+
+TABLE FILE LSV1
+SUM CLSV
+    PLSV
+BY FLAG
+BY REFUSE_CODE
+ON TABLE HOLD AS LSV2
+END
+-RUN
+
+TABLE FILE LSV2
+SUM CLSV AS 'TCLSV'
+    PLSV AS 'TPLSV'
+BY FLAG
+ON TABLE HOLD AS TLSV
+END
+-RUN
+
+-* JOIN CLEAR *
+-RUN
+
+MATCH FILE LSV2
+PRINT CLSV
+      PLSV
+      REFUSE_CODE
+BY FLAG
+ON TABLE HOLD
+RUN
+FILE TLSV
+SUM TCLSV
+    TPLSV
+BY FLAG
+AFTER MATCH HOLD AS TLSV1 OLD-AND-NEW
+END
+-RUN
+
+
+TABLE FILE TLSV1
+SUM CLSV
+    PLSV
+    TCLSV
+    TPLSV
+BY REFUSE_CODE
+-* WHERE (CLSV GE 1) AND (PLSV GE 1)
+WHERE (CLSV GE 1) OR (PLSV GE 1)
+ON TABLE HOLD AS TLSV2
+END
+-RUN
+
+
+
+TABLE FILE TLSV2
+SUM 
+    COMPUTE CPCTLSV/D15 = IF ((TCLSV LT 1) AND (TCLSV GT (-1))) THEN 0 ELSE
+                             ((CLSV/TCLSV)*100);
+    COMPUTE PPCTLSV/D15 = IF ((TCLSV LT 1) AND (TCLSV GT (-1))) THEN 0 ELSE
+                             ((PLSV/TPLSV)*100);
+
+
+    COMPUTE IDPCTLSV/D15 = IF ((PPCTLSV LT 1) AND (PPCTLSV GT (-1))) THEN 0 ELSE
+                              (CPCTLSV-PPCTLSV);
+    
+BY REFUSE_CODE
+ON TABLE HOLD AS LSV3
+WHERE TOTAL (CPCTLSV GE 1) OR (PPCTLSV GE 1)
+END
+-RUN
+
+
+DEFINE FILE LSV3
+CATEGORY/A50 = 'Percentage of Lost Savings Per Reason Code';
+CAT_ORDER/I2 = 20;
+END
+-RUN
+
+TABLE FILE LSV3
+PRINT CATEGORY/A50 AND REFUSE_CODE/A50 AS 'ROW_LABEL' AND
+CAT_ORDER/I2 AND CPCTLSV/D15 AS 'CURRENT' AND
+PPCTLSV/D15 AS 'PRIOR' IDPCTLSV AS 'IDPERCENT' 
+COMPUTE ROW_ORDER/I2 = 1;  
+ON TABLE HOLD AS LSV4
+END
+-RUN
+
+TABLE FILE LSV4
+PRINT CATEGORY AND ROW_LABEL AND CAT_ORDER
+      AND ROW_ORDER AND CURRENT AND PRIOR AND IDPERCENT
+ON TABLE HOLD AS LSV5
+END
+MODIFY FILE QTR_REV1
+FIXFORM FROM LSV5
+MATCH CATEGORY ROW_LABEL
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON LSV5
+END
+-RUN
+
+-IF &&SETF EQ 'ABQTRRV1' OR 'ABQTRRV2' THEN GOTO SKIP_GRAPH;
+
+-* -IF &RECORDS EQ 0 THEN GOTO SKIP_GRAPH;
+-* -RUN
+
+
+-* Lost Savings % Graph Creation
+TABLE FILE TLSV2
+SUM CLSV/D12.2CS
+    PLSV/D12.CS
+    TCLSV/D12.2CS
+    TPLSV/D12.2CS
+BY REFUSE_CODE
+ON TABLE HOLD AS GLSVP
+END
+-RUN
+
+DEFINE FILE GLSVP
+  CP/I9 = IF ((TCLSV LT 1) AND (TCLSV GT (-1))) THEN 0 ELSE 1;
+  PP/I9 = IF ((TPLSV LT 1) AND (TPLSV GT (-1))) THEN 0 ELSE 1;
+END
+TABLE FILE GLSVP
+SUM CP PP
+ON TABLE SAVE AS CHK1
+END
+-RUN
+-READ CHK1 &CP.9. &PP.9.
+-SET &PLINE1 = &CP;
+-SET &PLINE2 = &PP;
+
+GRAPH FILE GLSVP
+SUM
+COMPUTE CPCTLSV/P12.2 = IF ((TCLSV LT 1) AND (TCLSV GT (-1))) THEN 0 ELSE
+                           (CLSV/TCLSV); AS 'Period1'
+COMPUTE PPCTLSV/P12.2 = IF ((TPLSV LT 1) AND (TPLSV GT (-1))) THEN 0 ELSE
+                           (PLSV/TPLSV); AS 'Period2'
+
+ACROSS REFUSE_CODE AS ''
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS LSVRC FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setFillMissingData (0);
+setTextRotation(getO1Label(),0;
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(2); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),10);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(2);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Lost Savings Percentage");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setFontSizeAbsolute(getSubtitle(),true); 
+setAutofit(getSubtitle(),false);
+setSubtitleString("Per Reason Code");
+setTextJustHoriz(getSubtitle(),1);
+setFontStyle(getSubtitle(),0);
+setFontSize(getSubtitle(),15);
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(1, new Color, 255 255 0));
+setSeriesFillColor(2, new Color, 115 160 247));;
+
+-IF &PLINE1 GT 0 THEN GOTO showYVal;
+setDisplay(getDataText(0),false);
+-GOTO ChkXVal;
+
+-showYVal
+setDisplay(getDataText(0),true);
+
+-ChkXVal
+-IF &PLINE2 GT 0 THEN GOTO showXVal; 
+setDisplay(getDataText(1),false);
+-GOTO CHKXYDONE;
+
+-showXVal
+setDisplay(getDataText(1),true);
+
+-CHKXYDONE
+
+ENDSTYLE 
+END
+-RUN
+
+-SET &&G_GIF9=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+
+-* -SKIP_GRAPH
+
+-* Lost Savings Amount by Refuse Code
+TABLE FILE TLSV2
+SUM CLSV/D12.2CS
+    PLSV/D12.CS
+BY REFUSE_CODE
+ON TABLE HOLD AS GLSAVP
+END
+-RUN
+
+GRAPH FILE GLSAVP
+SUM CLSV AS 'Period1'
+    PLSV AS 'Period2'
+ACROSS REFUSE_CODE AS ''
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS LSVARC FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setFillMissingData (0);
+setTextRotation(getO1Label(),0;
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(6); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),10);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(6);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Lost Savings Amount");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setFontSizeAbsolute(getSubtitle(),true); 
+setAutofit(getSubtitle(),false);
+setSubtitleString("Per Reason Code");
+setTextJustHoriz(getSubtitle(),1);
+setFontStyle(getSubtitle(),0);
+setFontSize(getSubtitle(),15);
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(1, new Color, 255 255 0));
+setSeriesFillColor(2, new Color, 115 160 247));;
+
+-IF &PLINE1 GT 0 THEN GOTO showYVal2;
+setDisplay(getDataText(0),false);
+-GOTO ChkXVal2;
+
+-showYVal2
+setDisplay(getDataText(0),true);
+
+-ChkXVal2
+-IF &PLINE2 GT 0 THEN GOTO showXVal2; 
+setDisplay(getDataText(1),false);
+-GOTO CHKXYDONE2;
+
+-showXVal2
+setDisplay(getDataText(1),true);
+
+-CHKXYDONE2
+
+
+ENDSTYLE 
+END
+-RUN
+
+-SET &&G_GIF8=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+-SKIP_GRAPH

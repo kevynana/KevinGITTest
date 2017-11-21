@@ -1,0 +1,244 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File SMRYRPT.FEX
+-**********************************************************************
+-* Created for Booking type summary reports by JK 5/14/02
+
+-* Modifications:
+-*5/29/02 CARRIED THROUGH NON_REF NONREF_FARE NONREF_CNT REF_FARE REF_CNT
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*9/23/03    JOY                CARRIED THROUGH TICKET_BRANCH
+-*12/10/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+
+-**********************************************************************
+
+SET ASNAMES = ON
+-RUN
+
+TABLE FILE &&RPT_HOLD
+
+SUM FARE_PAID/D12.2CS AS 'TFARE'	
+    NET_TKT_CNT AS 'NTTKT'
+    NONREF_CNT AS 'NRTKT'
+    MNONREF_CNT AS 'MNRTKT'
+    NONREF_FARE AS 'NRFARE'
+    MNONREF_FARE AS 'MNRFARE'
+    REF_CNT AS 'RTKT'
+    MREF_CNT AS 'MRTKT'
+    REF_FARE AS 'RFARE'
+    MREF_FARE AS 'MRFARE'	
+BY LEVEL_DESC    
+ON TABLE HOLD AS HOLDONE FORMAT FOCUS
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT ABOOK_CNT
+  ABOOK_FARE
+  AIBOOK_CNT
+  AIRLINE
+  AMTRAK
+  BR_CL_IDX
+  CLIENT_NAME	
+  DPT_TIME	
+  EMB_CTY_NM
+  FARE_PAID	
+  IBOOK
+  IBOOK_CNT
+  IBOOK_FARE
+  IEBOOK_CNT
+  IEBOOK_FARE
+  LEVEL_DESC	
+  NET_TKT_CNT
+  NON_REF
+  MNON_REF
+  NONREF_CNT
+  MNONREF_CNT
+  NONREF_FARE
+  MNONREF_FARE
+  REF_CNT
+  MREF_CNT
+  REF_FARE
+  MREF_FARE	
+  RTE_CTY_NM
+  SEG_COUNT	
+  SEG_NBR	
+  SIBOOK_CNT
+  SORTA
+  TICKET_BRANCH
+  TKT_NUM	
+  TRN_DATE	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+BY LEVEL_DESC
+ON TABLE HOLD AS XTWO FORMAT FOCUS
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT ABOOK_CNT
+  ABOOK_FARE
+  AIBOOK_CNT
+  AIRLINE
+  AMTRAK
+  BR_CL_IDX
+  CLIENT_NAME	
+  DPT_TIME	
+  EMB_CTY_NM
+  FARE_PAID	
+  IBOOK
+  IBOOK_CNT
+  IBOOK_FARE
+  IEBOOK_CNT
+  IEBOOK_FARE
+  LEVEL_DESC	
+  NET_TKT_CNT
+  NON_REF
+  MNON_REF
+  NONREF_CNT
+  MNONREF_CNT
+  NONREF_FARE
+  MNONREF_FARE
+  REF_CNT
+  MREF_CNT
+  REF_FARE
+  MREF_FARE	
+  RTE_CTY_NM
+  SEG_COUNT	
+  SEG_NBR	
+  SIBOOK_CNT
+  SORTA
+  TICKET_BRANCH
+  TKT_NUM	
+  TRN_DATE	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+BY LEVEL_DESC
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM NTTKT
+    TFARE
+    MNRTKT
+    MNRFARE
+    MRTKT
+    MRFARE
+    NRTKT
+    NRFARE
+    RTKT
+    RFARE
+BY LEVEL_DESC
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW 
+END
+-RUN
+
+DEFINE FILE XTHREE
+
+SLASH/A1 = '|';
+PCTNRFARE/D8.1S=IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0 
+                ELSE ((NONREF_FARE/TFARE)*100);
+PCTMNRF/D8.1S=IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0 
+                ELSE ((MNONREF_FARE/TFARE)*100);
+PCTNRNTKT/D8.1S=IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0 
+                  ELSE ((NONREF_CNT/NTTKT)*100);
+PCTMNRT/D8.1S=IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0 
+                  ELSE ((MNONREF_CNT/NTTKT)*100);
+PCTRFARE/D8.1S=IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0 
+                ELSE ((REF_FARE/TFARE)*100);
+PCTMRF/D8.1S=IF ((TFARE LT 1) AND (TFARE GT (-1))) THEN 0 
+                ELSE ((MREF_FARE/TFARE)*100);
+PCTRNTKT/D8.1S=IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0 
+                  ELSE ((REF_CNT/NTTKT)*100);
+PCTMRT/D8.1S=IF ((NTTKT LT 1) AND (NTTKT GT (-1))) THEN 0 
+                  ELSE ((MREF_CNT/NTTKT)*100);
+
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+
+TABLE FILE XTHREE
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+&&BREAKOPTION
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYS
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+-RUN
+
+EX REPORT_3
+-RUN
+
+-SKIP_R3

@@ -1,0 +1,67 @@
+GRAPH FILE CAR
+SUM SALES AS ''
+ACROSS COUNTRY AS ''
+WHERE COUNTRY NE 'FRANCE'
+ON GRAPH SET LOOKGRAPH VBAR
+ON GRAPH SET GRAPHEDIT SERVER
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID ON
+ON GRAPH SET VAXIS 280
+ON GRAPH SET HAXIS 410
+ON GRAPH SET UNITS PX
+ON GRAPH PCHOLD FORMAT PNG
+ON GRAPH SET GRAPHSTYLE *
+setMarkerDisplay(true);
+setConnectLineMarkers(false);
+setConnectScatterMarkers(false);
+
+setTitleString("Car Sales by Country");
+setTextJustHoriz(getTitle(),1);
+setFontSizeAbsolute(getTitle(),true);
+setFontSize(getTitle(),14);
+setFontStyle(getTitle(),2);
+setPlaceResize(getTitle(),0);
+
+-*set label size for X-Axis and rotation
+setO1LabelDisplay(true);
+setFontSize(getO1Label(),9);
+setFontSizeAbsolute(getO1Label(),true);
+setPlaceResize(getO1Label(),0);
+setO1LabelRotate(3);
+
+-*set label size for Y-Axis
+setY1LabelDisplay(true);
+setFontSize(getY1Label(),12);
+setFontSizeAbsolute(getY1Label(),true);
+setPlaceResize(getY1Label(),0);
+
+setTextFormatPreset(getY1Label(),-1);
+setTextFormatPattern(getY1Label(),"#.##");
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH SET STYLE *
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+$
+ENDSTYLE
+END
+    

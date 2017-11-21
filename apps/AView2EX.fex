@@ -1,0 +1,535 @@
+-INCLUDE SETECHO
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File APEXTRT.FEX
+-********************************************************************
+-*
+-* This program extracts data for the series of basic ticket listing
+-* reports.  Based on the user profile selected, one of many report
+-* formats will be produced.  
+-*
+-* 11/14/01 ADDED DEFINE MX1ST_DOM MX1ST_INT                 - DEB
+-* 11/20/01 ADDED TOUR_CODE                                  - DEB
+-* 12/19/01 ADDED DEFINE FOR MX1ST_FLAG                      - DEB
+-* 4/29/02  CHANGED MRK_TKT_CNT DEFINE TO CORRECTLY BACK UP PARTIAL
+-*          REFUNDS AND EXCHANGES                            - SC DB
+-* 5/02/02  ADDED DOD_TYPE ORG_DST                           - DB
+-* 7/31/02  ADDED IFLAG DEFINE                               - DB
+-* 9/04/02  ADDED FLAG DEFINE                                - STEVE
+-* 4/8/04   Added Trip Purpose                               - Joy
+-* 4/16/04  Added KW_Adv_purch Define                        - Joy
+-* 4/19/04  Added KWCTY Define                               - Joy
+-* 8/9 04  CHANGED MX1ST_INT DEFINE (WAS NOT WORKING CORRECTLY)  - DEB
+-*12/21/04  CHANGED DEFINES INCLUDING DOD_TYPE TO INCL ADDTL DOD_TYPES-DV
+-*10/11/05  ADDED DOD_TYPE H TO IFLAG AND BKD_ONLINE DEFINE  - DEB
+-*03/07/13  CHANGED CLASS_CAT DEFINE DUE TO CLASS CATEGORY CHANGES - DV
+-*1/16/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+-* ADDED TRANTYPE INCLUDE - JK 12/9/14 STORY ID S-06492
+-* 11/30/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+
+-********************************************************************
+-* -INCLUDE SETECHO
+
+SET ASNAMES = ON
+
+-SET &&IDLEVELBREAK = '';
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+DEFINE FILE &&EXTRACT
+
+  BOOK_DT/MDYY         = RESV_DATE;
+  BKD_ONLINE/A1 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'Y' ELSE 'N';
+-*  CLASS_CAT/A8 = DECODE CL_CAT ('F' 'FIRST'     'C' 'COACH'   
+-*                              'D' 'DISCOUNT'  'B' 'BUSINESS');
+  CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+			        'D' 'DEFAULT'   'B' 'BUSINESS'
+			        'E' 'ECONOMY'   'U'  'UPGRADE' 
+                                ' ' 'DEFAULT'); 
+  FARE_PAID/D11.2CS   = SEG_AMT + SEG_TAX;
+  FLAG/A1 = 'A';
+  
+  IFLAG/A42 = DOD_DESC;
+  GRP_ADV_PUR/A8    = IF ADV_PURCH LT 7 THEN '0 - 6' ELSE
+                      IF ADV_PURCH GE 7 AND ADV_PURCH LE 13 
+                        THEN '07 - 13' ELSE
+                      IF ADV_PURCH GE 14 AND ADV_PURCH LE 20 
+                         THEN '14 - 20' ELSE
+                      IF ADV_PURCH GT 20 THEN '21 +';
+  LEVEL_DESC1/A60    = &&LDESC;
+  MC_ADV_BOOK/A8    = IF ADV_BOOK LT 7 THEN '0 - 6' ELSE
+                      IF ADV_BOOK GE 7 AND ADV_BOOK LE 13 THEN '07 - 13' ELSE
+                      IF ADV_BOOK GE 14 AND ADV_BOOK LE 20 THEN '14 - 20' ELSE
+                      IF ADV_BOOK GT 20 THEN '21 +';
+  MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+
+  MX_ADV_PUR/A8       = IF (ADV_PURCH LT 7) THEN '0 - 6' ELSE
+                        IF (ADV_PURCH LT 14) THEN '07 - 13' ELSE
+                        IF (ADV_PURCH LT 21) THEN '14 - 20' ELSE '21 +';
+  KM_ADV_PUR/A8       = IF (ADV_PURCH LT 7) THEN '0 - 6' ELSE
+                        IF (ADV_PURCH LT 14) THEN '07 - 13' ELSE
+                        IF (ADV_PURCH LT 21) THEN '14 - 20' ELSE  
+                        IF (ADV_PURCH LT 30) THEN '21 - 29' ELSE 
+                        IF (ADV_PURCH LT 60) THEN '30 - 59' ELSE '60 +' ;
+  KW_ADV_PUR/A8       = IF (ADV_PURCH LT 4) THEN '0 - 3' ELSE
+                        IF (ADV_PURCH GE 4) AND (ADV_PURCH LE 10)
+                           THEN '04 - 10' ELSE '11 +' ;
+  KWCTY/A7 = SUBSTR(176, ANON_STP, 1, 6, 176, KWCTY);
+
+-*   MX_ADV_PUR/A8    = IF ADV_PURCH LT 7 THEN '0 - 6' ELSE
+-*                       IF ADV_PURCH GE 7 AND ADV_PURCH LE 13 THEN 
+-*                       '07 - 13' ELSE
+-*                       IF ADV_PURCH GE 14 AND ADV_PURCH LE 20 THEN 
+-*                       '14 - 20' ELSE
+-*                       IF ADV_PURCH GT 20 THEN '21 +';
+  MX1ST_DOM/A1     =  IF (AIR_MAIN.INTL_DOM EQ 'D') AND
+                         (FARE_PAID GE 500 OR FARE_PAID LE -500) AND
+                         (CL_CAT EQ 'F') THEN 'Y' ELSE 'N';
+-*  MX1ST_INT/A1     =  IF (AIR_MAIN.INTL_DOM EQ 'I') AND
+-*                         (FARE_PAID GE 1000 OR FARE_PAID LE -1000) AND
+-*                         (CL_CAT EQ 'F') AND
+-*                         (AIRLINE NE 'CO' OR 'IB') AND
+-*                         (AIRLINE NE 'UA' AND CLASS NE 'D') THEN 'Y' ELSE 'N';
+MX1ST_INT/A1    =    IF (AIRLINE EQ 'UA' AND CLASS EQ 'D') THEN 'N' ELSE
+                         IF (CITYPAIR.INTL_DOM EQ 'I') AND
+                         (FARE_PAID GE 1000 OR FARE_PAID LE -1000) AND
+                         (CL_CAT EQ 'F') AND
+                         (AIRLINE NE 'CO' OR 'IB')  THEN 'Y' ELSE 'N';
+  MX1ST_FLAG/A1    = IF (AIR_MAIN.INTL_DOM EQ 'I') AND
+                        (CITYPAIR.INTL_DOM EQ 'D') THEN 'X' ELSE ' '; 
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NEW_ADV_PURCH/D9    = ADV_PURCH;
+  NEW_ADV_BOOK/D9     = ADV_BOOK;
+  REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID;
+  TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TRP_LEN/D9CS        = TRIP_LENGTH * SEG_COUNT;
+  UP_ADV_PUR/A8    = IF ADV_PURCH LT 8 THEN '0 - 7' ELSE
+                      IF ADV_PURCH GE 8 AND ADV_PURCH LE 14 THEN 
+                      '08 - 14' ELSE
+                      IF ADV_PURCH GE 15 AND ADV_PURCH LE 21 THEN
+                      '15 - 21' ELSE
+                      IF ADV_PURCH GT 21 THEN '22 +';
+  VASAVINGS/D11.2CS   = SEG_DISCOUNT - FARE_PAID;
+  XAP/A8 = EDIT(ADV_PURCH);
+  XAB/A8 = EDIT(ADV_BOOK);
+  XARR_DOW/W           = ARR_DATE;
+  XARR_DT/MDYY         = ARR_DATE;
+  XCRDT_CD/A18 = 'AX9999999999999999';
+  XDPT_DOW/W           = DPT_DATE;
+  XDPT_DT/MDYY         = DPT_DATE;
+  XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XTRAN_DT/MDYY        = TRN_DATE;
+
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+  AIRLINE_FEE/D8.2CS   = IF EMBARK EQ 'FP2' OR 'FP3' THEN FARE_PAID ELSE 0;
+  ARR_DAY/A3          = DECODE XARR_DOW (1 'MON' 2 'TUE' 3 'WED'
+                                 4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  DPT_DAY/A3          = DECODE XDPT_DOW (1 'MON' 2 'TUE' 3 'WED'
+                                 4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+  MX_DAYS/A8 =  IF ADV_PURCH LT 21 THEN XAP ELSE MX_ADV_PUR;
+  KM_DAYS/A8 =  IF ADV_PURCH LT 60 THEN XAP ELSE KM_ADV_PUR;
+  UP_DAYS/A8 =  IF ADV_PURCH LT 22 THEN XAP ELSE UP_ADV_PUR;
+  MC_DAYS/A8 =  IF ADV_BOOK LT 21 THEN XAB ELSE MC_ADV_BOOK;
+  FIRSTCL/D8CS = IF (MX1ST_FLAG EQ ' ') AND
+                    (MX1ST_DOM EQ 'Y') THEN 1 ELSE
+                 IF (MX1ST_FLAG EQ ' ') AND
+                    (MX1ST_INT EQ 'Y') THEN 1 ELSE 0;
+-INCLUDE TRANTYPE  
+-INCLUDE IDLEVDEFINE 
+
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+-* Report column elements
+  PRINT AGENT_NUM	
+        AIR_KEY	
+        AIR_MAIN.INTL_DOM	
+        AIRLINE	
+        AIRLINE_FEE	
+        AIRLINE_NAME	
+        AR_BRANCH	
+        ARR_DAY	
+        ARR_TIME
+        BKD_ONLINE	
+        BOOK_DT	
+        BR_CL_IDX	
+        CASH_CREDIT	
+        CITYPAIR.EMBARK      AS 'EMB_APT_CD'	
+        CITYPAIR.ROUTE       AS 'RTE_APT_CD'	
+        CLASS	
+        CLASS_CAT
+        CLIENT_NAME 
+        CONJ_REL	
+        CREDIT_CARD	
+        DISSAVINGS	
+        DOC_TYPE
+        DOD_TYPE	
+        DPT_DAY	
+        DPT_TIME	
+        EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'	
+        EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'	
+        EMB_CTY.EMB_CITY     AS 'EMB_CTY_CD'	
+        FARE_BAS	
+        FARE_PAID
+        FIRSTCL	
+        FLAG
+        FLIGHT	
+        GRP_ADV_PUR	
+        GSA_GTR
+        IFLAG	
+        INVOICE_NUM	
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        KM_DAYS
+        KM_ADV_PUR
+        KW_ADV_PUR
+        MC_ADV_BOOK	
+        MC_DAYS
+        MRK_TKT_CNT	
+        MX_ADV_PUR
+        MX_DAYS
+        MX1ST_DOM
+        MX1ST_FLAG
+        MX1ST_INT
+        NET_TKT_CNT
+        NEW_ADV_BOOK	
+        NEW_ADV_PURCH
+        NONREF_FLAG
+        ORG_DST	
+        PNR_LOCATOR	
+        REF_EXCH_CNT	
+        REFUSAL_DESC	
+        REFUSE_CODE
+        REFUSE_KEY	
+        RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'	
+        RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'	
+        RTE_CTY.RTE_CITY     AS 'RTE_CTY_CD'	
+        SAVINGS
+        SEG_AMT	
+        SEG_DESIG	
+        SEG_DISCOUNT	
+        SEG_LOWEST	
+        SEG_NBR	
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY	
+        TICKET_BRANCH
+        TKT_DATE	
+        TKT_NUM	
+        TKT_PURCH	
+        TKT_SORT	
+        TKT_TYPE
+        TOUR_CODE	
+        TRIP_PURPOSE
+        TRN_DATE	
+        TRP_LEN	
+        TRVL_AUTH	
+        UP_ADV_PUR
+        UP_DAYS
+        VAL_AIRLINE	
+        VASAVINGS	
+        XARR_DT	
+        XCRDT_CD	
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT	
+               
+-INCLUDE &AIRDATES
+
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS ADVPHOLD
+END
+-RUN
+-*
+
+TABLE FILE ADVPHOLD
+PRINT AGENT_NUM	
+        AIR_KEY	
+        AIRLINE	
+        AIRLINE_FEE	
+        AIRLINE_NAME	
+        AR_BRANCH	
+        ARR_DAY	
+        ARR_TIME
+        BKD_ONLINE	
+        BOOK_DT	
+        BR_CL_IDX	
+        CASH_CREDIT	
+        CLASS	
+        CLASS_CAT
+        CLIENT_NAME 
+        CONJ_REL	
+        CREDIT_CARD	
+        DISSAVINGS	
+        DOC_TYPE
+        DOD_TYPE	
+        DPT_DAY	
+        DPT_TIME
+        EMB_APT_CD	
+        EMB_APT_NM	
+        EMB_CTY_NM	
+        EMB_CTY_CD	
+        FARE_BAS	
+        FARE_PAID
+        FIRSTCL	
+        FLAG
+        FLIGHT	
+        GRP_ADV_PUR	
+        GSA_GTR
+        IFLAG
+        INTL_DOM	
+        INVOICE_NUM	
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        KM_DAYS
+        KM_ADV_PUR
+        KW_ADV_PUR
+        MC_ADV_BOOK	
+        MC_DAYS
+        MRK_TKT_CNT	
+        MX_ADV_PUR
+        MX_DAYS
+        MX1ST_DOM
+        MX1ST_FLAG
+        MX1ST_INT
+        NET_TKT_CNT
+        NEW_ADV_BOOK	
+        NEW_ADV_PURCH
+        NONREF_FLAG
+        ORG_DST	
+        PNR_LOCATOR	
+        REF_EXCH_CNT	
+        REFUSAL_DESC	
+        REFUSE_CODE
+        REFUSE_KEY
+        RTE_APT_CD	
+        RTE_APT_NM	
+        RTE_CTY_NM	
+        RTE_CTY_CD	
+        SAVINGS
+        SEG_AMT	
+        SEG_DESIG	
+        SEG_DISCOUNT	
+        SEG_LOWEST	
+        SEG_NBR	
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY	
+        TICKET_BRANCH	
+        TKT_NUM	
+        TKT_PURCH	
+        TKT_SORT	
+        TKT_TYPE
+        TOUR_CODE	
+        TRIP_PURPOSE
+        TRP_LEN
+        TRN_DATE	
+        TRVL_AUTH	
+        UP_ADV_PUR
+        UP_DAYS
+        VAL_AIRLINE	
+        VASAVINGS	
+        XARR_DT	
+        XCRDT_CD	
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT
+BY TKT_DATE
+ON TABLE HOLD AS ADVP FORMAT FOCUS INDEX TKT_DATE
+END
+-RUN
+
+
+-* Global Reporting JOIN
+JOIN ADVP.TKT_DATE IN ADVP TO GLOBAL.DATE IN GLOBAL AS J1
+END
+
+DEFINE FILE ADVP
+NAMEC/A30 = CNAME;
+
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+CURR1X/D20.6 = 1 / USDPU ;
+
+-* DEFINES ON PREVIOUS DEFINES
+PAID_FAREX/D20.6 = FARE_PAID * CURR1X;
+PAID_FARE1/D20.6C = PAID_FAREX;
+DISSAVEX/D20.6 = DISSAVINGS * CURR1X;
+SAVINGSX/D20.6 = SAVINGS * CURR1X;
+DISSAVE1/D20.6 = DISSAVEX;
+SAVINGS1/D20.6 = SAVINGSX;
+END
+
+
+TABLE FILE ADVP
+PRINT AGENT_NUM	
+        AIR_KEY	
+        AIRLINE	
+        AIRLINE_FEE	
+        AIRLINE_NAME	
+        AR_BRANCH	
+        ARR_DAY	
+        ARR_TIME
+        BKD_ONLINE	
+        BOOK_DT	
+        BR_CL_IDX	
+        CASH_CREDIT	
+        CLASS	
+        CLASS_CAT
+        CLIENT_NAME 
+        CONJ_REL	
+        CREDIT_CARD	
+        DISSAVINGS	
+        DOC_TYPE
+        DOD_TYPE	
+        DPT_DAY	
+        DPT_TIME
+        EMB_APT_CD	
+        EMB_APT_NM	
+        EMB_CTY_NM	
+        EMB_CTY_CD	
+        FARE_BAS	
+        FARE_PAID
+        FIRSTCL	
+        FLAG
+        FLIGHT	
+        GRP_ADV_PUR	
+        GSA_GTR
+        IFLAG
+        INTL_DOM	
+        INVOICE_NUM	
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        KM_DAYS
+        KM_ADV_PUR
+        KW_ADV_PUR
+        MC_ADV_BOOK	
+        MC_DAYS
+        MRK_TKT_CNT	
+        MX_ADV_PUR
+        MX_DAYS
+        MX1ST_DOM
+        MX1ST_FLAG
+        MX1ST_INT
+        NET_TKT_CNT
+        NEW_ADV_BOOK	
+        NEW_ADV_PURCH
+        NONREF_FLAG
+        ORG_DST	
+        PNR_LOCATOR	
+        REF_EXCH_CNT	
+        REFUSAL_DESC	
+        REFUSE_CODE
+        REFUSE_KEY
+        RTE_APT_CD	
+        RTE_APT_NM	
+        RTE_CTY_NM	
+        RTE_CTY_CD	
+        SAVINGS
+        SEG_AMT	
+        SEG_DESIG	
+        SEG_DISCOUNT	
+        SEG_LOWEST	
+        SEG_NBR	
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY	
+        TICKET_BRANCH	
+        TKT_NUM	
+        TKT_PURCH	
+        TKT_SORT	
+        TKT_TYPE
+        TOUR_CODE	
+        TRIP_PURPOSE
+        TRP_LEN
+        TRN_DATE	
+        TRVL_AUTH	
+        UP_ADV_PUR
+        UP_DAYS
+        VAL_AIRLINE	
+        VASAVINGS	
+        XARR_DT	
+        XCRDT_CD	
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT
+        NAMEC
+        PAID_FAREX
+        PAID_FARE1
+        DISSAVE1
+        SAVINGS1
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS ADVP1
+END
+-RUN

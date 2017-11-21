@@ -1,0 +1,56 @@
+-*********************************************************************
+-* This program will retrieve the AROLL_LEV# data from CH_50 and
+-* update CR_50 (new) with hierarchy data
+-*********************************************************************
+SET MESSAGE=ON
+-* -SET &ECHO=ON;
+
+SET EDAPATH=d:\tnt\ttracker\data; -
+            d:\tnt\ttracker\system\data; -
+            d:\tnt\ttracker\SUData; -
+            d:\tnt\ttracker\system\image;
+
+-RUN
+
+-SET &USEFILE1=&&OLDPATH || &FILENAME || '.FOC';
+-SET &USEFILE2=&&OLDPATH || 'CL' || &&COMP || '.FOC';
+
+USE
+  &USEFILE1 AS CR_50
+  &USEFILE2 AS CH_50
+END
+
+TABLE FILE CR_50
+PRINT   CAR_HIER.AROLL_LEV1 CAR_HIER.AROLL_LEV2
+	CAR_HIER.AROLL_LEV3 CAR_HIER.AROLL_LEV4
+	CAR_HIER.AROLL_LEV5 CAR_HIER.AROLL_LEV6
+	CAR_HIER.AROLL_LEV7 CAR_HIER.AROLL_LEV8
+	CAR_HIER.AROLL_LEV9 CAR_HIER.AROLL_LEV10
+BY CAR_MAIN.CAR_KEY
+WHERE CAR_MAIN.CAR_KEY EQ CAR_HIER.CAR_KEY
+ON TABLE HOLD
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO ENDIT;
+
+SET EDAPATH=d:\NewDBs;
+-RUN
+
+-*New database structure
+-SET &USEFILE=&&NEWPATH || &FILENAME || '.FOC';
+USE
+  &USEFILE AS &FILENAME
+END
+
+MODIFY FILE &FILENAME
+FIXFORM FROM HOLD
+MATCH CAR_KEY
+  ON NOMATCH REJECT
+  ON MATCH UPDATE AROLL_LEV1 AROLL_LEV2 AROLL_LEV3 AROLL_LEV4 AROLL_LEV5
+  ON MATCH UPDATE AROLL_LEV6 AROLL_LEV7 AROLL_LEV8 AROLL_LEV9 AROLL_LEV10
+DATA ON HOLD
+END
+-RUN
+
+-ENDIT

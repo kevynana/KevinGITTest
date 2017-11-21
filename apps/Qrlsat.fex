@@ -1,0 +1,91 @@
+-***************************************************
+-* Set up to run LOST SAVINGS ANALYSIS DOMESTIC
+-* -IF &&BASEROLL NE &&ROLLUP THEN GOTO NORPTPARMS;
+-* -INCLUDE RPTPARMS
+-* -NORPTPARMS
+-***************************************************
+-INCLUDE SETECHO
+
+-SET &&AUSEPASS = &&WEB_PATH || 'AUSEINCL.FTM';
+-SET &&CUSEPASS = &&WEB_PATH || 'CUSEINCL.FTM';
+-SET &&HUSEPASS = &&WEB_PATH || 'HUSEINCL.FTM';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+FILEDEF CUSEINCL DISK &&CUSEPASS
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+-***************************************************
+-* get date values from BRPTINST database and
+-* assign to the global variables.
+-***************************************************
+EX QRSetDate
+-RUN
+-***************************************************
+-* reset dates and report type in control file
+-***************************************************
+-*specify the values for program catqtr
+-SET &&RPTTYP = 'SPD';
+-SET &&SMD = 'S';
+-*reset the date ranges for Trending Data
+-SET &&FROMDT = '&&CYFMDT.EVAL';
+-SET &&TODT = '&&CYTODT.EVAL';
+-SET &&FXDATE = '&&PYFMDT.EVAL';
+-SET &&TXDATE = '&&PYTODT.EVAL';
+CREATE FILE QRLS 
+-RUN
+CREATE FILE QRLSVD
+-RUN
+-* initialize the temp file to hold peer group data
+
+-**************************************************************
+-* LOOP THROUGH ALL THE PEERS SELECTED
+-**************************************************************
+
+-IF &&TOTPEERS EQ 0 THEN GOTO ALLPEERS;
+-SET &CNT = 1;
+-REPEAT ALLPEERS &&TOTPEERS TIMES
+-SET &&ROLLUP = &&PEERMBR.&CNT;
+-TYPE &&ROLLUP
+
+EX QRSETBDB
+-RUN
+EX AIRUSE
+-RUN
+-********************************************************
+-*Execute program to generate data from selected Peers
+-********************************************************
+-SET &&INTDOM = 'T';
+EX NQPLSEX
+-RUN
+
+-SET &CNT = &CNT + 1;
+-ALLPEERS
+
+-**************************************************************
+-*RESET rollup_code and comp to the base rollup_code and comp.
+-**************************************************************
+-SET &&ROLLUP = '&&BASEROLL.EVAL';
+-SET &&COMPNY = '&&BASECOMP.EVAL';
+EX QRSETBDB
+-RUN
+
+EX AIRUSE
+-RUN
+-********************************************************
+-* Execute program to generate data from base rollup
+-********************************************************
+-SET &&NOLSTSAV = Y';
+-SET &&INTDOM = 'T';
+EX NQBLSEX
+-RUN
+-IF &&NOLSTSAV EQ 'N' THEN GOTO EXCLPAGE;
+
+-IF &&NOLSTSV2 EQ 'N' THEN GOTO EXCLPAGE;
+
+-********************************************************
+-* EXECUTE THE PROGRAM TO GENERATE final report
+-* after data is put into 1 file
+-********************************************************
+EX NQLST
+-RUN
+-EXCLPAGE

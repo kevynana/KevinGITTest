@@ -1,0 +1,386 @@
+-* 12/28/04  - DEB - ADDED DOD_TYPE 'J' TO CONL CDONL CONGONL DEFINE
+-*  08/23/2016  REJ  S-17914 Changes for ER5.
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+
+ 
+ 
+ 
+-INCLUDE SETECHO
+ 
+CREATE FILE TCABNM1
+CREATE FILE TCABNM2
+CREATE FILE TCCBNM
+CREATE FILE TCHBNM
+-RUN
+ 
+-INCLUDE TCGETROLL
+-RUN
+ 
+-SET &CNT = 1;
+-REPEAT Loop2 &TOTROLLS TIMES
+-SET &&ROLL = &ROLL.&CNT;
+EX TCAIRDB
+-RUN
+- IF &FOCERRNUM EQ 36 THEN GOTO IncLoop2;
+ 
+EX TCBNA1EX
+-RUN
+ 
+EX TCBNA2EX
+-RUN
+ 
+ 
+EX TCCARDB
+-RUN
+ 
+ 
+EX TCBNCEX
+-RUN
+ 
+EX TCHTLDB
+-RUN
+ 
+EX TCBNHEX
+-RUN
+ 
+ 
+-IncLoop2
+-SET &CNT = &CNT + 1;
+-Loop2
+ 
+-INCLUDE SetParmtime
+-RUN
+ 
+-**************************************************************
+-* GET THE FINAL REPORT
+-**************************************************************
+ 
+ 
+ 
+ 
+TABLE FILE TCABNM1
+SUM CADVT
+    CADVTP
+    CADVT1
+    CADVT2
+    CADVT3
+    CADVTPX
+    CANET
+    CAVOL
+    CDANET
+    CDAVOL
+    CDFARE
+    CDLSAV
+    CDLS
+    CDNTKT
+    CDONL
+    CDTKT
+    CIANET
+    CINTKT
+    CLSAV
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CMILES
+    CNR
+    CNTP
+    CSAV
+    CSAV1
+    CNTKT
+    CVSAV
+    PAVOL
+    PDAVOL
+    PDFARE
+    PDTKT
+COMPUTE CAVAR/D15.2CS = CAVOL - PAVOL;
+        CAVAR1/D15.2CS = IF ((PAVOL LT 1) AND (PAVOL GT (-1))) THEN 0 ELSE
+                           (((CAVOL-PAVOL)/PAVOL)*100);
+        CAVGT/D15.2CS = IF ((CDTKT LT 1) AND (CDTKT GT (-1))) THEN 0 ELSE
+                           (CDFARE/CDTKT);
+        PAVGT/D15.2CS = IF ((PDTKT LT 1) AND (PDTKT GT (-1))) THEN 0 ELSE
+                           (PDFARE/PDTKT);
+        AAVGV/D15.2CS = CAVGT - PAVGT;
+        AAVGV1/D15.2CS = IF ((PAVGT LT 1) AND (PAVGT GT (-1))) THEN 0 ELSE
+                           (((CAVGT-PAVGT)/PAVGT)*100);
+        CADVP1/P15.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT/CNTKT)*100);
+        CADVP2/P15.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT1/CNTKT)*100);
+        CADVP3/P15.2 = IF ((CNTP LT 1) AND (CNTP GT (-1))) THEN 0
+                          ELSE ((CADVTP/CNTP)*100);
+        CADVP4/P15.2 = IF ((CNTP LT 1) AND (CNTP GT (-1))) THEN 0
+                          ELSE ((CADVTPX/CNTP)*100);
+        CADVP5/P15.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT2/CNTKT)*100);
+        CADVP6/P15.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT3/CNTKT)*100);
+ -*       CLSP/P15.2 = IF ((CLS2001 LT 1) AND (CLS2001 GT (-1))) THEN 0
+ -*                        ELSE ((CLS200/CLS2001)*100);
+ -*       CONLP/P15.2 = IF ((CNTKT1 LT 1) AND (CNTKT1 GT (-1))) THEN 0
+ -*                        ELSE ((CONL/CNTKT1)*100);
+        CDONLP/P12.2 = IF ((CDNTKT LT 1) AND (CDNTKT GT (-1))) THEN 0
+                         ELSE ((CDONL/CDNTKT)*100);
+-*        CONLP1/P15.2 = IF ((CNTP1 LT 1) AND (CNTP1 GT (-1))) THEN 0
+-*                         ELSE ((CONGONL/CNTP1)*100);
+        CNRP/P15.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                         ELSE ((CNR/CNTKT)*100);
+-*        CNFSV/P15.2 = IF ((CSAV LT 1) AND (CSAV GT (-1))) THEN 0
+-*                         ELSE ((CSAV1/CSAV)*100);
+        CTLS/P15.2 =  IF ((CAVOL LT 1) AND (CAVOL GT (-1))) THEN 0
+                         ELSE ((CLSAV/CAVOL)*100);
+        CCLS1/P15.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0
+                         ELSE ((CLS1/CLSAV)*100);
+        CCLS2/P15.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0
+                         ELSE ((CLS2/CLSAV)*100);
+        CCLS3/P15.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0
+                         ELSE ((CLS3/CLSAV)*100);
+        CCLS4/P15.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0
+                         ELSE ((CLS4/CLSAV)*100);
+        CCLS5/P15.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0
+                         ELSE ((CLS5/CLSAV)*100);
+        CPMILE/P15.2 = IF ((CMILES LT 1) AND (CMILES GT (-1))) THEN 0
+                         ELSE (CAVOL/CMILES);
+        CTLSV/P15.2 = IF ((CDAVOL LT 1) AND (CDAVOL GT (-1))) THEN 0 ELSE
+                          ((CDLSAV/CDAVOL)*100);
+        CDATKT/P15.2 = IF ((CDNTKT LT 1) AND (CDNTKT GT (-1))) THEN 0 ELSE
+                          (CDAVOL/CDNTKT);
+        CDANTKT/P15.2 = IF ((CDNTKT LT 1) AND (CDNTKT GT (-1))) THEN 0 ELSE
+                         (CDANET/CDNTKT);
+        CIANTKT/P15.2 = IF ((CINTKT LT 1) AND (CINTKT GT (-1))) THEN 0 ELSE
+                          (CIANET/CINTKT);
+ 
+BY ROLLCD
+ON TABLE HOLD AS TRANTWO
+END
+-RUN
+ 
+ 
+TABLE FILE TCABNM2
+SUM CTOT_TRANS
+        CORIG
+        CEXCHGS
+BY ROLLCD
+ON TABLE HOLD AS TRANTHREE
+END
+-RUN
+ 
+ 
+ 
+ 
+TABLE FILE TCCBNM
+SUM CRENTAL
+    CNOMID_DAYS
+    CCAMT
+COMPUTE PCTNOMID/P12.2 = IF ((CRENTAL LT 1) AND (CRENTAL GT (-1))) THEN 0 ELSE
+                            ((CNOMID_DAYS/CRENTAL)*100);
+COMPUTE AVGMID/D12.2CS = IF ((CRENTALD LT 1) AND (CRENTALD GT (-1))) THEN 0
+                         ELSE (CRENTALA/CRENTALD);
+BY ROLLCD
+ON TABLE HOLD AS CARTHREE FORMAT FOCUS INDEX ROLLCD
+END
+-RUN
+ 
+ 
+ 
+ 
+TABLE FILE TCHBNM
+SUM CHTTLA
+COMPUTE AVGRATE/D12.2CS = IF ((CHTTLN LT 1) AND (CHTTLN GT (-1))) THEN 0 ELSE
+                             (CHTTLA/CHTTLN);
+BY ROLLCD
+ON TABLE HOLD AS HTLHLD3 FORMAT FOCUS INDEX ROLLCD
+END
+-RUN
+ 
+ 
+-SET &&RPTSUF = 'BENCHMARK';
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$$99');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$$99');
+-SET &FXMY=EDIT(&&FXDATE,'$9999');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$$99');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$$99');
+-SET &TXOY=EDIT(&&TXDATE,'$9999');
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$$99');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$$99');
+-SET &FXMY=EDIT(&&FXDATE,'$9999');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$$99');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$$99');
+-SET &TXOY=EDIT(&&TXDATE,'$9999');
+-SET &&SP = '|';
+-SET &&SP1A = IF &&ROLLNME EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP1 = IF &&ROLLCS EQ ' ' THEN ' ' ELSE &&SP1A;
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLPA = IF &&RCNCT.EVAL GE 10 OR &&CSL.EVAL GE 10 THEN 60 ELSE 68;
+-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN 78 ELSE &&CSLPA;
+-SET &&ROLLCS11 = TRUNCATE(&&ROLLCS);
+-SET &&RCNCT1 = TRUNCATE(&&ROLLCNCT);
+-SET &&BLANK = ' ';
+ 
+-INCLUDE FDEFRPTS
+-RUN
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF0;
+-INCLUDE AVRP_SUBFOOT
+-:AVSF0
+ 
+JOIN TRANTWO.ROLLCD IN TRANTWO TO TRANTHREE.ROLLCD IN TRANTHREE AS J1
+JOIN TRANTWO.ROLLCD IN TRANTWO TO CARTHREE.ROLLCD IN CARTHREE AS J2
+JOIN TRANTWO.ROLLCD IN TRANTWO TO HTLHLD3.ROLLCD IN HTLHLD3 AS J3
+END
+-RUN
+ 
+ 
+DEFINE FILE TRANTWO
+NOWTOD/A8 WITH CAVOL = HHMMSS (NOWTOD);
+BLANK/A1 = ' ';
+END
+-RUN
+ 
+TABLE FILE TRANTWO
+SUM CAVOL AS 'Total,Volume'
+PCT.CAVOL AS '% of,Total,Volume'
+CAVAR1 AS 'Volume,Variance %'
+CNTKT AS 'Net,Tickets'
+CDLSAV AS 'Domestic Air Lost Savings'
+CTLSV  AS '% of,Domestic,Lost Savings'
+CLSAV AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total,Lost Savings'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CTLSV AS '% of,Total Airline,Lost Savings'
+CVSAV AS 'Contract Savings'
+CDATKT AS 'Domestic,Average,Ticket,Price'
+CAVGT AS 'Average,Ticket,Price'
+AAVGV1 AS 'Average,Ticket Price,Variance %'
+CADVP1 AS '% of, Net Tickets Purchased,0-6 Days'
+CADVP2 AS '% of, Net Tickets Purchased,7-13 Days'
+CADVP5 AS '% of, Net Tickets Purchased,14-20 Days'
+CADVP6 AS '% of, Net Tickets Purchased,21+ Days'
+CDONLP AS '% of, Domestic Online Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOMID AS '%,of Cars Larger,Than Mid-size'
+AVGMID AS 'Average Midsize Car, Rate'
+CCAMT AS 'Total,Rental,Amount'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+CHTTLA AS 'Total,Room,Amount'
+CTOT_TRANS AS 'Total,Air Transaction,Count'
+CORIG AS 'Original Sale,Count'
+CEXCHGS AS 'Exchange Sale,Count'
+BY ROLLCD AS ' '
+ 
+-GOTO HEAD
+-HEAD
+HEADING
+"&&ROLLNME &&SP1 &&ROLLCS11 &&SP3 &&RCNCT1 &&SP4 &&ROLLPHN"
+"&&DTDESC  Period1: &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  Period2: &FXMM/&FXMD/&FXMY - &TXOM/&TXOD/&TXOY"
+"&&RPT_TTL1"
+"&&RPT_TTL2"
+" "
+FOOTING BOTTOM
+"eTTek Review &DATE AT <NOWTOD <60 &&FOOTR"
+ON TABLE SET PAGE-NUM OFF
+ON TABLE NOTOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ 
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.100000, RIGHTMARGIN=0.030000,
+    TOPMARGIN=0.300000, BOTTOMMARGIN=0.050000, SQUEEZE=ON,
+    ORIENTATION=LANDSCAPE, $
+ 
+TYPE=REPORT, FONT=ARIAL, SIZE=8, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=HEADING, SIZE=8, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(31 114 164), BACKCOLOR=NONE, $
+TYPE=HEADING, HEADALIGN=BODY, $
+TYPE=HEADING, LINE=1, COLSPAN=4, JUSTIFY=LEFT, $
+TYPE=HEADING, LINE=2, COLSPAN=4, JUSTIFY=LEFT, $
+TYPE=HEADING, LINE=3, COLSPAN=20, SIZE=9, JUSTIFY=CENTER, $
+TYPE=HEADING, LINE=4, COLSPAN=20, SIZE=9,JUSTIFY=CENTER, $
+TYPE=HEADING, LINE=6, COLSPAN=4, JUSTIFY=LEFT, $
+ 
+ 
+TYPE=DATA,
+     BORDER-TOP=LIGHT,
+     BORDER-BOTTOM=LIGHT,
+     BORDER-LEFT=LIGHT,
+     BORDER-RIGHT=LIGHT,
+     BORDER-TOP-COLOR='SILVER',
+     BORDER-BOTTOM-COLOR='SILVER',
+     BORDER-LEFT-COLOR='SILVER',
+     BORDER-RIGHT-COLOR='SILVER',
+     SIZE=8,
+     BACKCOLOR=(RGB(242 242 242) 'WHITE' ),$
+ 
+TYPE=TITLE,
+     BORDER-TOP=LIGHT,
+     BORDER-BOTTOM=LIGHT,
+     BORDER-LEFT=LIGHT,
+     BORDER-RIGHT=LIGHT,
+     BORDER-TOP-STYLE=RIDGE,
+     BORDER-BOTTOM-STYLE=RIDGE,
+     BORDER-LEFT-STYLE=RIDGE,
+     BORDER-RIGHT-STYLE=RIDGE,
+     BORDER-TOP-COLOR='SILVER',
+     BORDER-BOTTOM-COLOR='SILVER',
+     BORDER-LEFT-COLOR='SILVER',
+     BORDER-RIGHT-COLOR='SILVER',
+     SIZE=8,
+     COLOR='WHITE',
+     BACKCOLOR=RGB(31 114 164),
+     STYLE=BOLD,$
+ 
+TYPE=TITLE, JUSTIFY=LEFT, $
+ 
+TYPE=TABFOOTING, FONT=ARIAL, COLOR=GRAY,$
+ 
+TYPE=FOOTING, FONT=ARIAL, COLOR=GRAY,$
+ 
+TYPE=SUBHEAD,
+     STYLE=BOLD,
+$
+ 
+TYPE=SUBTOTAL,
+     STYLE=BOLD,
+     BORDER-TOP=LIGHT,
+     BORDER-BOTTOM=LIGHT,
+     BORDER-LEFT=LIGHT,
+     BORDER-RIGHT=LIGHT,
+     BORDER-TOP-COLOR='SILVER',
+     BORDER-BOTTOM-COLOR='SILVER',
+     BORDER-LEFT-COLOR='SILVER',
+     BORDER-RIGHT-COLOR='SILVER', $
+ 
+TYPE=GRANDTOTAL, STYLE=BOLD, $
+ 
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+-*
+END
+-RUN
+ 
+ 
+ 
+-IF &LINES GT 0 THEN GOTO XXIT;
+EX TCEMPTY
+-RUN
+-XXIT
+ 
+ 
+ 

@@ -1,0 +1,88 @@
+-***************************************************
+-* QRTRVLMS.FEX  - Quarterly Review
+-* Set up to run Travel Management Summary 
+-***************************************************
+-INCLUDE SETECHO
+
+-SET &&AUSEPASS = &&WEB_PATH || 'AUSEINCL.FTM';
+-SET &&CUSEPASS = &&WEB_PATH || 'CUSEINCL.FTM';
+-SET &&HUSEPASS = &&WEB_PATH || 'HUSEINCL.FTM';
+-SET &&LUSEPASS = &&WEB_PATH || 'LUSEINCL.FTM';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+FILEDEF CUSEINCL DISK &&CUSEPASS
+FILEDEF HUSEINCL DISK &&HUSEPASS
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+-***************************************************
+-* get date values from BRPTINST database and
+-* assign to the global variables.
+-***************************************************
+EX QRSetDate
+-RUN
+-***************************************************
+-* set report type in control file
+-***************************************************
+-*specify the values for program catqtr
+-SET &&RPTTYP = 'STS';
+-SET &&SMD = 'S';
+-SET &&PYTODT = '&&PYTDDATE.EVAL';
+-***************************************************
+-* generate include file for database allocation
+-***************************************************
+-SET &&ROLLUP = '&&BASEROLL.EVAL';
+-SET &&COMPNY = '&&BASECOMP.EVAL';
+EX QRSETBDB
+-RUN
+
+SET 3D=OFF
+SET GRID=ON
+SET VGRID=OFF
+SET EMPTYREPORT=ON
+
+EX TSAIRUSE
+-RUN
+
+-TYPE EXECMAI1
+EX QREXECMAI1
+-RUN
+
+-TYPE EXECMAI2
+EX EXECMAI2
+-RUN
+
+USE CLEAR *
+-RUN
+EX CARUSE
+-RUN
+
+-TYPE EXECCAR1
+EX QREXECCAR1
+-RUN
+
+-TYPE EXECCAR2
+EX EXECCAR2
+-RUN
+
+EX HTLUSE
+-RUN
+
+-TYPE EXECHTL1
+EX QREXECHTL1
+-RUN
+
+-TYPE EXECHTL2
+EX EXECHTL2
+-RUN
+
+-TYPE EXECTOT1
+EX EXECTOT1
+-RUN
+
+-TYPE EXECTOT2
+EX EXECTOT2
+-RUN
+
+-TYPE EXECSUM1
+EX QREXECSUM1
+-RUN

@@ -1,0 +1,650 @@
+-*********************************************************************
+-* Created for top markets based upon transaction and travel dates
+-* JK 11/29/06
+-**********************************************************************
+SET ASNAMES = ON
+-RUN
+
+-SET &&RANK_LIMIT= 100;
+-SET &&RANK_LIMIT2= 100;
+-SET &&RANK_METH = 'NET_TKT_CNT';
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &BASF_CUR = 'BASE FARE, (' | &&CURRENCY || ')';
+-SET &&PRINT6='GFARE/D16.2CS AS ' | '''&BASF_CUR.EVAL''';
+
+
+-NEXT
+
+TABLE FILE TPMP
+SUM CLASS
+    COMM_SEG	
+    CP_FARE_PD AS 'FARE'
+    PAID_FAREX AS 'GFARE'
+    DEMB_APT 	
+    DISSAVINGS
+    DPT_TIME
+    DRTE_APT    	
+    EMB_APT
+    FARE_BAS1
+    LABEL1
+    LABEL2
+    LEVEL3	
+    LEVEL_DESC
+    MILES
+    NAMEC	
+    NET_COMM	
+    NET_FARE 	
+    NET_TKT_CNT	
+    NEW_SEG_COUNT
+    ORGDST
+    REFUSE_CODE
+    RTE_APT	
+    SAVINGS 
+    SEG_DESIG
+    TKT_NUM
+    TKT_SORT
+    TKT_TYPE
+    TRIP_PURPOSE
+    TOTAL_FARE	
+    VASAVINGS
+    XPSNGR_NM
+    XTRAN_DT
+    XDPT_DT
+BY DEMB_APT NOPRINT
+BY DRTE_APT NOPRINT	
+-* BY ORGDST
+BY CP_AIRLINE
+BY XPSNGR_NM NOPRINT
+BY TKT_SORT NOPRINT
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+-* -SET &&RANK_METH = 'NET_TKT_CNT';
+
+TABLE FILE HOLD1
+PRINT CLASS
+      COMM_SEG	
+      CP_AIRLINE
+      DEMB_APT	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT      	
+      EMB_APT
+      FARE
+      FARE_BAS1
+      GFARE	
+      LABEL1
+      LABEL2
+      LEVEL3
+      LEVEL_DESC	
+      MILES
+      NAMEC	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT
+      REFUSE_CODE
+      RTE_APT
+      SAVINGS
+      SEG_DESIG
+      TKT_NUM
+      TKT_TYPE	
+      TOTAL_FARE
+      TRIP_PURPOSE
+      VASAVINGS	
+      XPSNGR_NM
+      XDPT_DT
+      XTRAN_DT
+BY ORGDST
+RANKED BY HIGHEST &&RANK_METH
+BY XPSNGR_NM
+BY TKT_SORT
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+-* -SET &&RANK_LIMIT2 = 5;
+
+DEFINE FILE HOLD2
+  DRANK/D5      = RANK ;
+  ARANKX/A6     = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5      = EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT2 ;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN ARANK ELSE
+                  IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+-RUN
+
+TABLE FILE HOLD2
+PRINT CLASS
+      COMM_SEG	
+      CP_AIRLINE
+      DEMB_APT 	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT      	
+      EMB_APT
+      FARE_BAS1
+      FARE
+      GFARE
+      LABEL1
+      LABEL2
+      LEVEL3
+      LEVEL_DESC	
+      MILES
+      NAMEC	
+      NET_COMM	
+      NET_FARE	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT
+      REFUSE_CODE
+      RTE_APT
+      SAVINGS 
+      SEG_DESIG
+      TOTAL_FARE
+      TKT_NUM
+      TKT_SORT
+      TKT_TYPE
+      TRIP_PURPOSE
+      VASAVINGS	
+      XPSNGR_NM
+      XDPT_DT
+      XTRAN_DT
+BY ORGDST  
+BY RANK_VALUE
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+-* -SET &&RANK_LIMIT2 = 2;
+
+DEFINE FILE HOLD3
+AIRLINE_PRINT/A12 = IF RANK_VALUE LE '&&RANK_LIMIT2' 
+	THEN CP_AIRLINE ELSE 'OTHER';
+END
+-RUN
+
+TABLE FILE HOLD3
+-* SUM COMM_SEG
+PRINT AIRLINE_PRINT
+    CLASS
+    COMM_SEG
+    CP_AIRLINE
+    DEMB_APT	
+    DISSAVINGS
+    DPT_TIME
+    DRTE_APT    	
+    EMB_APT
+    FARE
+    FARE_BAS1
+    GFARE
+    LABEL1
+    LABEL2
+    LEVEL3
+    LEVEL_DESC	
+    MILES
+    NAMEC	
+    NET_COMM	
+    NET_FARE	
+    NET_TKT_CNT	
+    NEW_SEG_COUNT
+    ORGDST
+    RANK_VALUE
+    REFUSE_CODE
+    RTE_APT	
+    SAVINGS 
+    SEG_DESIG
+    TKT_NUM
+    TKT_SORT
+    TKT_TYPE	
+    TOTAL_FARE
+    TRIP_PURPOSE
+    VASAVINGS
+    XPSNGR_NM
+    XTRAN_DT
+    XDPT_DT
+-* BY DEMB_APT NOPRINT
+-* BY DRTE_APT NOPRINT	
+BY ORGDST 
+-* BY RANK_VALUE 
+-* BY AIRLINE_PRINT
+-* BY XPSNGR_NM NOPRINT
+-* BY TKT_SORT NOPRINT
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+
+TABLE FILE HOLD1
+SUM &&RANK_METH 
+BY ORGDST
+ON TABLE HOLD AS RHOLD1 
+END
+-RUN
+
+
+TABLE FILE RHOLD1
+PRINT &&RANK_METH
+RANKED BY HIGHEST &&RANK_METH AS 'SEG_RANK'
+BY ORGDST
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+
+MATCH FILE HOLD4
+PRINT AIRLINE_PRINT
+      CLASS       	
+      COMM_SEG
+      CP_AIRLINE
+      DEMB_APT	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT      	
+      EMB_APT
+      FARE	
+      FARE_BAS1
+      GFARE
+      LABEL1
+      LABEL2
+      LEVEL3	
+      LEVEL_DESC
+      MILES
+      NAMEC	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT
+      RANK_VALUE
+      REFUSE_CODE
+      RTE_APT
+      SAVINGS 
+      SEG_DESIG
+      TKT_NUM
+      TKT_SORT
+      TKT_TYPE	
+      TOTAL_FARE
+      TRIP_PURPOSE
+      VASAVINGS
+      XPSNGR_NM
+      XDPT_DT	
+      XTRAN_DT
+BY ORGDST 
+ON TABLE HOLD
+RUN
+FILE RHOLD2
+SUM SEG_RANK
+BY ORGDST
+AFTER MATCH HOLD AS HOLD5 OLD-OR-NEW
+END
+-RUN
+
+
+TABLE FILE HOLD5
+PRINT AIRLINE_PRINT
+      CLASS     	
+      COMM_SEG
+      CP_AIRLINE
+      DEMB_APT	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT      	
+      EMB_APT	
+      FARE
+      FARE_BAS1
+      GFARE
+      LABEL1
+      LABEL2
+      LEVEL3
+      LEVEL_DESC	
+      MILES
+      NAMEC	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT	
+      ORGDST
+      RANK_VALUE
+      REFUSE_CODE
+      RTE_APT	
+      SAVINGS 
+      SEG_DESIG
+      TKT_NUM
+      TKT_SORT
+      TKT_TYPE	
+      TOTAL_FARE
+      TRIP_PURPOSE
+      VASAVINGS
+      XPSNGR_NM
+      XDPT_DT
+      XTRAN_DT
+RANKED BY HIGHEST SEG_RANK 
+ON TABLE HOLD AS HOLD6
+END
+-RUN
+
+-* -SET &&RANK_LIMIT = 50;
+
+DEFINE FILE HOLD6
+  ORG_LIMIT/I2 = &&RANK_LIMIT ;
+  OLIMIT/A2    = EDIT(ORG_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6 = IF ORGDST NE LAST ORGDST THEN (LAST LIST + 1) 
+    ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6  = EDIT(FRANKX,'$999999'); 
+  ORG_VALUE/A6 = IF ORG_LIMIT EQ 0 THEN BRANK ELSE
+               IF LIST GT ORG_LIMIT THEN 'OTHER' ELSE FRANK;
+  
+END
+-RUN
+
+TABLE FILE HOLD6
+SUM CLASS 
+    COMM_SEG
+    CP_AIRLINE
+    DEMB_APT	
+    DISSAVINGS
+    DPT_TIME
+    DRTE_APT   	
+    EMB_APT
+    FARE
+    FARE_BAS1
+    GFARE
+    LABEL1
+    LABEL2
+    LEVEL3
+    LEVEL_DESC	
+    MILES
+    NAMEC	
+    NET_COMM	
+    NET_FARE  	
+    NET_TKT_CNT	
+    NEW_SEG_COUNT	
+    OLIMIT
+    ORGDST	
+    ORG_LIMIT
+    REFUSE_CODE
+    RTE_APT	
+    SAVINGS
+    SEG_DESIG
+    SEG_RANK    
+    TKT_NUM
+    TKT_SORT
+    TKT_TYPE	
+    TOTAL_FARE
+    TRIP_PURPOSE
+    VASAVINGS
+    XPSNGR_NM
+    XDPT_DT
+    XTRAN_DT
+BY ORG_VALUE
+BY DEMB_APT NOPRINT
+BY DRTE_APT NOPRINT
+-* BY ORGDST
+BY RANK_VALUE
+BY AIRLINE_PRINT
+BY XPSNGR_NM NOPRINT
+BY TKT_SORT NOPRINT
+ON TABLE HOLD AS HOLD7
+END
+-RUN
+
+DEFINE FILE HOLD7
+-INCLUDE STDTIME1
+  DEMBARK_APT/A21 = IF ORG_VALUE LT OLIMIT THEN DEMB_APT ELSE 'ALL OTHER';
+  DROUTE_APT/A21 = IF ORG_VALUE LT OLIMIT THEN DRTE_APT ELSE 'ALL OTHER';
+  EMBARK_APT/A21 = IF ORG_VALUE LT OLIMIT THEN EMB_APT ELSE 'ALL OTHER'; 
+  ORG_PRINT/A55 =IF ORG_VALUE LT OLIMIT THEN ORGDST ELSE 'ALL OTHER';
+  RO_PRINT/A12   =IF ORG_VALUE LT OLIMIT THEN AIRLINE_PRINT ELSE ' ';
+  ROUTE_APT/A21 = IF ORG_VALUE LT OLIMIT THEN RTE_APT ELSE 'ALL OTHER';
+ -* EMB_LBL/A25 = IF ORG_VALUE LT OLIMIT THEN LABEL1 ELSE 'ALL OTHER';
+ -*  RTE_LBL/A25 = IF ORG_VALUE LT OLIMIT THEN LABEL2 ELSE 'ALL OTHER';
+  EMB_LBL/A15 = IF ORG_VALUE LT OLIMIT THEN EDIT(LABEL1,'999999999999999')
+        ELSE 'ALL OTHER';
+  RTE_LBL/A15 = IF ORG_VALUE LT OLIMIT THEN EDIT(LABEL2,'999999999999999')
+    ELSE 'ALL OTHER';  
+  
+  
+  
+END
+-RUN
+
+TABLE FILE HOLD7
+SUM CLASS
+    COMM_SEG
+    CP_AIRLINE
+   DEMB_APT
+    DEMBARK_APT    	
+    DISSAVINGS
+    DPT_TIME
+  DRTE_APT
+    DROUTE_APT    
+    EMBARK_APT
+    EMB_LBL
+    FARE
+    FARE_BAS1
+    GFARE
+    LEVEL3
+    LEVEL_DESC	
+    MILES
+    NAMEC	
+    NET_COMM	
+    NET_FARE	
+    NET_TKT_CNT
+    NEW_SEG_COUNT
+    ORGDST
+    REFUSE_CODE
+    ROUTE_APT
+    RTE_LBL
+    SAVINGS
+    SEG_DESIG
+    SEG_RANK   
+    TKT_NUM
+    TKT_SORT
+    TKT_TYPE
+    TIME_DPT	
+    TOTAL_FARE
+    TRIP_PURPOSE
+    VASAVINGS
+    XPSNGR_NM
+    XDPT_DT
+    XTRAN_DT
+BY ORG_VALUE     
+BY DEMBARK_APT NOPRINT
+BY DROUTE_APT NOPRINT
+BY ORG_PRINT
+BY RANK_VALUE
+BY RO_PRINT
+BY XPSNGR_NM NOPRINT
+BY TKT_SORT NOPRINT
+ON TABLE HOLD AS HOLD8
+END
+-RUN
+
+
+TABLE FILE HOLD8
+PRINT CLASS
+      COMM_SEG
+      CP_AIRLINE
+     DEMB_APT
+      DEMBARK_APT	
+      DISSAVINGS
+      DPT_TIME
+   DRTE_APT
+      DROUTE_APT      
+      EMBARK_APT
+      EMB_LBL	
+      FARE
+      FARE_BAS1
+      GFARE
+      LEVEL3
+      LEVEL_DESC	
+      MILES
+      NAMEC	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT 	
+      NEW_SEG_COUNT	
+      ORGDST
+      ORG_VALUE
+      ORG_PRINT
+      RANK_VALUE
+      REFUSE_CODE
+      RO_PRINT	
+      ROUTE_APT	
+      RTE_LBL
+      SAVINGS
+      SEG_DESIG
+      SEG_RANK     
+      TIME_DPT	
+      TKT_NUM
+      TKT_TYPE
+      TOTAL_FARE
+      TRIP_PURPOSE
+      VASAVINGS
+      XDPT_DT
+      XTRAN_DT
+BY XPSNGR_NM
+BY TKT_SORT
+ON TABLE HOLD AS HOLD9
+END
+-RUN
+
+
+-SET &&RPTSUF = 'DTL';
+-INCLUDE FDEFRPTS
+-RUN
+
+-TYPE BEFORE DEFINES
+
+DEFINE FILE HOLD9
+
+
+
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*7/31/00     IBISTL-KR             ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+XTS_FLAG/A1 = ' ';
+
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD9';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HOLD9
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+
+-* REJ EX RESTART 
+-*-*-EXIT

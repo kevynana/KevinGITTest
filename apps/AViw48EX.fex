@@ -1,0 +1,616 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+-* File AVIW23EX.FEX
+-******************************************************************** 
+-* MODIFICAIONS:
+-********************************************************************
+-* 
+-* This program extracts data for the series of basic ticket listing
+-* reports.  Based on the user profile selected, one of many report
+-* formats will be produced.  
+-*
+-* DATE     INITIALS           DESCRIPTION
+-* 3/15/01  TANDT-SS           ADDED GEOAREA AND AGENT_NUM FOR USE
+-*                             IN KIMBERLY CLARK TRANS SUMMARY
+-*4/18/01      TANDT-JK             ADDED A JOIN TO THE AGENT FILE
+-*                                  SO THAT WE COULD REPORT ON AGENT_NAME
+-*8/1/02    STEVE              ADDED TRAN_MYA FOR TRANSACTION BY MONTH REPORT
+-*1/10/03   JK                 ADDED ONL_FLAG DEFINE
+-*02/20/03  STEVE              ADDED INT_CODE
+-* 3/5/03   JK                 CHANGED NET_TKT_CNT DEFINE TO BE NAMED
+-*                             NET_TKT_CNT1
+-*9/4/03    Joy             Carried through Ticketing Branch field
+-*02/20/04  STEVE  	    Carried through CLIENT_NAME
+-*4/2/04    JOY             Added Tkt_purch define - REMOVED THIS INFO
+-*4/28/04   joy             Added Air_main.intl_dom as 'idflag'
+-*7/30/04   DEB             ADDED GEO_FLAG DEFINE
+-*11/17/04  DEB             ADDED LVL3 DEFINE
+-*12/20/04  DEB             CHANGED BKD_ONLINE AND ONL_FLAG TO INCLUDE
+-*                          DOD_TYPE 'J' 
+-*01/19/2005 STEVE          ADDED PNR_LOCATOR
+-*01/27/05   DEB            ADDED CODE FOR GLOBAL CURRENCY
+-*03/02/05   DEB            ADDED DEFINE FOR ACCT_FLAG
+-*03/10/05   DEB            ADDED DEPT_CD ACCT_CD OFFICE_CD SOURCE_CD PRJCT_CD
+-*                          DEFINES
+-*08/29/05   DEB            ADDED BDGA_DPT DEFINE
+-*10/11/05   DEB            ADDED DOD_TYPE H TO BKD_ONLINE AND ONL_FLAG DEFINE
+-*04/07/06   DEB            ADDED C_ITIN
+-*9/19/06    JK             ADDED CODE FOR JHA REPORT TO INCLUDE ONLY AGENT_NUMS STARTING WITH 00
+-*1/2/08     DEB	    ADDED IDFLAG DEFINE PER STEVE
+-*3/4/08     DEB            ADDED OTC_COA DEFINE FOR OTC REPORT
+-*1/22/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+-*3/10/2015   DEB            S-07724  ADDED DEFINE LENGTH INTF_FLAG FOR VMTRNS
+-*4/22/15   DEB    S-08547  CHANGED INTF_FLAG FOR VMTRNS PER KORI HARM
+-*11/23/15  Joy    S-07987  Corrected Error when running for Currency Enabled
+-*01/20/16 - DEB - S-14801 changed  EXCHGS defines
+-*                         to exclude RF_FLAG so exchanges with partial refunds
+-*                         would not appear twice under exchanges and partial refunds on the report
+-*02/25/16 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-*4/26/16 - JEM - S-18162 Added defines for us_flt/dxb_flt/afg_flt/dfs_flt
+-*07/26/16   DLV   S-20630 - Added New Employee ID database field EMP_ID
+-*10/18/16   DLV S-26019 - Updated PRWG define to use EMP_ID instead of LEVEL1
+-*12/20/16   DLV - S-28295 - Changed sorts to be similar to AVIW23DT due to balancing
+-*                           issues of REFUNDS
+-********************************************************************
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-INCLUDE SETECHO
+
+-SET &&IDLEVELBREAK = '';
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+
+
+DEFINE FILE &&EXTRACT
+ACCT_FLAG/A10 = IF ACCT_TYPE EQ '1' THEN 'COMMERCIAL' ELSE 'LEISURE';
+GEO1/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO2/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO3/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO4/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO5/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO6/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO7/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO8/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO9/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO10/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO11/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$$$$$');
+GEO12/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$$$$$');
+GEO13/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$$$$$');
+GEO14/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$$$$$');
+GEO15/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$$$$$');
+GEO16/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$$$$$');
+GEO17/A3 =  EDIT(TKT_MAIN.GEO_ZONE, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$999$');
+
+BKD_ONLINE/A1 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'Y' ELSE 'N';
+-* BKD_ONLINE/A1 = IF DOD_TYPE EQ 'I' OR 'J' THEN 'Y' ELSE 'N';
+-* BKD_ONLINE/A1 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'Y' ELSE 'N';
+  ONL_FLAG/A1 = IF DOD_TYPE EQ 'H' OR 'I' OR 'J' THEN 'O' ELSE 
+                IF DOD_TYPE EQ 'L' OR 'S' THEN 'W' ELSE 'T';
+-* ONL_FLAG/A1 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'O' ELSE 'T';
+ONL_TRA/A33 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'ONLINE' ELSE 'TRADITIONAL';
+-*   ONL_TRA/A11 = IF DOD_TYPE EQ 'H' OR 'I' OR 'J' THEN 'ONLINE' ELSE 'TRADITIONAL';
+  MTG_CODE/A2=EDIT(CLIENT_NUM, '99'); 
+  FARE_PAID/D12.2=SEG_AMT + SEG_TAX;
+-*   IDFLAG/A1 = IF VAL_AIRLINE EQ '2V' THEN 'D' ELSE
+-*               IF TKT_MAIN.GEO_ZONE CONTAINS 'AFR' OR 'ASA' OR 'CAN' OR 'EUR' OR 'LAM' 
+-*               OR 'MES' OR 'PAC' OR 'SAM' THEN 'I' ELSE 'D';
+  
+  LEVEL_DESC1/A80 = &&LDESC;
+  KBLEVEL1/A3 = EDIT (LEVEL1, '999');
+  GEOAREA/A6 = IF (KBLEVEL1 EQ '265' OR '274' OR '283') THEN
+               'CANADA' ELSE 'US';
+             
+  MCOS/D9CS           = IF (DOC_TYPE EQ '1') AND
+                           (EX_FLAG EQ ' ')  AND
+                           (EXCHG_SALE NE ' ') THEN 1 ELSE 0;
+  OTC_COA/A50 =  IF LEVEL3 EQ ' ' THEN LEVEL1 || '.' || LEVEL2 ELSE
+                 LEVEL1 || '.' || LEVEL2 || '.' || LEVEL3;   
+  NET_TKT_CNT1/D9 =   IF (SEG_NBR EQ '01') AND (FARE_PAID GE 0) AND (SEG_COUNT  EQ 1) AND (EXCHG_SALE EQ ' ') THEN 1 ELSE 
+                      IF (DOC_TYPE EQ '1') AND (EX_FLAG EQ ' ') AND (EXCHG_SALE NE ' ') AND (RF_FLAG EQ ' ') THEN 1 ELSE 0;
+-* AND (RF_FLAG EQ ' ')                      
+  TKT_CNT/D9CS        = IF (SEG_NBR EQ '01') AND 
+                           (FARE_PAID GE 0) AND 
+                           (SEG_COUNT EQ 1) THEN 1 ELSE 0;                         
+  TKT_TYPE/A4         = IF (SEG_COUNT LE 0) AND
+                           (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                           (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                           (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                           (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TRAN_MYA/I6MTYY = TRN_DATE;
+  VOIDS/D9CS          = IF (VOID_DATE NE 0) AND
+                           (SEG_COUNT EQ 1) AND
+                           (SEG_NBR EQ '01') THEN 1 ELSE
+                        IF (DOC_TYPE EQ '1') AND 
+                           (VOID_DATE NE 0) THEN 1 ELSE 0;
+                           
+  XDPT_DT/MDYY=DPT_DATE;
+  XFST_DPT/MDYY = FST_DPT_DATE;
+  XPSNGR_NM/A15=EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XTRAN_DT/MDYY=TRN_DATE;
+  LVL3/A15 = IF LEVEL3 EQ ' ' THEN 'NONE GIVEN' ELSE LEVEL3;
+  BDGA_DPT/A3 = EDIT(LEVEL1, '999$$$$$$$$$$$$');
+  ANUM/A2 = EDIT(AGENT_NUM, '99$$$');
+  LENGTH/I3 = ARGLEN (208,ADIR_ALL, LENGTH);
+  
+-*  INTF_FLAG/A1 =  IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' AND AIR_MAIN.INTL_DOM EQ 'I' AND LENGTH GT 64 THEN 'Y' ELSE 'N';
+  INTF_FLAG/A1 =  IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' AND AIR_MAIN.INTL_DOM EQ 'I' AND LENGTH GT 51 THEN 'Y' ELSE 'N';
+
+-* ******* DEFINES ON PREVIOUS DEFINES ******
+
+EXCHGS/D9 = IF (EX_FLAG EQ 'F' OR 'P') AND (RF_FLAG EQ ' ') AND (SEG_COUNT LE 0) AND (EMBARK 
+  NE 'DT1' OR 'RF1' OR 'FP3') THEN TKT_CNT ELSE
+  IF (DOC_TYPE EQ '1') AND (EXCHG_SALE EQ 'E') THEN 0 ELSE
+  IF (SEG_COUNT GE 0) AND (EXCHG_SALE NE ' ') THEN TKT_CNT ELSE 0;
+
+GEO_FLAG/A1 = IF (GEO1 EQ 'USA' ) AND (GEO2 CONTAINS 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO2 EQ 'EUR') OR 
+  (GEO1 EQ 'USA' ) AND (GEO3 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO4 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO5 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO6 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO7 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO8 EQ 'EUR') OR 
+  (GEO1 EQ 'USA' ) AND (GEO9 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO10 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO11 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO12 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO13 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO14 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO15 EQ 'EUR') OR
+  (GEO1 EQ 'USA' ) AND (GEO16 EQ 'EUR') OR 
+  (GEO1 EQ 'USA' ) AND (GEO17 EQ 'EUR') THEN 'Y' ELSE 'N';
+
+
+POS/A31 = GETTOK(INT_CODE, 31, -1, '-', 31, POS);
+DEPT_CD/A36 = GETTOK(INT_CODE, 36, 1, '-', 36, DEPT_CD);
+ACCT_CD/A31 = GETTOK(POS, 31, 1, '*', 31, ACCT_CD);
+SOURCE_CD/A31 = GETTOK(POS, 31, 2, '*', 31, SOURCE_CD);
+PRJCT_CD/A31 = GETTOK(POS, 31, -2, '*', 31, PRJCT_CD);
+OFFICE_CD/A31 = GETTOK(POS, 31, -1, '*', 31, OFFICE_CD);
+
+JHFLAG/A1 = IF ANUM EQ '00' THEN 'Y' ELSE 'N';
+TRAN_MY/MTYY = TRN_DATE;
+
+-****** Start of Defines for the New Principal Transaction Summary
+-* Determine number of segments ticket has
+SEG_FLAG/A1 = EDIT(TKT_MAIN.C_ITIN, '$$$$$$$$$$$9');
+4SEG_REC/A1 = IF SEG_FLAG EQ ' ' THEN 'Y' ELSE 'N';
+PRWG/A1 = IF EMP_ID EQ '10000867' OR '10048791' OR '10036274' THEN 'Y' ELSE 'N';
+
+-**** IRC DEFINES TO PARSE OUT LEVEL4 INTO 6 FIELDS
+TOK1/A15 = GETTOK(LEVEL4, 60, 1, '*', 15, TOK1);
+TOK2/A1 = GETTOK(LEVEL4, 60, 2, '*', 1, TOK2);
+TOK3/A5 = GETTOK(LEVEL4, 60, 3, '*', 5, TOK3);
+TOK4/A1 = GETTOK(LEVEL4, 60, 4, '*', 1, TOK4);
+TOK5/A5 = GETTOK(LEVEL4, 60, 5, '*', 5, TOK5);
+TOK6/A4 = GETTOK(LEVEL4, 60, 6, '*', 4, TOK6);
+TOK1A/A3 = GETTOK(TOK1, 15, 1, '-', 3, TOK1A);
+TOK2A/A6 = GETTOK(TOK1, 15, 2, '-', 6, TOK2A);
+TOK3A/A4 = GETTOK(TOK1, 15, -1, '-', 4, TOK3A);  
+
+-**** Airwatch country code define
+AW_CF/A30 = IF TKT_MAIN.CTRY_COD CONTAINS 'CA' OR 'MX' OR 'AI' OR 'AG' OR 'AN' OR 'BB' OR 'BM' OR 'BS' OR 'CU' OR 'DM' OR 'DO' OR
+                                          'GD' OR 'GP' OR 'HT' OR 'JM' OR 'KN' OR 'KY' OR 'LC' OR 'LK' OR 'MQ' OR 'MS' OR 'PR' OR
+                                          'RW' OR 'TC' OR 'TT' OR 'VC' OR 'VG' OR 'VI' THEN 'INTL Canada Mexico Carribean' ELSE
+            IF TKT_MAIN.CTRY_COD OMITS    'CA' OR 'MX' OR 'AI' OR 'AG' OR 'AN' OR 'BB' OR 'BM' OR 'BS' OR 'CU' OR 'DM' OR 'DO' OR
+                                          'GD' OR 'GP' OR 'HT' OR 'JM' OR 'KN' OR 'KY' OR 'LC' OR 'LK' OR 'MQ' OR 'MS' OR 'PR' OR
+                                          'RW' OR 'TC' OR 'TT' OR 'VC' OR 'VG' OR 'VI' OR 'US' THEN 'INTL All Other' ELSE 'Domestic';                                         
+                                          
+-***** MAGDS-R defines
+US_FLT/A1 = IF CTRY_COD CONTAINS 'US' THEN 'Y' ELSE 'N';
+DXB_FLT/A1 = IF C_ITIN CONTAINS 'DXB' THEN 'Y' ELSE 'N';
+AFG_FLT/A1 = IF CTRY_COD CONTAINS 'AF' THEN 'Y' ELSE 'N';
+DFS_FLT/A1 = IF ADIR_ALL CONTAINS '/YL' THEN 'Y' ELSE 'N';
+-INCLUDE IDLEVDEFINE 
+
+END
+
+
+TABLE FILE &&EXTRACT
+PRINT 4SEG_REC
+  ACCT_FLAG
+  AIR_MAIN.INTL_DOM AS 'IDFLAG'
+  AIR_MAIN.INTL_DOM AS 'INT_DOM'
+  AGENT_NUM 
+  AIR_KEY	
+  AIRLINE
+  AROLL_LEV3
+  AROLL_LEV4
+  AROLL_DSC5
+  AW_CF
+  BDGA_DPT
+  BKD_ONLINE
+  BR_CL_IDX
+  C_ITIN
+  CITYPAIR.EMBARK      AS 'EMB_APT_CD'	
+  CITYPAIR.ROUTE       AS 'RTE_APT_CD'	
+  CLASS	
+  CLIENT_NUM
+  CLIENT_NAME
+  DOD_DESC
+  DOC_TYPE	
+  DOD_TYPE
+  DPT_DATE	
+  DPT_TIME
+  EMAIL_ADDR
+  EMBARK
+  EMP_ID
+  EX_FLAG	
+  EXCHG_SALE
+  EXCHGS
+  FARE_PAID	
+  FLIGHT
+  GEOAREA
+  GEO_FLAG
+  GRAND_MSTR_CODE	
+  GROUP_CODE
+  INT_CODE
+  INTF_FLAG
+  INVOICE_NUM	
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      LEVEL4
+      LEVEL5 
+      LEVEL6 
+      LEVEL7
+  LEVEL_DESC
+  LVL3
+  MCOS
+  MTG_CODE	
+  MSTR_GRP_CODE	
+  NET_TKT_CNT1
+  ONLINE_TRADITIONAL
+  ONL_FLAG
+  ONL_TRA
+  OTC_COA
+  PASSNGR_NAME
+  PNR_LOCATOR
+  PRWG
+  REFUSE_KEY	
+  RESV_BRANCH	
+  RF_FLAG
+  SEG_AMT	
+  SEG_COM	
+  SEG_COUNT
+  SEG_NBR 	
+  SEG_TAX 
+  TICKET_BRANCH
+  TKT_DATE	
+  TKT_NUM
+  TKT_SORT
+  TKT_TYPE
+  TRAN_MYA
+  TRAN_MY
+  TRN_DATE
+  VAL_AIRLINE
+  VOIDS	
+  VOID_DATE 	
+  VOID_STATUS 
+  XDPT_DT
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT
+  POS
+  DEPT_CD
+  ACCT_CD
+  SOURCE_CD
+  PRJCT_CD
+  OFFICE_CD
+  TOK1A
+  TOK2A
+  TOK3A
+  TOK2
+  TOK3
+  TOK4
+  TOK5
+  TOK6
+  US_FLT
+  DXB_FLT
+  AFG_FLT
+  DFS_FLT
+-* BY TKT_SORT NOPRINT
+
+
+-INCLUDE &AIRDATES
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS AIRTRANS
+END
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NOREC;
+
+TABLE FILE AIRTRANS
+PRINT 4SEG_REC
+  ACCT_FLAG
+  AW_CF
+  IDFLAG
+  AGENT_NUM 
+  AIR_KEY	
+  AIRLINE
+  AROLL_LEV3
+  AROLL_LEV4
+  AROLL_DSC5
+  BDGA_DPT
+  BKD_ONLINE
+  BR_CL_IDX
+  C_ITIN
+  EMB_APT_CD	
+  RTE_APT_CD 	
+  CLASS	
+  CLIENT_NUM
+  CLIENT_NAME
+  DOD_DESC
+  DOC_TYPE	
+  DOD_TYPE
+  DPT_DATE	
+  DPT_TIME
+  EMAIL_ADDR
+  EMBARK
+  EMP_ID
+  EX_FLAG	
+  EXCHG_SALE
+  EXCHGS
+  FARE_PAID	
+  FLIGHT
+  GEOAREA
+  GEO_FLAG
+  GRAND_MSTR_CODE	
+  GROUP_CODE
+  INT_CODE
+  INVOICE_NUM
+  INT_DOM
+  INTF_FLAG
+      LEVEL1	
+      LEVEL2	
+      LEVEL3
+      LEVEL4
+      LEVEL5 
+      LEVEL6 
+      LEVEL7
+  LEVEL_DESC
+  LVL3
+  MCOS
+  MTG_CODE	
+  MSTR_GRP_CODE	
+  NET_TKT_CNT1
+  ONLINE_TRADITIONAL
+  ONL_FLAG
+  ONL_TRA
+  OTC_COA
+  PASSNGR_NAME
+  PNR_LOCATOR
+  PRWG
+  REFUSE_KEY	
+  RESV_BRANCH	
+  RF_FLAG
+  SEG_AMT	
+  SEG_COM	
+  SEG_COUNT
+  SEG_NBR 	
+  SEG_TAX 
+  TICKET_BRANCH
+  TKT_NUM
+  TKT_SORT
+  TKT_TYPE
+  TRAN_MYA
+  TRAN_MY
+  TRN_DATE
+  VAL_AIRLINE
+  VOIDS	
+  VOID_DATE 	
+  VOID_STATUS 
+  XDPT_DT
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT
+  DEPT_CD
+  ACCT_CD
+  SOURCE_CD
+  PRJCT_CD
+  OFFICE_CD
+  TOK1A
+  TOK2A
+  TOK3A
+  TOK2
+  TOK3
+  TOK4  
+  TOK5
+  TOK6
+  US_FLT
+  DXB_FLT
+  AFG_FLT
+  DFS_FLT
+BY TKT_DATE
+ON TABLE HOLD AS TRAIR FORMAT FOCUS INDEX TKT_DATE
+END
+-RUN
+
+-* Global Reporting JOIN
+JOIN TRAIR.TKT_DATE IN TRAIR TO GLOBAL.DATE IN GLOBAL AS J1
+
+
+DEFINE FILE TRAIR
+NAMEC/A30 = CNAME;
+
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+CURR1X/D20.6 = 1 / USDPU ;
+
+-* DEFINES ON PREVIOUS DEFINES
+GSEG_TAX1/D20.6 = SEG_TAX * CURR1X;
+GSEG_AMT1/D20.6 = SEG_AMT * CURR1X;
+GSEG_COM1/D20.6 = SEG_COM * CURR1X;
+PAID_FAREX1/D20.6 = FARE_PAID * CURR1X;
+GSEG_TAX/D16.2CS = GSEG_TAX1;
+GSEG_AMT/D16.2CS = GSEG_AMT1;
+GSEG_COM/D16.2CS = GSEG_COM;
+PAID_FAREX/D16.2CS = PAID_FAREX1;
+END
+-RUN  	 
+
+TABLE FILE TRAIR
+PRINT 4SEG_REC
+  ACCT_FLAG
+  AW_CF
+  IDFLAG
+  AGENT_NUM 
+  AIR_KEY	
+  AIRLINE
+  AROLL_LEV3
+  AROLL_LEV4
+  AROLL_DSC5
+  BDGA_DPT
+  BKD_ONLINE
+  BR_CL_IDX	
+  EMB_APT_CD	
+  RTE_APT_CD 
+  C_ITIN
+  CLASS	
+  CLIENT_NUM
+  CLIENT_NAME
+  CURR1X
+  DOD_DESC
+  DOC_TYPE	
+  DOD_TYPE
+  DPT_DATE	
+  DPT_TIME
+  EMAIL_ADDR
+  EMBARK
+  EMP_ID
+  EX_FLAG	
+  EXCHG_SALE
+  EXCHGS
+  FARE_PAID	
+  FLIGHT
+  GEOAREA
+  GEO_FLAG
+  GRAND_MSTR_CODE	
+  GROUP_CODE
+  INT_CODE
+  INTF_FLAG
+  INVOICE_NUM	
+  INT_DOM
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  LEVEL4
+  LEVEL5
+  LEVEL6 
+  LEVEL7
+  LEVEL_DESC
+  LVL3
+  MCOS
+  MTG_CODE	
+  MSTR_GRP_CODE	
+  NET_TKT_CNT1
+  ONLINE_TRADITIONAL
+  ONL_FLAG
+  ONL_TRA
+  OTC_COA
+  PASSNGR_NAME
+  PNR_LOCATOR
+  PRWG
+  REFUSE_KEY	
+  RESV_BRANCH	
+  RF_FLAG
+  SEG_AMT	
+  SEG_COM	
+  SEG_COUNT
+  SEG_NBR 	
+  SEG_TAX 
+  TICKET_BRANCH
+  TKT_DATE
+  TKT_NUM
+  TKT_SORT
+  TKT_TYPE
+  TRAN_MYA
+  TRAN_MY
+  TRN_DATE
+  VAL_AIRLINE
+  VOIDS	
+  VOID_DATE 	
+  VOID_STATUS 
+  XDPT_DT
+  XPSNGR_NM
+  XFST_DPT
+  XTRAN_DT
+  DEPT_CD
+  ACCT_CD
+  SOURCE_CD
+  PRJCT_CD
+  OFFICE_CD
+  NAMEC
+  GSEG_AMT
+  GSEG_TAX
+  GSEG_COM
+  PAID_FAREX
+  CURR1X
+  TOK1A
+  TOK2A
+  TOK3A
+  TOK2
+  TOK3
+  TOK4  
+  TOK5
+  TOK6
+  US_FLT
+  DXB_FLT
+  AFG_FLT
+  DFS_FLT
+-*BY TKT_SORT NOPRINT
+BY TKT_NUM
+BY SEG_COUNT
+BY NAMEC
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS AIRTRANS1
+END
+-RUN
+
+
+-NOREC;
+
+ 

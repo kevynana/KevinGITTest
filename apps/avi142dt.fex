@@ -1,0 +1,195 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*
+-****************************************************************************
+-* DATE       INITIAL        DESCRIPTION
+-*
+-* 08/12/2016 RSB            S-19016 - Citypair with connections report
+-*                                     (Copy of avi101dt.fex)
+-****************************************************************************
+-*
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-RUN
+-*
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+-*
+-SET &BASF_CUR = 'Segment,Amt Paid, (' | &&CURRENCY || ')';
+-SET &&PRINT5='GFARE/D16.2CS AS ' | '''&BASF_CUR.EVAL''';
+-*
+-*****
+-NEXT
+-*****
+TABLE FILE CONN_HOLD
+PRINT DIR_CP_CD
+      FLIGHT_HOURS
+      LAYOVER_HOURS
+      CONNECTION
+     COMPUTE CXN   /A3=IF ((TKT_NUM EQ LAST TKT_NUM) AND (CONNECTION EQ LAST CONNECTION)) THEN ' ' ELSE CONNECTION;
+     COMPUTE SORTBY/A3=IF ((TKT_NUM NE LAST TKT_NUM) AND (CONNECTION EQ ' ')) THEN ' '        ELSE 
+                       IF ((TKT_NUM NE LAST TKT_NUM) AND (CONNECTION NE ' ')) THEN CONNECTION ELSE LAST SORTBY;
+      FARE_PAID
+      EMBARK
+      ROUTE
+     COMPUTE SEG_CONN/A7 = EMBARK || '-' | ROUTE;
+      FNL_DEST_AIRPORT
+      SEG_AMT
+      TAX_AMT
+      TICKET_CODE
+      SEG_COUNT
+      CONJ_REL
+      STOP_CON
+      EX_FLAG
+      RF_FLAG
+      C_ITIN
+      DPT_DATE
+      AIRLINE_NAME
+      REFUSE_CODE
+      AROLL_LEV1
+      AROLL_LEV2
+      AROLL_LEV3
+      AROLL_LEV4
+      AROLL_LEV5
+      AROLL_LEV6
+      AROLL_LEV7
+      AROLL_LEV8
+      AROLL_LEV9
+      AROLL_LEV10
+      AROLL_LEV11 
+      AROLL_LEV12
+      AROLL_LEV13
+      AROLL_LEV14
+BY TKT_NUM
+BY SEG_NBR
+ON TABLE HOLD AS CONN_HOLDX
+END
+-RUN
+-*
+DEFINE FILE CONN_HOLDX
+ DEPARTURE/MDYY = DPT_DATE;
+-*
+ -**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+-*
+END
+-*
+-SET &&RPTSUF = 'DTL';
+-*
+-INCLUDE FDEFRPTS
+-RUN
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-*
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'CONN_HOLD';
+-*
+-INCLUDE DRILWHRS
+-*
+-*********
+-SKIP_DRIL
+-*********
+-*
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+-*
+TABLE FILE CONN_HOLDX
+-*
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-*
+-******
+-NOSPC;
+-******
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHRA;
+-INCLUDE &&DRILLWHR
+-*
+-**********
+-SKIP_WHRA
+-**********
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-*
+-INCLUDE FOOTERDT
+-*
+ON TABLE PAGE-BREAK AND SUBFOOT
+-*
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-*
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN 
+-*
+-******
+-XXITA;
+-******

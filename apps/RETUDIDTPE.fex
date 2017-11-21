@@ -1,0 +1,171 @@
+-***********************************************************************************************
+-* The logic below illustrates how to get UDID data dynamically. This 
+-* logic will be more efficient as well. This program performs similar 
+-* functions as UDMATCH.fex
+-*
+-* How to use this program:
+-* 1. From your extract, hold file as ‘ON TABLE HOLD AS RPTHOLD ’.
+-* 2. The final HOLD file named UDIDHOLD contains all the fields you need.
+-* 3. Reference the fields in your query as E02 E03 E04 ... E10 etc.  E01 is the BY field.
+-* Added Limo UDID 5/16/12
+-* 6/25/15      JEK S-09889  Created to show exr udid on drilldown within AVI108DT
+
+-***********************************************************************************************
+-INCLUDE SETECHO
+
+-IF '&&REPTTYPE.EVAL' EQ 'AIR' THEN GOTO AIR;
+-IF '&&REPTTYPE.EVAL' EQ 'CAR' THEN GOTO CAR;
+-IF '&&REPTTYPE.EVAL' EQ 'HTL' THEN GOTO HTL;
+-IF '&&REPTTYPE.EVAL' EQ 'LIM' THEN GOTO LIM;
+-AIR
+-SET &WHATUD = 'WHERE UD_GROUP CONTAINS ''A''';
+JOIN AIR_KEY IN TOPTVL1 TO AIR_KEY IN AIRUDID
+-GOTO QRY;
+-CAR
+-SET &WHATUD = 'WHERE UD_GROUP CONTAINS ''C''';
+JOIN CAR_KEY IN RPTHOLD TO CAR_KEY IN CARUDID
+-GOTO QRY;
+-LIM
+-SET &WHATUD = 'WHERE UD_GROUP CONTAINS ''L''';
+JOIN CAR_KEY IN RPTHOLD TO CAR_KEY IN CARUDID
+-GOTO QRY;
+
+-HTL
+-SET &WHATUD = 'WHERE UD_GROUP CONTAINS ''H''';
+JOIN HTL_KEY IN RPTHOLD TO HTL_KEY IN HTLUDID
+
+-QRY
+-SET &SORTKEY = IF '&&REPTTYPE.EVAL' EQ 'AIR' THEN 'AIR_KEY'
+- ELSE IF '&&REPTTYPE.EVAL' EQ 'CAR' THEN 'CAR_KEY'
+- ELSE IF '&&REPTTYPE.EVAL' EQ 'LIM' THEN 'CAR_KEY'
+- ELSE 'HTL_KEY';
+
+TABLE FILE TOPTVL1
+PRINT SEG UDID
+BY &SORTKEY
+-* WHERE AUD_DATA NE ' ' OR NUD_DATA GT 0
+WHERE AUD_DATA NE ' ' OR NUD_DATA NE 0
+ON TABLE HOLD
+END
+-RUN
+
+
+-SET &&NOCUDID = IF &LINES EQ 0 THEN 'Y' ELSE 'N';
+-IF &LINES EQ 0 THEN GOTO NOUDID;
+
+-*We need to get all UDID, column headings and UDIDTYPE from UDFILE.
+TABLE FILE UDFILE
+PRINT UDID UD_COLH UDIDTYPE
+&WHATUD
+ON TABLE SAVE AS SAVE2
+END
+-RUN
+
+
+-IF &LINES EQ 0 THEN GOTO NOUDID;
+-SET &TotalUDID = &LINES;
+
+-*Initialize all the field names, asnames
+-SET &CNT = 1;
+-REPEAT intiEnd &TotalUDID TIMES
+-SET &PRINTLINE.&CNT = '';
+-SET &ASNAME.&CNT = '';
+-*-SET &DEFINE.&CNT = '';
+-SET &CNT = &CNT + 1;
+-intiEnd
+
+-*The first loop to generate multiple hold files, each with its own UDID data
+-SET &CNT = 1;
+-REPEAT TOEND1 &TotalUDID TIMES
+
+-READ SAVE2 NOCLOSE &UDID.3. &ASNAME.20. &UDTYPE.1.
+-*-SET &LEN = ARGLEN(20, &ASNAME, 'I2');
+-*-SET &ASNAME.&CNT = SUBSTR(20, &ASNAME, 1, &LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &SUBUDID = CTRAN(3,'&UDID.EVAL', 45, 95,'A3');
+-SET &ASNAME.&CNT = &SUBUDID;
+
+-SET &FNAME = 'HOLD' | '&CNT.EVAL';
+-SET &FILENAME.&CNT = &FNAME;
+
+-*Hold multiple files, each has its own UDID data 
+TABLE FILE HOLD
+-IF &UDTYPE EQ 'N' THEN GOTO NUD;
+PRINT AUD_DATA 
+-GOTO UDTESTDONE
+-NUD
+PRINT NUD_DATA 
+-UDTESTDONE
+BY &SORTKEY
+WHERE UDID EQ '&UDID.EVAL'
+ON TABLE HOLD AS  '&FNAME.EVAL'
+END
+-RUN
+
+-SET &CNT = &CNT + 1;
+-TOEND1
+-CLOSE SAVE2
+
+-*To get hold files to be concatenated, to generate one file with all UDID data in MATCH
+-SET &CNT = 1;
+-SET &FN = &FILENAME.&CNT;
+-*HOLD HOLD1 as hold file for easier coding
+TABLE FILE &FN
+PRINT E02
+BY &SORTKEY
+ON TABLE HOLD 
+END
+-RUN
+
+-SET &PRNLINE = 'PRINT';
+-SET &PRINTLINE1 = 'E02 AS ''&ASNAME1.EVAL''' ;
+-SET &CNT = 1;
+-SET &CNT2 = 2;
+-SET &RemainUDID = &TotalUDID - 1;
+-REPEAT TOEND2 &RemainUDID TIMES
+
+-*dynamically construct print line by using alias in hold file
+-SET &PRNLINE = IF &CNT2 LT 10 THEN '&PRNLINE.EVAL' | ' E0' | '&CNT2.EVAL' ELSE '&PRNLINE.EVAL' | ' E' | '&CNT2.EVAL';
+-SET &FN1 = 'HOLD' | '&CNT2.EVAL';
+MATCH FILE HOLD
+&PRNLINE
+BY &SORTKEY
+RUN
+FILE &FN1
+PRINT E02
+BY &SORTKEY
+ON MATCH HOLD OLD-OR-NEW
+END
+-RUN
+
+-SET &CNT = &CNT + 1;
+-SET &CNT2 = &CNT2 + 1;
+-SET &ASNAME = &ASNAME.&CNT;
+-SET &PRINTLINE.&CNT = IF &CNT2 LT 10 THEN 'E0' | '&CNT2.EVAL AS ''&ASNAME.EVAL''' ELSE 'E' | '&CNT2.EVAL AS ''&ASNAME.EVAL''';
+
+-TOEND2
+
+-*dynamically create focexec, which generates a hold file and the hold file contains all the UDID fields available.
+-SET &UDPARMS = &&WEB_PATH || 'EXTRUDID.FEX';
+FILEDEF EXTRUDID DISK &UDPARMS
+-RUN
+-WRITE EXTRUDID TABLE FILE HOLD
+-WRITE EXTRUDID PRINT
+-SET &CNT = 1;
+-REPEAT TOEND3 &TotalUDID TIMES
+-SET &PRINTLINE=&PRINTLINE.&CNT;
+-WRITE EXTRUDID &PRINTLINE
+-SET &CNT = &CNT + 1;
+-TOEND3
+-WRITE EXTRUDID BY &SORTKEY
+-WRITE EXTRUDID ON TABLE HOLD AS UDIDHOLD FORMAT FOCUS INDEX &SORTKEY
+-WRITE EXTRUDID END 
+-CLOSE EXTRUDID
+
+
+SET HOLDATTR = ON
+-INCLUDE EXTRUDID
+-RUN
+
+
+-NOUDID

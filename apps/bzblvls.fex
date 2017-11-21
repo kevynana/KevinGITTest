@@ -1,0 +1,152 @@
+TABLE FILE BRPTINST
+ 
+BY BREAK_LEVELS  
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE  
+END
+-RUN
+
+-SET &LVL1 = 'XX';
+-SET &LVL2 = 'XX';
+-SET &LVL3 = 'XX';
+-SET &LVL4 = 'XX';
+-SET &LVL5 = 'XX';
+-SET &PARM1 = 'XX';
+-SET &PARM2 = 'XX';
+-SET &PARM3 = 'XX';
+-SET &PARM4 = 'XX';
+-SET &PARM5 = 'XX';
+-SET &N1 = 'XX';
+-SET &N2 = 'XX';
+-SET &N3 = 'XX';
+-SET &N4 = 'XX';
+-SET &N5 = 'XX';
+
+-READ SAVE &BL.18.
+-SET &LEN = ARGLEN(60, '&BL.EVAL', 'I2');
+-SET &NBRLVL = &LEN / 3;
+-*-SET &V_PASS= IF &&MULTIBREAK NE 'Y' THEN 0 ELSE &NBRLVL;
+-REPEAT AllHLevels FOR &VN FROM 1 TO &NBRLVL  
+ 
+-SET &LEV = GETTOK(&BL, 18, &VN, ';', 2, 'A2');
+-SET &LVLDSC = EDIT(&LEV, '99');
+-SET &LVL.&VN = '&LVLDSC.EVAL';
+-SET &N.&VN  = 'N' || '&VN.EVAL'; 
+-SET &&CNT  = '&NBRLVL.EVAL';
+
+-SET &PARM.&VN = IF &LVLDSC GT '10' THEN 'AROLL_DSC' | &LVLDSC ELSE 'AROLL_DSC' | EDIT(&LVLDSC, '$9');
+-AllHLevels
+-CLOSE SAVE
+
+
+-SET &NR1 = 5 + &NBRLVL.EVAL;
+-SET &RL1 = 'N' || '&NR1.EVAL';
+-SET &NR2 = 9 + &NBRLVL.EVAL;
+-SET &RL2 = 'N' || '&NR2.EVAL';
+-SET &NR3 = 12 + &NBRLVL.EVAL;
+-SET &RL3 = 'N' || '&NR3.EVAL';
+-SET &NR4 = 15 + &NBRLVL.EVAL;
+-SET &RL4 = 'N' || '&NR4.EVAL';
+-SET &NR =  3 + &NBRLVL.EVAL; 
+-SET &RL = 'N' || '&NR.EVAL';
+-SET &TR = 3 + &NBRLVL.EVAL;
+-SET &TL = 'N' || '&TR.EVAL';  
+
+ 
+
+-IF &LINES EQ 0 THEN GOTO NORECORDS;
+
+DEFINE FILE BOOZHOLD
+
+NOWTOD/A8 WITH CHG_TYPE = HHMMSS (NOWTOD);
+BLANK/A1 = ' ';
+CHG_DESC/A42 = IF CHG_TYPE EQ 'BCHG' THEN 'B Charge Codes' ELSE
+               IF CHG_TYPE EQ 'GCHG' THEN 'G Charge Codes' ELSE
+               IF CHG_TYPE EQ 'MCHG' THEN 'M Charge Codes' ELSE
+               IF CHG_TYPE EQ 'PCHG' THEN 'P Charge Codes' ELSE
+               IF CHG_TYPE EQ 'DEF PARTNERS' THEN 'Default Charge Codes - Partners' ELSE
+               'Default Charge Codes - All other travelers';
+KEY/A2 = IF CHG_TYPE EQ 'BCHG' THEN 'AA' ELSE
+         IF CHG_TYPE EQ 'GCHG' THEN 'BB' ELSE
+         IF CHG_TYPE EQ 'MCHG' THEN 'CC' ELSE
+         IF CHG_TYPE EQ 'PCHG' THEN 'DD' ELSE
+         IF CHG_TYPE EQ 'DEF PARTNERS' THEN 'EE' ELSE 'FF';     
+KEY2/A1 = IF CHG_TYPE EQ 'BCHG' THEN 'B' ELSE
+         IF CHG_TYPE EQ 'GCHG' THEN 'G' ELSE
+         IF CHG_TYPE EQ 'MCHG' THEN 'M' ELSE
+         IF CHG_TYPE EQ 'PCHG' THEN 'P' ELSE
+         IF CHG_TYPE EQ 'DEF PARTNERS' THEN 'D' ELSE 'O';
+FLAG/A1 = 'A';
+NOSEL/A50 = '                                                  ';
+LV1/A60 = IF '&PARM1.EVAL' EQ 'XX' THEN NOSEL ELSE &PARM1;
+LV2/A60 = IF '&PARM2.EVAL' EQ 'XX' THEN NOSEL ELSE &PARM2;
+LV3/A60 = IF '&PARM3.EVAL' EQ 'XX' THEN NOSEL ELSE &PARM3;
+LV4/A60 = IF '&PARM4.EVAL' EQ 'XX' THEN NOSEL ELSE &PARM4;   
+LV5/A60 = IF '&PARM5.EVAL' EQ 'XX' THEN NOSEL ELSE &PARM5; 
+END
+
+
+-SET &LV1 = LV1;
+-SET &LV2 = LV2;
+-SET &LV3 = LV3;
+-SET &LV4 = LV4;
+-SET &LV5 = LV5;
+
+-SET &N1 = IF &N1 EQ ' ' THEN ' ' ELSE '=' || &N1;
+-SET &N2 = IF &N2 EQ ' ' THEN ' ' ELSE '=' || &N2;
+-SET &N3 = IF &N3 EQ ' ' THEN ' ' ELSE '=' || &N3;
+-SET &N4 = IF &N4 EQ ' ' THEN ' ' ELSE '=' || &N4;
+-SET &N5 = IF &N5 EQ ' ' THEN ' ' ELSE '=' || &N5;
+ 
+ 
+-IF '&NBRLVL.EVAL' EQ 1 THEN GOTO MB1 ELSE 
+-IF '&NBRLVL.EVAL' EQ 2 THEN GOTO MB2 ELSE
+-IF '&NBRLVL.EVAL' EQ 3 THEN GOTO MB3 ELSE
+-IF '&NBRLVL.EVAL' EQ 4 THEN GOTO MB4 ELSE GOTO MB5;
+ 
+ 
+
+-MB1
+
+-SET &&MBSTYLEDATA = '&LV1.EVAL' || '&N1.EVAL' | '\';
+-SET &&FIELD1 = '&PARM1.EVAL';
+-GOTO DONE;
+
+-MB2
+-SET &&MBSTYLEDATA = '&LV1.EVAL' || '&N1.EVAL' | ' ' | '&LV2.EVAL' || '&N2.EVAL' | '\';
+-SET &&FIELD1 = '&PARM1.EVAL';
+-SET &&FIELD2 = '&PARM2.EVAL';
+-GOTO DONE;
+
+-MB3
+-SET &&MBSTYLEDATA = '&LCHK1.EVAL' | '   ' | '&LCHK2.EVAL' | '   ' | '&LCHK3.EVAL' | ' \ '  ;
+-GOTO DONE;
+
+-MB4
+-SET &&MBSTYLEDATA = '&LCHK1.EVAL' | '   ' | '&LCHK2.EVAL' | '   ' | '&LCHK3.EVAL' | '   ' | '&LCHK4.EVAL' | ' \ ' ;
+-GOTO DONE;
+
+-MB5
+-SET &&MBSTYLEDATA = '&LCHK1.EVAL' | '   ' | '&LCHK2.EVAL' | '   ' | '&LCHK3.EVAL' | '   ' | '&LCHK4.EVAL' | '   ' '&LCHK5.EVAL' | ' \ ' ;
+
+  
+-DONE
+
+ 
+ 
+
+-SET &NR1 = 6 + &NBRLVL.EVAL;
+-SET &RL1 = 'N' || '&NR1.EVAL';
+-SET &NR2 = 10 + &NBRLVL.EVAL;
+-SET &RL2 = 'N' || '&NR2.EVAL';
+-SET &NR3 = 13 + &NBRLVL.EVAL;
+-SET &RL3 = 'N' || '&NR3.EVAL';
+-SET &NR4 = 16 + &NBRLVL.EVAL;
+-SET &RL4 = 'N' || '&NR4.EVAL';
+-SET &NR =  4 + &NBRLVL.EVAL; 
+-SET &RL = 'N' || '&NR.EVAL';
+-SET &TR = 4 + &NBRLVL.EVAL;
+-SET &TL = 'N' || '&TR.EVAL';  
+
+-TYPE &&MBSTYLEDATA
+-QUIT

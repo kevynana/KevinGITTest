@@ -1,0 +1,81 @@
+-* JK added code to select only tnt_company eq 1 or 2 2/21/05
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-DEFAULT &&ORIENTATION = ' ';
+
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT
+CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+			        'D' 'DEFAULT'   'B' 'BUSINESS'
+			        'E' 'ECONOMY'   'U'  'UPGRADE' 
+                                ' ' 'DEFAULT');       
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+-*LEVEL_DESC/A60 = &&LDESC;
+MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+CLASS1/A5 = IF CLASS NE ' ' THEN CLASS ELSE 'OTHER';
+END
+
+TABLEF FILE &&EXTRACT
+PRINT
+  CLASS1
+  CLASS 
+  CLASS_CAT
+  FARE_PAID
+  MRK_TKT_CNT
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TC_MRK 
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACTED DATA FROM ABOVE
+-*========================================================================
+DEFINE FILE TC_MRK
+ROLLCD/A8 = '&&ROLL';
+NMB/I5    = NMB + 1;
+END
+TABLE FILE TC_MRK
+SUM FARE_PAID
+    MRK_TKT_CNT
+BY ROLLCD
+BY NMB
+BY CLASS
+BY CLASS1 
+ON TABLE HOLD AS TCM2 
+END
+-RUN
+
+MODIFY FILE TCCLS1
+FIXFORM FROM TCM2
+DATA ON TCM2
+END
+-RUN
+
+-NEXTONE

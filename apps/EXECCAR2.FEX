@@ -1,0 +1,299 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File EXECCAR2.FEX
+MAINTAIN FILES ES1_MAIN AND CARSUMLD
+
+INFER ES1_MAIN.CATEGORY INTO E_STACK
+INFER CARSUMLD.CDM1RNT_AMT INTO CAR1_STACK
+
+COMPUTE E_STACK(1).CATEGORY = 'Car';
+        E_STACK(2).CATEGORY = 'Car';
+        E_STACK(3).CATEGORY = 'Car';
+        
+        E_STACK(1).ROW_LABEL = 'Rental Days';
+        E_STACK(2).ROW_LABEL = 'Rental Amount';
+        E_STACK(3).ROW_LABEL = 'Avg. Rate/Day';
+        E_STACK(1).CAT_ORDER = '3';
+        E_STACK(2).CAT_ORDER = '3';
+        E_STACK(3).CAT_ORDER = '3';
+        E_STACK(1).ROW_ORDER = '1'; -* THESE NEED TO BE PARAMETERS
+        E_STACK(2).ROW_ORDER = '2'; -* SO THAT WE CAN SORT HOWEVER 
+        E_STACK(3).ROW_ORDER = '3'; -* THE CLIENT WOULD LIKE TO SEE
+        CNT1/I2 = 0;
+
+COMPUTE CNT1 = 1;
+
+REPEAT ALL
+ STACK CLEAR CAR1_STACK
+ NEXT CARSUMLD.CDM1RNT_AMT INTO CAR1_STACK
+ 
+TYPE "LOADING STACKS"
+ IF CAR1_STACK.FOCCOUNT EQ 0 THEN GOTO EXITREPEAT
+
+PERFORM RENT_DAYS
+PERFORM RENT_AMT
+PERFORM RENT_AVG
+
+ENDREPEAT
+
+COMPUTE
+E_STACK(3).DI_CURR = IF ((E_STACK(1).DI_CURR LT 1) AND 
+                        (E_STACK(1).DI_CURR GT (-1))) THEN 0 ELSE
+                        (E_STACK(2).DI_CURR/E_STACK(1).DI_CURR);
+
+E_STACK(3).DIYTD_CURR = IF ((E_STACK(1).DIYTD_CURR LT 1) AND
+                           (E_STACK(1).DIYTD_CURR GT (-1))) THEN 0 ELSE 
+                           (E_STACK(2).DIYTD_CURR/E_STACK(1).DIYTD_CURR);
+
+E_STACK(3).DI_PRIOR = IF ((E_STACK(1).DI_PRIOR LT 1) AND
+                         (E_STACK(1).DI_PRIOR GT (-1))) THEN 0 ELSE
+                         (E_STACK(2).DI_PRIOR/E_STACK(1).DI_PRIOR);
+
+E_STACK(3).DIYTD_PRIOR = IF ((E_STACK(1).DIYTD_PRIOR LT 1) AND
+                            (E_STACK(1).DIYTD_PRIOR GT (-1))) THEN 0 ELSE
+                            (E_STACK(2).DIYTD_PRIOR/E_STACK(1).DIYTD_PRIOR);
+
+FOR ALL INCLUDE ES1_MAIN FROM E_STACK
+
+-****************************
+CASE RENT_DAYS
+COMPUTE
+
+E_STACK(1).DOM_CURR = E_STACK(1).DOM_CURR
+                       + CAR1_STACK(CNT1).CDM1RNT_DAY; 
+                       
+E_STACK(1).DOM_PRIOR = E_STACK(1).DOM_PRIOR
+                        + CAR1_STACK(CNT1).PDM1RNT_DAY; 
+                         
+E_STACK(1).DOM_VAR_VAL = E_STACK(1).DOM_CURR - E_STACK(1).DOM_PRIOR;
+
+E_STACK(1).DOM_VAR_PCT = IF ((E_STACK(1).DOM_PRIOR LT 1) AND 
+                            (E_STACK(1).DOM_PRIOR GT (-1))) THEN 0 ELSE 
+                          (E_STACK(1).DOM_VAR_VAL/E_STACK(1).DOM_PRIOR) * 100;
+
+
+E_STACK(1).INT_CURR = E_STACK(1).INT_CURR
+                      + CAR1_STACK(CNT1).CIM1RNT_DAY; 
+
+E_STACK(1).INT_PRIOR = E_STACK(1).INT_PRIOR
+                       + CAR1_STACK(CNT1).PIM1RNT_DAY; 
+                      
+E_STACK(1).INT_VAR_VAL = E_STACK(1).INT_CURR - E_STACK(1).INT_PRIOR;
+
+E_STACK(1).INT_VAR_PCT = IF ((E_STACK(1).INT_PRIOR LT 1) AND 
+                            (E_STACK(1).INT_PRIOR GT (-1))) THEN 0 ELSE
+                (E_STACK(1).INT_VAR_VAL/E_STACK(1).INT_PRIOR) * 100;
+
+E_STACK(1).DI_CURR = E_STACK(1).DOM_CURR + E_STACK(1).INT_CURR;
+E_STACK(1).DI_PRIOR = E_STACK(1).DOM_PRIOR + E_STACK(1).INT_PRIOR;
+E_STACK(1).DI_VAR_VAL = E_STACK(1).DI_CURR - E_STACK(1).DI_PRIOR;
+
+E_STACK(1).DI_VAR_PCT = IF ((E_STACK(1).DI_PRIOR LT 1) AND 
+                           (E_STACK(1).DI_PRIOR GT (-1))) THEN 0 ELSE
+                (E_STACK(1).DI_VAR_VAL/E_STACK(1).DI_PRIOR) * 100;
+
+-***YEAR-TO-DATE
+
+E_STACK(1).DYTD_CURR = E_STACK(1).DYTD_CURR
+                       + CAR1_STACK(CNT1).CDY1RNT_DAY; 
+                       
+E_STACK(1).DYTD_PRIOR = E_STACK(1).DYTD_PRIOR
+                        + CAR1_STACK(CNT1).PDY1RNT_DAY; 
+                         
+E_STACK(1).DYTD_VAR_VAL = E_STACK(1).DYTD_CURR - E_STACK(1).DYTD_PRIOR;
+
+E_STACK(1).DYTD_VAR_PCT = IF ((E_STACK(1).DYTD_PRIOR LT 1) AND 
+                             (E_STACK(1).DYTD_PRIOR GT (-1))) THEN 0 ELSE
+                (E_STACK(1).DYTD_VAR_VAL/E_STACK(1).DYTD_PRIOR) * 100;
+
+
+E_STACK(1).IYTD_CURR = E_STACK(1).IYTD_CURR
+                      + CAR1_STACK(CNT1).CIY1RNT_DAY; 
+
+E_STACK(1).IYTD_PRIOR = E_STACK(1).IYTD_PRIOR
+                       + CAR1_STACK(CNT1).PIY1RNT_DAY; 
+                      
+E_STACK(1).IYTD_VAR_VAL = E_STACK(1).IYTD_CURR - E_STACK(1).IYTD_PRIOR;
+
+E_STACK(1).IYTD_VAR_PCT = IF ((E_STACK(1).IYTD_PRIOR LT 1) AND 
+                             (E_STACK(1).IYTD_PRIOR GT (-1))) THEN 0 ELSE
+                (E_STACK(1).IYTD_VAR_VAL/E_STACK(1).IYTD_PRIOR) * 100;
+
+E_STACK(1).DIYTD_CURR = E_STACK(1).DYTD_CURR + E_STACK(1).IYTD_CURR;
+E_STACK(1).DIYTD_PRIOR = E_STACK(1).DYTD_PRIOR + E_STACK(1).IYTD_PRIOR;
+E_STACK(1).DIYTD_VAR_VAL = E_STACK(1).DIYTD_CURR - E_STACK(1).DIYTD_PRIOR;
+
+E_STACK(1).DIYTD_VAR_PCT = IF ((E_STACK(1).DIYTD_PRIOR LT 1) AND 
+                              (E_STACK(1).DIYTD_PRIOR GT (-1))) THEN 0 ELSE
+                    (E_STACK(1).DIYTD_VAR_VAL/E_STACK(1).DIYTD_PRIOR) * 100;
+
+-************
+
+ENDCASE
+
+CASE RENT_AMT
+COMPUTE
+
+E_STACK(2).DOM_CURR = E_STACK(2).DOM_CURR
+                       + CAR1_STACK(CNT1).CDM1RNT_AMT; 
+                       
+E_STACK(2).DOM_PRIOR = E_STACK(2).DOM_PRIOR
+                        + CAR1_STACK(CNT1).PDM1RNT_AMT; 
+                         
+E_STACK(2).DOM_VAR_VAL = E_STACK(2).DOM_CURR - E_STACK(2).DOM_PRIOR;
+
+E_STACK(2).DOM_VAR_PCT = IF ((E_STACK(2).DOM_PRIOR LT 1) AND
+                            (E_STACK(2).DOM_PRIOR GT (-1))) THEN 0 ELSE
+                      (E_STACK(2).DOM_VAR_VAL/E_STACK(2).DOM_PRIOR) * 100;
+
+
+E_STACK(2).INT_CURR = E_STACK(2).INT_CURR
+                      + CAR1_STACK(CNT1).CIM1RNT_AMT; 
+
+E_STACK(2).INT_PRIOR = E_STACK(2).INT_PRIOR
+                       + CAR1_STACK(CNT1).PIM1RNT_AMT; 
+                      
+E_STACK(2).INT_VAR_VAL = E_STACK(2).INT_CURR - E_STACK(2).INT_PRIOR;
+
+E_STACK(2).INT_VAR_PCT = IF ((E_STACK(2).INT_PRIOR LT 1) AND 
+                            (E_STACK(2).INT_PRIOR GT (-1))) THEN 0 ELSE
+                     (E_STACK(2).INT_VAR_VAL/E_STACK(2).INT_PRIOR) * 100;
+
+
+E_STACK(2).DI_CURR = E_STACK(2).DOM_CURR + E_STACK(2).INT_CURR;
+E_STACK(2).DI_PRIOR = E_STACK(2).DOM_PRIOR + E_STACK(2).INT_PRIOR;
+E_STACK(2).DI_VAR_VAL = E_STACK(2).DI_CURR - E_STACK(2).DI_PRIOR;
+
+E_STACK(2).DI_VAR_PCT = IF ((E_STACK(2).DI_PRIOR LT 1) AND
+                           (E_STACK(2).DI_PRIOR GT (-1))) THEN 0 ELSE
+                    (E_STACK(2).DI_VAR_VAL/E_STACK(2).DI_PRIOR) * 100;
+
+-**YEAR-TO-DATE
+
+E_STACK(2).DYTD_CURR = E_STACK(2).DYTD_CURR
+                       + CAR1_STACK(CNT1).CDY1RNT_AMT; 
+                       
+E_STACK(2).DYTD_PRIOR = E_STACK(2).DYTD_PRIOR
+                        + CAR1_STACK(CNT1).PDY1RNT_AMT; 
+                         
+E_STACK(2).DYTD_VAR_VAL = E_STACK(2).DYTD_CURR - E_STACK(2).DYTD_PRIOR
+;
+E_STACK(2).DYTD_VAR_PCT = IF ((E_STACK(2).DYTD_PRIOR LT 1) AND 
+                             (E_STACK(2).DYTD_PRIOR GT (-1))) THEN 0 ELSE
+                       (E_STACK(2).DYTD_VAR_VAL/E_STACK(2).DYTD_PRIOR) * 100;
+
+
+E_STACK(2).IYTD_CURR = E_STACK(2).IYTD_CURR
+                      + CAR1_STACK(CNT1).CIY1RNT_AMT; 
+
+E_STACK(2).IYTD_PRIOR = E_STACK(2).IYTD_PRIOR
+                       + CAR1_STACK(CNT1).PIY1RNT_AMT; 
+                      
+E_STACK(2).IYTD_VAR_VAL = E_STACK(2).IYTD_CURR - E_STACK(2).IYTD_PRIOR;
+
+E_STACK(2).IYTD_VAR_PCT = IF ((E_STACK(2).IYTD_PRIOR LT 1) AND
+                             (E_STACK(2).IYTD_PRIOR GT (-1))) THEN 0 ELSE
+                      (E_STACK(2).IYTD_VAR_VAL/E_STACK(2).IYTD_PRIOR) * 100;
+
+
+E_STACK(2).DIYTD_CURR = E_STACK(2).DYTD_CURR + E_STACK(2).IYTD_CURR;
+E_STACK(2).DIYTD_PRIOR = E_STACK(2).DYTD_PRIOR + E_STACK(2).IYTD_PRIOR;
+E_STACK(2).DIYTD_VAR_VAL = E_STACK(2).DIYTD_CURR - E_STACK(2).DIYTD_PRIOR;
+
+E_STACK(2).DIYTD_VAR_PCT = IF ((E_STACK(2).DIYTD_PRIOR LT 1) AND 
+                              (E_STACK(2).DIYTD_PRIOR GT (-1))) THEN 0 ELSE
+                      (E_STACK(2).DIYTD_VAR_VAL/E_STACK(2).DIYTD_PRIOR) * 100;
+
+-************
+
+ENDCASE
+
+CASE RENT_AVG
+COMPUTE
+
+E_STACK(3).DOM_CURR = E_STACK(3).DOM_CURR
+                       + CAR1_STACK(CNT1).CDM1AVG_RATE; 
+                       
+ E_STACK(3).DOM_PRIOR = E_STACK(3).DOM_PRIOR
+                        + CAR1_STACK(CNT1).PDM1AVG_RATE; 
+                         
+ E_STACK(3).DOM_VAR_VAL = E_STACK(3).DOM_CURR - E_STACK(3).DOM_PRIOR;
+ 
+ E_STACK(3).DOM_VAR_PCT = IF ((E_STACK(3).DOM_PRIOR LT 1) AND
+                             (E_STACK(3).DOM_PRIOR GT (-1))) THEN 0 ELSE
+                    (E_STACK(3).DOM_VAR_VAL/E_STACK(3).DOM_PRIOR) * 100;
+
+
+E_STACK(3).INT_CURR = E_STACK(3).INT_CURR
+                      + CAR1_STACK(CNT1).CIM1AVG_RATE; 
+
+E_STACK(3).INT_PRIOR = E_STACK(3).INT_PRIOR
+                       + CAR1_STACK(CNT1).PIM1AVG_RATE; 
+                      
+E_STACK(3).INT_VAR_VAL = E_STACK(3).INT_CURR - E_STACK(3).INT_PRIOR;
+
+E_STACK(3).INT_VAR_PCT = IF ((E_STACK(3).INT_PRIOR LT 1) AND
+                            (E_STACK(3).INT_PRIOR GT (-1))) THEN 0 ELSE
+                         (E_STACK(3).INT_VAR_VAL/E_STACK(3).INT_PRIOR) * 100;
+
+E_STACK(3).DI_CURR = IF ((E_STACK(1).DI_CURR LT 1) AND
+                        (E_STACK(1).DI_CURR GT (-1))) THEN 0 ELSE
+                        (E_STACK(2).DI_CURR/E_STACK(1).DI_CURR);
+                      
+E_STACK(3).DI_PRIOR = IF ((E_STACK(1).DI_PRIOR LT 1) AND
+                         (E_STACK(1).DI_PRIOR GT (-1))) THEN 0 ELSE
+                         (E_STACK(2).DI_PRIOR/E_STACK(1).DI_PRIOR);
+
+E_STACK(3).DI_VAR_VAL = E_STACK(3).DI_CURR - E_STACK(3).DI_PRIOR;
+
+E_STACK(3).DI_VAR_PCT = IF ((E_STACK(3).DI_PRIOR LT 1) AND
+                           (E_STACK(3).DI_PRIOR GT (-1))) THEN 0 ELSE
+                       (E_STACK(3).DI_VAR_VAL/E_STACK(3).DI_PRIOR) * 100;
+
+-**YEAR-TO-DATE
+
+E_STACK(3).DYTD_CURR = E_STACK(3).DYTD_CURR
+                       + CAR1_STACK(CNT1).CDY1AVG_RATE; 
+                       
+ E_STACK(3).DYTD_PRIOR = E_STACK(3).DYTD_PRIOR
+                        + CAR1_STACK(CNT1).PDY1AVG_RATE; 
+                         
+ E_STACK(3).DYTD_VAR_VAL = E_STACK(3).DYTD_CURR - E_STACK(3).DYTD_PRIOR;
+
+ E_STACK(3).DYTD_VAR_PCT = IF ((E_STACK(3).DYTD_PRIOR LT 1) AND
+                              (E_STACK(3).DYTD_PRIOR GT (-1))) THEN 0 ELSE
+                       (E_STACK(3).DYTD_VAR_VAL/E_STACK(3).DYTD_PRIOR) * 100;
+
+
+E_STACK(3).IYTD_CURR = E_STACK(3).IYTD_CURR
+                      + CAR1_STACK(CNT1).CIY1AVG_RATE; 
+
+E_STACK(3).IYTD_PRIOR = E_STACK(3).IYTD_PRIOR
+                       + CAR1_STACK(CNT1).PIY1AVG_RATE; 
+                      
+E_STACK(3).IYTD_VAR_VAL = E_STACK(3).IYTD_CURR - E_STACK(3).IYTD_PRIOR;
+
+E_STACK(3).IYTD_VAR_PCT = IF ((E_STACK(3).IYTD_PRIOR LT 1) AND
+                             (E_STACK(3).IYTD_PRIOR GT (-1))) THEN 0 ELSE
+                        (E_STACK(3).IYTD_VAR_VAL/E_STACK(3).IYTD_PRIOR) * 100;
+
+E_STACK(3).DIYTD_CURR = IF ((E_STACK(1).DIYTD_CURR LT 1) AND 
+                           (E_STACK(1).DIYTD_CURR GT (-1))) THEN 0 ELSE
+                           (E_STACK(2).DIYTD_CURR/E_STACK(1).DIYTD_CURR);
+                      
+E_STACK(3).DIYTD_PRIOR = IF ((E_STACK(1).DIYTD_PRIOR LT 1) AND
+                            (E_STACK(1).DIYTD_PRIOR GT (-1))) THEN 0 ELSE
+                            (E_STACK(2).DIYTD_PRIOR/E_STACK(1).DIYTD_PRIOR);
+ 
+E_STACK(3).DIYTD_VAR_VAL = E_STACK(3).DIYTD_CURR - E_STACK(3).DIYTD_PRIOR;
+
+E_STACK(3).DIYTD_VAR_PCT = IF ((E_STACK(3).DIYTD_PRIOR LT 1) AND 
+                              (E_STACK(3).DIYTD_PRIOR GT (-1))) THEN 0 ELSE
+                      (E_STACK(3).DIYTD_VAR_VAL/E_STACK(3).DIYTD_PRIOR) * 100;
+
+-************
+
+ENDCASE
+
+END
+

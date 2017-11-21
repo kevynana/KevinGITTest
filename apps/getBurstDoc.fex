@@ -1,0 +1,18 @@
+-*getBurstDoc.fex
+-INCLUDE SETECHO
+-*  Fex is used to display the html file for burst Options.
+-*
+
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+<SCRIPT>
+ function showhtml () {
+ location.href='/asp/BurstReportsOptions.htm';
+ }
+</SCRIPT>
+</HEAD>
+<BODY onload="showhtml();">
+</BODY>
+<HTML>
+-HTMLFORM END

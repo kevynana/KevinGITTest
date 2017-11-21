@@ -1,0 +1,91 @@
+-* JK added code to select only tnt_company eq 1 or 2 2/21/05
+-*2/5/14 Updated the bookings define to use num_days instead of daily_rate - JK
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED IN STEP3
+-*========================================================================
+DEFINE FILE CR_50
+BOOKINGS/D8 = IF NUM_DAYS GT 0 THEN 1 ELSE IF NUM_DAYS LT 0 THEN (-1) ELSE 0;
+  NBR_DAYS/D12 = NUM_DAYS;
+  
+END
+
+TABLEF FILE CR_50
+PRINT  
+  BOOKINGS 	
+  NBR_DAYS
+  RENTAL_AMT/D12.2
+  CAR_TYPE
+  CAR_DESC
+  CAR_CAT
+ WHERE INVOICE_DATE GE &&FROMDT.EVAL AND INVOICE_DATE LE &&TODT.EVAL
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS TC_CAR4
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM ABOVE
+-*========================================================================
+
+DEFINE FILE TC_CAR4
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TC_CAR4
+SUM BOOKINGS
+    RENTAL_AMT	
+    NBR_DAYS
+    CAR_DESC
+    CAR_CAT
+BY ROLLCD
+BY CAR_TYPE
+ON TABLE HOLD AS TCCAR5 
+END
+-RUN
+
+
+
+DEFINE FILE TCCAR5
+NMB/I5    = NMB + 1;
+END
+TABLE FILE TCCAR5
+SUM BOOKINGS
+    RENTAL_AMT
+    NBR_DAYS
+    CAR_TYPE
+    CAR_DESC
+    CAR_CAT
+BY ROLLCD
+BY NMB
+ON TABLE HOLD AS TCCAR6 FORMAT ALPHA
+END
+-RUN
+
+
+
+MODIFY FILE TCCTYP
+FIXFORM FROM TCCAR6
+DATA ON TCCAR6
+END
+-RUN
+
+
+
+-NEXTONE

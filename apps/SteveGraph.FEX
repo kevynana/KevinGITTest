@@ -1,0 +1,168 @@
+-* File SteveGraphxx.fex
+-* Default Mode: ResourceLayout
+-SET &ECHO=ON;
+-*SET TEMPERASE = OFF
+
+-* -GOTO STEVE
+
+GRAPH FILE STEVEGRAPH
+SUM TOTAL_VOL AS 'Total Volume' NET_TKTS AS 'Net Tickets'
+ACROSS PERIOD AS ' '
+ON GRAPH SET LOOKGRAPH VBAR2AX
+ON GRAPH SET GRAPHEDIT SERVER
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID ON
+ON GRAPH SET GRAPHSTYLE *
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(1, new Color, 128 255 128));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setConnectScatterMarkers(true);
+setO1LabelDisplay(true);
+setO1LabelRotate(0);
+setAxisAssignment(0,0);
+setSeriesType(0,1);
+setAxisAssignment(1,1);
+setSeriesType(1,2);
+setY2TitleString("Net Tickets");
+setTextFormatPreset(getY1Label(),5);
+setTextFormatPreset(getY2Label(),-1);
+setTextFormatPattern(getY2Label(),"#,###");
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setTitleString("Air Volume and Net Tickets");
+setFontSizeAbsolute(getTitle(),true);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+END
+-RUN
+-QUIT
+
+
+ON GRAPH SET STYLE *
+     PAGESIZE='Letter',
+     LEFTMARGIN=0.250000,
+     RIGHTMARGIN=0.250000,
+     TOPMARGIN=0.250000,
+     BOTTOMMARGIN=0.250000,
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+     TITLETEXT=Air Volume and Net Tickets,
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+     COLOR=RGB(255 255 153),
+     BACKCOLOR='NONE',
+     STYLE=NORMAL,
+     RIGHTGAP=0.125000,
+$
+ENDSTYLE
+-* G:\TNT\TTRACKER\SYSTEM\APPS\STEVEGRAPH.SVG FORMAT SVG
+-* ON GRAPH HOLD AS ITEM1 FORMAT HTMTABLE
+-* ON GRAPH PCHOLD FORMAT SVG
+END
+-RUN
+-QUIT
+
+
+TABLE FILE STEVEGRAPH
+PRINT TOTAL_VOL AS 'TOTAL VOLUME'
+     NET_TKTS AS 'NET TICKETS'
+BY PERIOD
+ON TABLE SET PAGE-NUM OFF
+ON TABLE NOTOTAL
+ON TABLE SET STYLE *
+     UNITS=IN,
+     PAGESIZE='SCREEN',
+     LEFTMARGIN=0.000000,
+     RIGHTMARGIN=0.000000,
+     TOPMARGIN=0.000000,
+     BOTTOMMARGIN=0.000000,
+     SQUEEZE=ON,
+     ORIENTATION=LANDSCAPE,
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='ARIAL',
+     SIZE=9,
+     COLOR='BLACK',
+     BACKCOLOR='NONE',
+     STYLE=NORMAL,
+     RIGHTGAP=0.125000,
+     TOPGAP=0.013889,
+     BOTTOMGAP=0.027778,
+$
+TYPE=REPORT,
+     IMAGE=G:\\TNT\TTRACKER\SYSTEM\APPS\STEVEGRAPH.SVG,
+     POSITION=(+.08 +2.5), SIZE=(3 2),
+$
+TYPE=DATA,
+     ACROSSCOLUMN=N1,
+     SIZE=9,
+$
+TYPE=DATA,
+     ACROSSCOLUMN=N2,
+     SIZE=9,
+$
+TYPE=TITLE,
+     STYLE=BOLD,
+$
+TYPE=TABHEADING,
+     SIZE=12,
+     STYLE=BOLD,
+$
+TYPE=TABFOOTING,
+     SIZE=12,
+     STYLE=BOLD,
+$
+TYPE=HEADING,
+     SIZE=12,
+     STYLE=BOLD,
+$
+TYPE=FOOTING,
+     SIZE=12,
+     STYLE=BOLD,
+$
+TYPE=SUBHEAD,
+     SIZE=10,
+     STYLE=BOLD,
+$
+TYPE=SUBFOOT,
+     SIZE=10,
+     STYLE=BOLD,
+$
+TYPE=SUBTOTAL,
+     BACKCOLOR=RGB(210 210 210),
+$
+TYPE=ACROSSVALUE,
+     SIZE=9,
+$
+TYPE=ACROSSVALUE,
+     ACROSS=1,
+     SIZE=9,
+$
+TYPE=ACROSSTITLE,
+     STYLE=BOLD,
+$
+TYPE=GRANDTOTAL,
+     BACKCOLOR=RGB(210 210 210),
+     STYLE=BOLD,
+$
+ENDSTYLE
+END

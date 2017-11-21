@@ -1,0 +1,44 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File FOOTERSM.FEX
+
+-****************************************************************************
+-*DATE         NAME                 DESCRIPTION
+-*7/31/00    IBISTL-KR              REPLACED &FOCSYSTOD WITH NOWTOD DEFINED
+-*                                  FOR HHMMSS SUBROUTINE 
+-*06/11/02   STEVE              CHANGED COPYRIGHT TO 2002
+-*07/03/02   STEVE              CHANGED TO eTTek Review
+-*11/01/05   DEB                ADDED BLANK LINE DUE TO OVERLAY 
+-*                              OF TOTALS ON FOOTER
+-*02/24/17   DLV        S-22486 CHANGED TO Post-trip Reporting
+-*09/12/17   RSB        S-39791 Footer changes to be backed out of story S-35418
+-*10/25/17   RSB        S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*
+-****************************************************************************
+-DEFAULT &&FOOTER1      = ' ';
+-DEFAULT &&FOOTER2      = ' ';
+-DEFAULT &FTR_AddlLines = 0;
+-*
+-SET &NOWTOD = HHMMSS('A8');
+-*
+-* &FTR_DateTimeLine is the line number in the footer with the date/time stamp text.
+-SET &FTR_DateTimeLine = 8 + &FTR_AddlLines;
+-* 
+FOOTING BOTTOM
+-IF &&OUTFMT NE 'PDF' OR 'PPT' OR 'COM' GOTO NOLINES;
+"</1"
+-NOLINES;
+"NOTE:"
+" ** CHARGED TRANSACTIONS EXCLUDES EXCHANGE MCOS ** "
+"-  TICKETS ISSUED ON TRAVEL SUMMARY = NEW SALES + EXCHANGE SALES - MCO'S"
+"&&FOOTER1"
+"&&FOOTER2"
+-* "<60 Post-trip Reporting &DATE at <NOWTOD &&FOOTR"
+"<60 Post-trip Reporting &DATE at &NOWTOD &&FOOTR"
+
+
+
+
+
+
+

@@ -1,0 +1,42 @@
+MAINTAIN FILE USRTBLF AND CONTROL                                               
+                                                                                
+$$Declarations                                                                  
+                                                                                
+Case Top                                                                        
+COMPUTE HOLD_FC/I5 = ;                                                          
+                                                                                
+INFER CONTROL INTO Cntl_Stack                                                   
+INFER USRTBLF INTO User_Stack                                                   
+                                                                                
+REPOSITION CONTROL.CONTROL_ID                                                   
+FOR ALL NEXT CONTROL.CONTROL_ID INTO Cntl_Stack                                 
+                                                                                
+FOR ALL NEXT USRTBLF.USER_NAME INTO User_Stack                                  
+WHERE Cntl_Stack(1).USER_ID EQ USRTBLF.USER_NAME;                               
+                                                                                
+COMPUTE HOLD_FC=User_Stack.FOCCOUNT;                                            
+COMPUTE User_Stack().USER_NAME = IF User_Stack().USER_NAME EQ '' THEN           
+        Cntl_Stack().USER_ID ELSE User_Stack().USER_NAME;                       
+COMPUTE User_Stack().EMAIL = IF User_Stack().EMAIL EQ '' THEN 'None' ELSE       
+          User_Stack().EMAIL;                                                   
+                                                                                
+-*COMPUTE User_Stack.FOCINDEX = 1;                                              
+-*COMPUTE User_Stack.FOCCOUNT = 1;                                              
+                                                                                
+Winform show EADDR;                                                             
+                                                                                
+EndCase                                                                         
+                                                                                
+CASE UPD_EADDR                                                                  
+IF HOLD_FC EQ 0                                                                 
+ BEGIN                                                                          
+  INCLUDE USRTBLF.USER_NAME FROM User_Stack(1)                                  
+ ENDBEGIN                                                                       
+ELSE                                                                            
+ BEGIN                                                                          
+  UPDATE USRTBLF.EMAIL FROM User_Stack(1)                                       
+ ENDBEGIN                                                                       
+ENDCASE                                                                         
+                                                                                
+                                                                                
+END                                                                             

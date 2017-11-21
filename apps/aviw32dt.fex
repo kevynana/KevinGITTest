@@ -1,0 +1,230 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-* 8/8/03          DEB              ADDED CCARD2 CC_NUM SEG_AMT
+-* 8/8/03          DEB              SEG_TAX INVOICE_NUM BR_CL_IDX
+-* 3/24/04         JK               MADE ADDITIONS FOR THE NEW KOHLS REPORT
+-* 5/13/04         STEVE            Carried through AROLL_LEV4 for BLV-R report
+-*5/22/14          DEB              ADDED EX5 TO ADV DEFINE
+-*06/29/16         RSB              S-20630 - New Employee ID database field
+-*                                  Added EMP_ID
+-**********************************************************************
+SET ASNAMES=ON;
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT AIRLINE_FEE 
+      AROLL_DSC5
+      AROLL_LEV5
+      BOOK_DT
+      BR_CL_IDX
+      CITY
+      CC_NUM
+      DISSAVINGS
+      EMBARK
+      EX_FLAG
+      FARE_PAID
+      INT_DOM
+      INVOICE_NUM
+      EMP_ID
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL_DESC
+      NEW_ADV_PURCH
+      NRFLAG
+      OTFLAG
+      LOW_AMT
+      REFUSE_CODE
+      REFUSAL_DESC
+      ROLL1
+      SEG_AMT
+      SEG_TAX
+      SEG_NBR
+      TKT_NUM	
+      TKT_SORT
+      TKT_TYPE
+      TRN_DATE
+      XTRAN_DT  
+BY PASSNGR_NAME
+BY TKT_NUM
+BY XTRAN_DT
+BY SEG_COUNT
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+
+
+TABLE FILE &&RPT_HOLD
+PRINT XDPT_DT CITY
+BY PASSNGR_NAME
+BY TKT_NUM
+WHERE (SEG_NBR EQ '01') OR ((SEG_NBR EQ '02') AND (FARE_PAID LT 0)) OR
+      ((CITY EQ 'FP2FP2' OR 'RF1RF1') AND (SEG_NBR EQ '01'))
+ON TABLE HOLD AS DPTMATCH
+END
+-RUN
+
+MATCH FILE AIRHOLD3
+PRINT AIRLINE_FEE
+      AROLL_DSC5
+      AROLL_LEV5
+      BOOK_DT
+      BR_CL_IDX
+      CITY
+      CC_NUM
+      DISSAVINGS
+      EMBARK
+      FARE_PAID
+      INT_DOM
+      INVOICE_NUM
+      EMP_ID
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL_DESC
+      NEW_ADV_PURCH
+      NRFLAG
+      OTFLAG
+      LOW_AMT
+      REFUSE_CODE
+      REFUSAL_DESC
+      ROLL1
+      SEG_AMT
+      SEG_TAX
+      SEG_COUNT
+      SEG_NBR
+      TKT_NUM	
+      TKT_SORT
+      TKT_TYPE	
+      TRN_DATE
+      XTRAN_DT   
+BY PASSNGR_NAME
+BY TKT_NUM
+ON TABLE HOLD
+RUN
+FILE DPTMATCH
+SUM XDPT_DT
+BY PASSNGR_NAME
+BY TKT_NUM
+AFTER MATCH HOLD AS MATCHFIL OLD
+END
+-RUN
+
+DEFINE FILE MATCHFIL
+ADV/I8C = IF (CITY CONTAINS 'FP2' OR 'EX1' OR 'RF1' OR 'EX5') THEN 0
+  ELSE IF (EMBARK CONTAINS 'FP2' OR 'EX1' OR 'RF1' OR 'EX5') THEN 0
+  ELSE IF TKT_SORT NE LAST TKT_SORT AND (FARE_PAID GT 0) THEN NEW_ADV_PURCH
+  ELSE IF TKT_SORT NE LAST TKT_SORT AND (FARE_PAID LT 0) 
+  THEN NEW_ADV_PURCH * (-1) ELSE 0;
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+XTS_FLAG/A1 = IF TKT_SRT NE LAST TKT_SRT THEN 'Y' ELSE 'N';
+
+END
+
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'MATCHFIL';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE MATCHFIL
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN

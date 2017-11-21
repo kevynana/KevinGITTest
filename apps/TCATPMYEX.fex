@@ -1,0 +1,102 @@
+-*  03/23/2017  JEM  S-31961 Created for new report TCATPMY
+
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED IN STEP3
+-*========================================================================
+DEFINE FILE SR_50
+  
+COMM_AMT/D12CSM = IF VOID_DATE EQ 0 THEN SEG_COM ELSE 0;
+ID_KEY/A1 = AIR_MAIN.INTL_DOM; 
+FARE_PAID/D12CSM = SEG_AMT + SEG_TAX;
+NET_TKT_CNT/P8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;  
+TRNMY/MtY = TRN_DATE;  
+TRNYY/YY = TRN_DATE; 
+ 
+ 
+  
+END
+-RUN
+
+TABLE FILE SR_50
+SUM
+COMM_AMT
+FARE_PAID
+NET_TKT_CNT
+BY TRNYY
+BY TRNMY
+BY ID_KEY
+
+
+
+WHERE (TRN_DATE GE &&FROMDT.EVAL) AND (TRN_DATE LE &&TODT.EVAL) 
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TC_ATP
+END
+-RUN
+
+
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*                <---------------- STEP5 ---------------->
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM STEP4 - HOLD TO FOCUS DATABASE TCAREV       
+-*========================================================================
+DEFINE FILE TC_ATP
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TC_ATP
+SUM COMM_AMT
+    FARE_PAID
+    NET_TKT_CNT
+BY ROLLCD
+BY TRNYY
+BY TRNMY
+BY ID_KEY
+ON TABLE HOLD AS TCATP1 
+END
+-RUN
+
+
+MODIFY FILE TC_ATPMY
+FIXFORM FROM TCATP1
+MATCH ROLLCD TRNYY TRNMY ID_KEY
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON TCATP1
+END
+-RUN
+
+
+
+-NEXTONE

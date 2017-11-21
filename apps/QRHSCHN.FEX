@@ -1,0 +1,49 @@
+-***************************************************
+-* File Name: QRHSCHN.FEX
+-* Set up to run Hotel Summary By Chain
+-* Top 10 Hotel Chains, ranked by number of nights
+-***************************************************
+-INCLUDE SETECHO
+
+-SET &&AUSEPASS = &&WEB_PATH || 'AUSEINCL.FTM';
+-SET &&CUSEPASS = &&WEB_PATH || 'CUSEINCL.FTM';
+-SET &&HUSEPASS = &&WEB_PATH || 'HUSEINCL.FTM';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+FILEDEF CUSEINCL DISK &&CUSEPASS
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+-***************************************************
+-* get date values from BRPTINST database and
+-* assign to the global variables.
+-***************************************************
+EX QRSetDate
+-RUN
+-***************************************************
+-* reset dates and report type in control file
+-***************************************************
+-*specify the values for program catqtr
+-SET &&RPTTYP = 'SPD';
+-SET &&SMD = 'S';
+-*reset the date ranges for Trending Data
+-SET &&FROMDT = '&&CYFMDT.EVAL';
+-SET &&TODT = '&&CYTODT.EVAL';
+-SET &&FXDATE = '&&PYFMDT.EVAL';
+-SET &&TXDATE = '&&PYTODT.EVAL';
+-**************************************************************
+-*RESET rollup_code and comp to the base rollup_code and comp.
+-**************************************************************
+-SET &&ROLLUP = '&&BASEROLL.EVAL';
+-SET &&COMPNY = '&&BASECOMP.EVAL';
+EX QRSETBDB
+-RUN
+
+EX HTLUSE
+-RUN
+
+-********************************************************
+-* EXECUTE THE PROGRAM TO GENERATE final report
+
+-********************************************************
+EX NQHCHN
+-RUN

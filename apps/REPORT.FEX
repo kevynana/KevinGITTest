@@ -1,0 +1,45 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File REPORT.FEX
+-***************** M O D I F I C A T I O N S *******************
+-*  DATE        NAME         DESCRIPTION OF CHANGE
+-*  ----        ----         ---------------------
+-* 5/22/98      JK           CHANGED HEADINGS
+-* 6/19/98      LP           ADDED HIERSET INCLUDE FOR DYNAMIC USE
+-**********************************************************************
+-* Get information for the report headers
+-*********************************************************************
+-*
+
+-* INCLUDE HEADRSET
+
+-*
+-**********************************************************************
+-* Produce a report cover page
+-**********************************************************************
+-*
+-*
+-*
+**********************************************************************
+-* Cover Page Routine
+-**********************************************************************
+-*
+
+-TYPE Before CVPG
+
+-* -IF &&DRILLABLE EQ 'Y' GOTO DRILL ELSE GOTO CONT;
+-* -RUN
+
+-CONT
+-* EX COVERPG
+-* -RUN
+
+-* EX REPORT_2
+-*-RUN
+
+
+-TYPE After CVPG
+
+-* -DRILL
+
+-* -EXIT

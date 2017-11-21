@@ -1,0 +1,97 @@
+-* Steve - 10/04/2004 - changed to copy .ZIP file to TE directory
+-*                      if file was too large - was only trying to
+-*                      copy .TNT file (file is still named .ZIP)
+-* 08/14/2007 LS - change back to .zip file from .tnt file
+-* 09/25/2007 LS - change to .tnt file for JOINT-R.
+
+-INCLUDE SETECHO
+-SET &WEPATH=IF &&SETZIP EQ 'Y' THEN
+- '&&SEPATH.EVAL' ELSE 
+- '&&EPATH.EVAL';
+-SET &ZIPFILES = &WEPATH || &GROUPNAME;
+-*
+-SET &MAILFILES = ' ' | &&USEMPATH || &GROUPNAME;
+-SET &DIRALL = &WEPATH || '*.*';
+
+-* ZIP REPORTS INTO &ZIPFILES
+-DOS PKZIP25 -add &ZIPFILES &DIRALL
+-RUN
+
+-* if &RETCODE = 8 the PKZIP job failed.  Probably no reports to zip.
+-* Skipping the Email job since the PKZIP job failed. 
+-IF &RETCODE EQ 8 GOTO SKIP_EMAIL;
+
+-INCLUDE VALSIZE
+-RUN
+-IF &&TOLARGE EQ 'Y' GOTO ZIP_TOLARGE;
+
+-* GET EMAIL ADDRESS 
+TABLE FILE USRTBL
+PRINT EMAIL
+WHERE USER_NAME EQ '&&UNAME'
+ON TABLE HOLD AS HOLDMAIL FORMAT ALPHA
+END
+-RUN
+-READ HOLDMAIL &EADDR.100
+
+-* EXEC EMAIL PROGRAM
+-*-DOS d:\ibi\webfocus436\javamail\SENDFILE &EADDR &MAILFILES
+-**** LUSHENG 03/03/2004 ***************************************
+-SET &POS = POSIT('&MAILFILES.EVAL',120,'.ZIP', 4, 'I2');
+-SET &A = SUBSTR(120,&MAILFILES, 1, &POS, &POS, 'A110');
+-SET &TNTFILES = &A || 'TNT';
+-**** LUSHENG 03/03/2004 ***************************************
+
+-SET &EMAILBAT = &&WEB_PATH || 'EMAILFIL.BAT';
+FI EMAILBAT DISK &EMAILBAT
+-RUN
+
+-**** LUSHENG 09/25/2007 ***************************************
+-IF &&ROLLUP NE 'JOINT-R' THEN GOTO NOTTNTFILE;
+
+-SET &ETEMP = 'SENDFILE ' | '&EADDR.EVAL' 
+- || '&TNTFILES.EVAL';
+-WRITE EMAILBAT COPY &MAILFILES &TNTFILES
+-GOTO CONTINUE2;
+
+-NOTTNTFILE
+-**** LUSHENG 01/16/2012 ***************************************
+-SET &ETEMP = 'java sendfile ' | '&EADDR.EVAL' | ' ettekreviewhelp@tandt.com smtpmail.tandt.com ' 
+- || ' &MAILFILES.EVAL' | ' false "eTTekReview Scheduled Report for &&ROLLUP.EVAL" "The Report Attached (emailfil)"';
+
+-*-SET &ETEMP = 'SENDFILE ' | '&EADDR.EVAL' 
+-*- || ' &MAILFILES.EVAL';
+-*- || '&TNTFILES.EVAL';
+-*-WRITE EMAILBAT COPY &MAILFILES &TNTFILES
+
+-CONTINUE2
+-**** LUSHENG 01/16/2012 ***************************************
+-WRITE EMAILBAT cd d:\ibi\webfocus77\javamail
+-WRITE EMAILBAT set CLASSPATH=.;d:\ibi\webfocus77\javamail\activation.jar;d:\ibi\webfocus77\javamail\mail.jar;d:\ibi\webfocus77\javamail\smtp.jar;d:\ibi\webfocus77\javamail\
+-WRITE EMAILBAT &ETEMP
+-CLOSE EMAILBAT
+
+DOS &EMAILBAT
+-RUN
+
+-GOTO DEL_RPTS
+
+-ZIP_TOLARGE
+-**** LUSHENG 03/03/2004 ***************************************
+-SET &ZDIRAL2 = &WEPATH || '*.ZIP';
+-*-SET &ZDIRALL = &WEPATH || '*.TNT';
+-*-DOS COPY &ZDIRALL D:\TE\*.*
+-DOS COPY &ZDIRAL2 D:\TE\*.*
+-**** LUSHENG 03/03/2004 ***************************************
+
+EX MAILZMSG
+-RUN
+
+-DEL_RPTS
+
+-* DELETE THE REPORTS THAT WERE EMAILED
+-DOS DEL /Q &DIRALL
+-* DELETE THE TEMP DIRECTORY USED FOR EMAIL
+-DOS RMDIR &WEPATH
+
+-SKIP_EMAIL

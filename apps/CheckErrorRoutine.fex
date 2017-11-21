@@ -1,0 +1,39 @@
+-* filename: CheckErrorRoutine.fex
+-INCLUDE SETECHO
+-IF &FOCERRNUM GT 0 OR &RETCODE EQ -1 THEN GOTO ERRHANDLER ELSE GOTO COMMONERREXT;
+
+-ERRHANDLER
+
+-HTMLFORM BEGIN
+<html>
+<HEAD>
+<META http-equiv="Content-Type" CONTENT="text/html; charset=utf-8">
+<TITLE>Report Error Message
+</TITLE>
+<SCRIPT TYPE='text/javascript' LANGUAGE='JavaScript'>
+	function closeWindow() {
+	  window.close();
+	}
+</script>
+</HEAD>
+<body>
+<form name="errorPage">
+<br><br>
+<p>There is an error in the report program.  Please contact <b> ettek Review team </b> for help.
+<p>Sorry for the inconvenience.
+<p>
+<table border="0" width="50%">
+  <tr>
+    <td width="50%"></td>
+    <td width="50%">
+        <input type="button" value="Close" name="B2" onclick="closeWindow();">
+    </td>
+  </tr>
+</table>
+
+</form>
+
+</body>
+</html>
+-HTMLFORM END
+-COMMONERREXT

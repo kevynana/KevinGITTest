@@ -1,0 +1,59 @@
+ CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+ 			        'D' 'DEFAULT'   'B' 'BUSINESS'
+ 			        'E' 'ECONOMY'   'U'  'UPGRADE' 
+                                ' ' 'DEFAULT'); 
+                                
+ FLVL1/A4 = EDIT(ICODEX,'9999$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+ MIR_TYPE/A24 = DECODE AUX_NON_MIR ('X' 'X-DUAL MIR'
+                                    'N' 'N-NON-TICKETING MIR'
+                                    'J' 'J-NON-FARING MIR'
+                                    'A' 'A-NON-ACCOUNTING MIR'
+                                    'B' 'B-ACCOUNTING MIR'
+                                    'H' 'H-REGULAR TICKET MIR'
+                                    'V' 'V-VOID'
+                                    'E' 'E-ELECTRONIC TKT NETWORK'
+                                    'L' 'L-ELECTRONIC TKT MIR'
+                                    ' ' ' -MANUALLY ENTERED TRANS');
+  MTG_NUM/A7 = EDIT(LEVEL3, '$$$$$$$$9999999');
+  LEVEL_DESC/A60 = &&LDESC;
+  NEW_SEG_MILES/D9= SEG_MILES;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  UPCCR/A6 = EDIT(ICODEX,'999999$$$$$$$$$$');
+  UPCOSTC/A1 = IF LEVEL1 EQ '0EM999' OR '0EM299' OR '0EM199' OR '0EM167' OR 
+  '0EM166' OR '0EM165' OR '0EM163' OR '0EM161' OR '0EM112' OR '0EM093' OR
+  '0EM092' OR '0EM089' OR '0EM085' OR '0EM079' OR '0EM072' OR '0EM069' OR
+  '0EM061' OR '0EM057' OR '0EM056' OR '0EM055' OR '0EM054' OR '0EM053' OR
+  '0EM053' OR '0EM051' OR '0EM033' OR '0EM032' OR '0EM027' OR '0EM026' OR
+  '0EM022' THEN 'Y' ELSE 'N';
+  VALUA/A1 = IF (VAL_AIRLINE EQ 'UA') AND 
+                (FLIGHT GE '5000')    AND
+                (FLIGHT LE '5499') THEN 'Y' ELSE 
+             IF (VAL_AIRLINE EQ 'UA') AND
+                (FLIGHT GE '5500')    AND
+                (FLIGHT LE '5899') THEN 'Y' ELSE
+             IF (VAL_AIRLINE EQ 'UA') AND
+                (FLIGHT GE '6800')    AND
+                (FLIGHT LE '7019') THEN 'Y' ELSE
+             IF (VAL_AIRLINE EQ 'UA') AND
+                (FLIGHT GE '7020')    AND
+                (FLIGHT LE '7149') THEN 'Y' ELSE
+             IF (VAL_AIRLINE EQ 'UA') AND
+                (FLIGHT GE '7150')    AND
+                (FLIGHT LE '7899') THEN 'Y' ELSE
+             IF (VAL_AIRLINE EQ 'UA') AND
+                (FLIGHT GE '7900')    AND
+                (FLIGHT LE '7899') THEN 'Y' ELSE 'N';
+  XPSNGR_NM/A15        = 
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+ TRIPS/D8CS = IF STAY GT 0 THEN 1 ELSE
+               IF STAY LT 0 THEN (-1) ELSE 0;
+
+  
+

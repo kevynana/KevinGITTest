@@ -1,0 +1,36 @@
+-* File RunInteractiveFex.fex
+
+-SET &ECHO = ALL;
+-SET &DRIVE = 'D:';
+-SET &DIR = 'D:\Lusheng';
+
+-SET &CMD = &DIR || '\RunDBChanges.bat';
+-SET &T3I = &DIR || '\RunDBChanges.t3i';
+
+-*-SET &CMD = &DIR || '\RunLIMO.bat';
+-*-SET &T3I = &DIR || '\RunLIMO.t3i';
+
+-RUN
+
+FILEDEF BATFILE DISK &CMD
+-RUN
+-WRITE BATFILE CD &DIR
+-WRITE BATFILE SET EDATEMP=&DIR
+-*-WRITE BATFILE C:\ibi\DevStudio76\srv76\wfs\bin\edastart -f &T3I
+-WRITE BATFILE d:\ibi\srv77\wfs\bin\edastart -f &T3I
+-CLOSE BATFILE
+
+FILEDEF T3IFILE DISK &T3I
+-RUN
+
+-WRITE T3IFILE %connect
+-WRITE T3IFILE %begin
+-WRITE T3IFILE EX RebuildUFFiles
+-*-WRITE T3IFILE EX CreateLIMOUDID
+-WRITE T3IFILE %end
+-WRITE T3IFILE %disconnect
+-WRITE T3IFILE %stop_server
+-CLOSE T3IFILE
+
+DOS &CMD.EVAL
+-RUN

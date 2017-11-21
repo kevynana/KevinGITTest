@@ -1,0 +1,39 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-INCLUDE SETECHO
+-* File LIMUSE.FEX
+
+-*****   This routine sets up the USE directory for the Limo Rpts 
+-*****   Created from CARUSE
+-*****    
+-*
+-***********************************************************
+-*  DATE        NAME         DESCRIPTION
+-* 08/31/00   IBISTL-DLM     CONVERTED THE ROLL_KEY FROM A VARIABLE
+-*                           LENGTH TO FIXED LENGTH OF 50 CHARACTERS
+-* 4/1/02        SAC                 TOOK OUT REFERENCE TO HPXXXX
+-*-**********************************************************
+
+
+-SET &&CH = AH_50;
+-SET &&DCH = AH_50 || '.';
+-SET &&EXTRACT = LR_50;
+-SET &&EXTJOIN = LIM_JOIN;
+
+-SET &&USE_LIM = 
+- &&LIM_PATH || &&LIM_DB;
+-SET &&USE_CH = 
+- &&LIM_PATH || &&CH_DB;
+
+USE CLEAR  
+-RUN
+EX SUUSES
+-RUN
+
+USE ADD
+-INCLUDE &&LUSEPASS
+  &&USE_CH AS &&CH
+END
+-*-EXIT
+
+ 
+

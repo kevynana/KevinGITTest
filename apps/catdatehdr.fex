@@ -1,0 +1,184 @@
+-*  This program parses out all dates and so they can be used in the report titles 
+
+  
+DEFINE FILE TC_ORG
+DASH/A1 = '-';
+SPACE/A1 = ' ';
+-* Current Month
+CMF1/YYMD = CMFM_DT;
+CMF/A8MDYY = CMF1;
+CMFM/A2 = EDIT(CMF, '99');
+CMFD/A2 = EDIT(CMF, '$$99');
+CMFY/A4 = EDIT(CMF, '$$$$9999');
+CMFMC/A3  = IF CMFM EQ '01' THEN 'Jan' ELSE
+            IF CMFM EQ '02' THEN 'Feb' ELSE
+            IF CMFM EQ '03' THEN 'Mar' ELSE 
+            IF CMFM EQ '04' THEN 'Apr' ELSE
+            IF CMFM EQ '05' THEN 'May' ELSE
+            IF CMFM EQ '06' THEN 'Jun' ELSE
+            IF CMFM EQ '07' THEN 'Jul' ELSE
+            IF CMFM EQ '08' THEN 'Aug' ELSE
+            IF CMFM EQ '09' THEN 'Sep' ELSE
+            IF CMFM EQ '10' THEN 'Oct' ELSE
+            IF CMFM EQ '11' THEN 'Nov' ELSE 'Dec';
+CMFDATE/A15 = CMFMC|SPACE|CMFD|SPACE|CMFY|SPACE|'-';  
+
+CMT1/YYMD = CMTO_DT;
+CMT/A8MDYY = CMT1;
+CMTM/A2 = EDIT(CMT, '99');
+CMTD/A2 = EDIT(CMT, '$$99');
+CMTY/A4 = EDIT(CMT, '$$$$9999');
+CMTMC/A3  = IF CMTM EQ '01' THEN 'Jan' ELSE
+            IF CMTM EQ '02' THEN 'Feb' ELSE
+            IF CMTM EQ '03' THEN 'Mar' ELSE 
+            IF CMTM EQ '04' THEN 'Apr' ELSE
+            IF CMTM EQ '05' THEN 'May' ELSE
+            IF CMTM EQ '06' THEN 'Jun' ELSE
+            IF CMTM EQ '07' THEN 'Jul' ELSE
+            IF CMTM EQ '08' THEN 'Aug' ELSE
+            IF CMTM EQ '09' THEN 'Sep' ELSE
+            IF CMTM EQ '10' THEN 'Oct' ELSE
+            IF CMTM EQ '11' THEN 'Nov' ELSE 'Dec';
+CMTDATE/A15 = CMTMC|SPACE|CMTD|SPACE|CMTY; 
+
+-* Prior Month
+PMF1/YYMD = CPFM_DT;
+PMF/A8MDYY = PMF1;
+PMFM/A2 = EDIT(PMF, '99');
+PMFD/A2 = EDIT(PMF, '$$99');
+PMFY/A4 = EDIT(PMF, '$$$$9999');
+PMFMC/A3  = IF PMFM EQ '01' THEN 'Jan' ELSE
+            IF PMFM EQ '02' THEN 'Feb' ELSE
+            IF PMFM EQ '03' THEN 'Mar' ELSE 
+            IF PMFM EQ '04' THEN 'Apr' ELSE
+            IF PMFM EQ '05' THEN 'May' ELSE
+            IF PMFM EQ '06' THEN 'Jun' ELSE
+            IF PMFM EQ '07' THEN 'Jul' ELSE
+            IF PMFM EQ '08' THEN 'Aug' ELSE
+            IF PMFM EQ '09' THEN 'Sep' ELSE
+            IF PMFM EQ '10' THEN 'Oct' ELSE
+            IF PMFM EQ '11' THEN 'Nov' ELSE 'Dec';
+PMFDATE/A15 = PMFMC|SPACE|PMFD|SPACE|PMFY|SPACE|'-';  
+
+PMT1/YYMD = CPTO_DT;
+PMT/A8MDYY = PMT1;
+PMTM/A2 = EDIT(PMT, '99');
+PMTD/A2 = EDIT(PMT, '$$99');
+PMTY/A4 = EDIT(PMT, '$$$$9999');
+PMTMC/A3  = IF PMTM EQ '01' THEN 'Jan' ELSE
+            IF PMTM EQ '02' THEN 'Feb' ELSE
+            IF PMTM EQ '03' THEN 'Mar' ELSE 
+            IF PMTM EQ '04' THEN 'Apr' ELSE
+            IF PMTM EQ '05' THEN 'May' ELSE
+            IF PMTM EQ '06' THEN 'Jun' ELSE
+            IF PMTM EQ '07' THEN 'Jul' ELSE
+            IF PMTM EQ '08' THEN 'Aug' ELSE
+            IF PMTM EQ '09' THEN 'Sep' ELSE
+            IF PMTM EQ '10' THEN 'Oct' ELSE
+            IF PMTM EQ '11' THEN 'Nov' ELSE 'Dec';
+PMTDATE/A15 = PMTMC|SPACE|PMTD|SPACE|PMTY; 
+
+-* Current Year
+CYF1/YYMD = CYFM_DT;
+CYF/A8MDYY = CYF1;
+CYFM/A2 = EDIT(CYF, '99');
+CYFD/A2 = EDIT(CYF, '$$99');
+CYFY/A4 = EDIT(CYF, '$$$$9999');
+CYFMC/A3  = IF CYFM EQ '01' THEN 'Jan' ELSE
+            IF CYFM EQ '02' THEN 'Feb' ELSE
+            IF CYFM EQ '03' THEN 'Mar' ELSE 
+            IF CYFM EQ '04' THEN 'Apr' ELSE
+            IF CYFM EQ '05' THEN 'May' ELSE
+            IF CYFM EQ '06' THEN 'Jun' ELSE
+            IF CYFM EQ '07' THEN 'Jul' ELSE
+            IF CYFM EQ '08' THEN 'Aug' ELSE
+            IF CYFM EQ '09' THEN 'Sep' ELSE
+            IF CYFM EQ '10' THEN 'Oct' ELSE
+            IF CYFM EQ '11' THEN 'Nov' ELSE 'Dec';
+CYFDATE/A15 = CYFMC|SPACE|CYFD|SPACE|CYFY|SPACE|'-';
+
+
+CYT1/YYMD = CMTO_DT;
+CYT/A8MDYY = CYT1;
+CYTM/A2 = EDIT(CYT, '99');
+CYTD/A2 = EDIT(CYT, '$$99');
+CYTY/A4 = EDIT(CYT, '$$$$9999');
+CYTMC/A3  = IF CYTM EQ '01' THEN 'Jan' ELSE
+            IF CYTM EQ '02' THEN 'Feb' ELSE
+            IF CYTM EQ '03' THEN 'Mar' ELSE 
+            IF CYTM EQ '04' THEN 'Apr' ELSE
+            IF CYTM EQ '05' THEN 'May' ELSE
+            IF CYTM EQ '06' THEN 'Jun' ELSE
+            IF CYTM EQ '07' THEN 'Jul' ELSE
+            IF CYTM EQ '08' THEN 'Aug' ELSE
+            IF CYTM EQ '09' THEN 'Sep' ELSE
+            IF CYTM EQ '10' THEN 'Oct' ELSE
+            IF CYTM EQ '11' THEN 'Nov' ELSE 'Dec';
+CYTDATE/A15 = CYTMC|SPACE|CYTD|SPACE|CYTY; 
+
+-* Prior Year
+PYF1/YYMD = PYFM_DT;
+PYF/A8MDYY = PYF1;
+PYFM/A2 = EDIT(PYF, '99');
+PYFD/A2 = EDIT(PYF, '$$99');
+PYFY/A4 = EDIT(PYF, '$$$$9999');
+PYFMC/A3  = IF PYFM EQ '01' THEN 'Jan' ELSE
+            IF PYFM EQ '02' THEN 'Feb' ELSE
+            IF PYFM EQ '03' THEN 'Mar' ELSE 
+            IF PYFM EQ '04' THEN 'Apr' ELSE
+            IF PYFM EQ '05' THEN 'May' ELSE
+            IF PYFM EQ '06' THEN 'Jun' ELSE
+            IF PYFM EQ '07' THEN 'Jul' ELSE
+            IF PYFM EQ '08' THEN 'Aug' ELSE
+            IF PYFM EQ '09' THEN 'Sep' ELSE
+            IF PYFM EQ '10' THEN 'Oct' ELSE
+            IF PYFM EQ '11' THEN 'Nov' ELSE 'Dec';
+PYFDATE/A15 = PYFMC|SPACE|PYFD|SPACE|PYFY|SPACE|'-'; 
+
+PYT1/YYMD = CPTO_DT;
+PYT/A8MDYY = PYT1;
+PYTM/A2 = EDIT(PYT, '99');
+PYTD/A2 = EDIT(PYT, '$$99');
+PYTY/A4 = EDIT(PYT, '$$$$9999');
+PYTMC/A3  = IF PYTM EQ '01' THEN 'Jan' ELSE
+            IF PYTM EQ '02' THEN 'Feb' ELSE
+            IF PYTM EQ '03' THEN 'Mar' ELSE 
+            IF PYTM EQ '04' THEN 'Apr' ELSE
+            IF PYTM EQ '05' THEN 'May' ELSE
+            IF PYTM EQ '06' THEN 'Jun' ELSE
+            IF PYTM EQ '07' THEN 'Jul' ELSE
+            IF PYTM EQ '08' THEN 'Aug' ELSE
+            IF PYTM EQ '09' THEN 'Sep' ELSE
+            IF PYTM EQ '10' THEN 'Oct' ELSE
+            IF PYTM EQ '11' THEN 'Nov' ELSE 'Dec';
+PYTDATE/A15 = PYTMC|SPACE|PYTD|SPACE|PYTY; 
+
+
+
+
+END
+TABLE FILE TC_ORG
+SUM CMFM_DT NOPRINT
+BY CMFDATE
+BY CMTDATE
+BY PMFDATE
+BY PMTDATE
+BY CYFDATE
+BY CYTDATE
+BY PYFDATE
+BY PYTDATE
+ON TABLE HOLD AS DATE
+END
+-RUN
+
+TABLE FILE DATE
+SUM CMFDATE CMTDATE PMFDATE PMTDATE CYFDATE CYTDATE PYFDATE PYTDATE
+BY CMFDATE NOPRINT
+ON TABLE SAVE AS DATE1
+END
+-RUN
+-READ DATE1 &&CMFDATE.15. &&CMTDATE.15. &&PMFDATE.15. &&PMTDATE.15. &&CYFDATE.15. &&CYTDATE.15. &&PYFDATE.15. &&PYTDATE.15.
+
+
+-XXIT;
+

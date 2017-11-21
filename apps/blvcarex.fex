@@ -1,0 +1,52 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File BLVCAREX.FEX
+-********************************************************************
+-* MODIFICAIONS:
+-********************************************************************
+-* Created by JK 1/16/03
+-********************************************************************
+-*SET &ECHO=ALL;
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE &&EXTRACT  
+LEVEL_DESC/A60 = &&LDESC;  	
+NBR_DAYS/D12 = NUM_DAYS;
+-* ****DEFINES ON PREVIOUS DEFINES****
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT DAILY_RATE 	
+  INVOICE_DATE	
+  LEVEL_DESC	
+  LEVEL1 	
+  LEVEL2	
+  LEVEL3 	
+  NBR_DAYS 
+  PASSNGR_NAME
+  PICKUP_DATE	
+  TKT_NUM	
+  VENDOR_NAME
+WHERE INVOICE_DATE GE &&FROMDT.EVAL AND INVOICE_DATE LE &&TODT.EVAL
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+ON TABLE HOLD AS CAR_HOLD
+END
+-RUN
+
+

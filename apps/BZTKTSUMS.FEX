@@ -1,0 +1,170 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File TKTSUM.FEX
+-*10/05/04 - JK - ADDED CODE FOR CH2M REPORT
+-*10/08/04 - DV - CHANGED PROGRAM SO SETFILE WOULD PRODUCE REPORT
+-**********************************************************************
+
+-**********************************************************************
+
+SET ASNAMES=ON
+-*SET TEMPERASE = OFF
+
+
+-SET &&RPTSUF = 'SUM';
+-INCLUDE FDEFRPTS
+-RUN
+
+MATCH FILE AIRHOLD1
+SUM AFLAG 
+BY LEVEL_DESC
+BY PNR_LOCATOR
+ON TABLE HOLD
+RUN
+FILE CARHOLD1
+SUM CFLAG
+BY LEVEL_DESC
+BY PNR_LOCATOR
+AFTER MATCH HOLD AS MATCH1A OLD-OR-NEW
+END
+
+MATCH FILE MATCH1A
+SUM AFLAG CFLAG
+BY LEVEL_DESC
+BY PNR_LOCATOR
+ON TABLE HOLD
+RUN
+FILE LIMHOLD1
+SUM LFLAG
+BY LEVEL_DESC
+BY PNR_LOCATOR
+AFTER MATCH HOLD AS MATCH1AB OLD-OR-NEW
+END
+
+MATCH FILE MATCH1AB
+SUM AFLAG CFLAG LFLAG
+BY LEVEL_DESC
+BY PNR_LOCATOR
+ON TABLE HOLD
+RUN
+FILE HTLHOLD1
+SUM HFLAG
+BY LEVEL_DESC
+BY PNR_LOCATOR
+AFTER MATCH HOLD AS MATCH1ABC OLD-OR-NEW
+END
+
+TABLE FILE MATCH1ABC
+SUM 
+COMPUTE ACHL_COUNT/P12 = IF AFLAG EQ 'AIR' THEN 1 ELSE 0;
+COMPUTE CHL_COUNT/P12 = IF AFLAG EQ ' ' THEN 1 ELSE 0;
+COMPUTE TTL_COUNT/P12 = ACHL_COUNT + CHL_COUNT;
+BY LEVEL_DESC
+BY PNR_LOCATOR
+BY AFLAG
+BY CFLAG
+BY LFLAG
+BY HFLAG
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+-************************************************************
+DEFINE FILE HOLD1
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END  
+TABLE FILE HOLD1
+-INCLUDE HEADER
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+ 
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+ 
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&SMSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+ 
+
+

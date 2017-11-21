@@ -1,0 +1,22 @@
+-INCLUDE SETECHO
+FILEDEF TESTLN DISK D:\IBI\TESTLN.PDF
+TABLE FILE CAR
+PRINT  CAR MODEL DEALER_COST RETAIL_COST
+FOOTING
+"______________________________________________________________________________________________________________________________________________________________________________________________"
+
+"<5 The body of a free-form report enables you to incorporate test, data fields, and graphic characters in your report, and lay out your report by positioning text and data in exact column locations and skipping lines for"
+"<5 reaability."
+" "   
+"<5 You can specify text anywhere in a free-form report, for a variety of purposes. see page 23-6."
+"______________________________________________________________________________________________________________________________________________________________________________________________"
+ON TABLE SAVE AS TESTLN FORMAT PDF 
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.150000, 
+TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=10, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=FOOTING,FONT=TIMES NEW ROMAN, SIZE=8, $
+ENDSTYLE
+END
+-RUN

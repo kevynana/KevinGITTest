@@ -1,0 +1,834 @@
+-*========================================================================
+-* 08/16/2003
+-*  -*04/29/10   DEB         CHANGED RATE_GRP FOR ROUNDING
+
+-*
+-*               TOTAL COMPANY HOTEL SUMMARY RANKED BY CITY
+-* 	
+-*========================================================================
+-*                <---------------- STEP1 ---------------->
+-*========================================================================
+-*      CLEAR ROLLUPX PROCESS STAMPS BEFORE TOTAL COMPANY REPORT RUN
+-*========================================================================
+-* -INCLUDE SETECHO
+-SET HOLDATTR = ON;
+
+-SET &&LP0 = 0;
+-SET &&XP0 = 0;
+-SET &&LP1 = 0;
+
+SET ASNAMES = ON
+
+USE
+D:\TNT\TTRACKER\SYSTEM\DATA\ROLLUPX.FOC
+END
+
+FILEDEF WLT DISK D:\FOCTEMP\WLT.DAT
+-RUN
+
+-*EX TCHT100B
+-RUN
+
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-*========================================================================
+-*              SET PROCESS STAMP TO ' ' (FIELD = PR_STAMP)
+-*========================================================================
+DEFINE FILE ROLLUPX
+XL01/A1 = ' ' ;
+END
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT ROLLUP_CODE
+      XL01 AS 'PR_STAMP' 
+IF UPD_ENABLE EQ 'X'
+ON TABLE HOLD 
+END
+MODIFY FILE ROLLUPX
+FIXFORM FROM HOLD
+MATCH ROLLUP_CODE
+ON MATCH UPDATE PR_STAMP
+ON NOMATCH REJECT
+DATA ON HOLD
+END
+-*========================================================================
+-* SET PROCESS STAMP TO 'T' (FIELD = PR_STAMP) - ROLLUP CODES TO PROCESS
+-*========================================================================
+DEFINE FILE ROLLUPX
+XL01/A1 = 'T' ;
+END
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT ROLLUP_CODE
+      XL01 AS 'PR_STAMP'
+IF UPD_ENABLE EQ 'X'
+IF QTR_ENABLE EQ ' '
+ON TABLE HOLD 
+END
+MODIFY FILE ROLLUPX
+FIXFORM FROM HOLD
+MATCH ROLLUP_CODE
+ON MATCH UPDATE PR_STAMP
+ON NOMATCH REJECT
+DATA ON HOLD
+END
+-RUN
+-*========================================================================
+-*       FIND CLIENTS TO PROCESS (SETS OF 25 - THIS IS THE MAXIMUM
+-*========================================================================
+-TCLOOP
+USE CLEAR *
+
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT COMP
+IF PR_STAMP EQ 'T'
+IF QTR_ENABLE EQ ' '
+IF ROLLUP NE 'TOTAL-R'
+IF RECORDLIMIT EQ 25
+ON TABLE SAVE
+END
+-RUN
+-IF &RECORDS EQ 0 GOTO STOP;
+-SET &&HTL_PATH = 'D:\TNT\TTRACKER\DATA\' ;
+-SET &&COM_PATH = 'D:\TNT\TTRACKER\SYSTEM\DATA\' ;
+-SET &&SU_PATH = 'D:\TNT\TTRACKER\SUDATA\' ;
+-SET &CNT  = 1;
+-RUN
+-REPEAT GETROLL WHILE &CNT LE &RECORDS;
+-READ SAVE &&XX.A6.
+-SET &&COMP.&CNT = &&XX ;
+-*========================================================================
+-*                SET-UP DIALOUGE MANAGER FOR 'AL' DATABASES
+-*========================================================================
+-SET &&AL_DB.&CNT = 'AL'||&&XX|||'.FOC' ;
+-SET &&USE_AL.&CNT = &&HTL_PATH||&&AL_DB.&CNT;
+-*========================================================================
+-*                SET-UP DIALOUGE MANAGER FOR 'H_' DATABASES
+-*========================================================================
+-SET &&HTL_DB.&CNT = 'H_'||&&XX|||'.FOC' ;
+-SET &&USE_HTL.&CNT = &&HTL_PATH||&&HTL_DB.&CNT;
+
+-SET &CNT = &CNT + 1;
+-GETROLL
+-*========================================================================
+-*                        SET-UP USE STATEMENTS
+-*========================================================================
+-SET &&USE_HREF = &&COM_PATH || 'HTL_REF.FOC';
+-SET &&USE_ARPT = &&COM_PATH || 'AIRPORT.FOC';
+-SET &&USE_CLNT = &&COM_PATH || 'CLIENT.FOC';
+-SET &&USE_ROLL = &&COM_PATH || 'ROLLUPX.FOC';
+-SET &&USE_ARAT = &&COM_PATH || 'AL_RATE.FOC';
+-SET &&USE_CITY = &&COM_PATH || 'CITY.FOC';
+-SET &&USE_PROP = &&COM_PATH || 'HOTL_PRP.FOC';
+-SET &&USE_HCHN = &&COM_PATH || 'HOTL_CHN.FOC';
+-SET &&USE_BRAN = &&COM_PATH || 'BRANCH.FOC';
+
+USE 
+ &&USE_AL1  AS 'AH_50' ;
+ &&USE_AL2  AS 'AH_50' ;
+ &&USE_AL3  AS 'AH_50' ;
+ &&USE_AL4  AS 'AH_50' ;
+ &&USE_AL5  AS 'AH_50' ;
+ &&USE_AL6  AS 'AH_50' ;
+ &&USE_AL7  AS 'AH_50' ;
+ &&USE_AL8  AS 'AH_50' ;
+ &&USE_AL9  AS 'AH_50' ;
+ &&USE_AL10 AS 'AH_50' ;
+ &&USE_AL11 AS 'AH_50' ;
+ &&USE_AL12 AS 'AH_50' ;
+ &&USE_AL13 AS 'AH_50' ;
+ &&USE_AL14 AS 'AH_50' ;
+ &&USE_AL15 AS 'AH_50' ;
+ &&USE_AL16 AS 'AH_50' ;
+ &&USE_AL17 AS 'AH_50' ;
+ &&USE_AL18 AS 'AH_50' ;
+ &&USE_AL19 AS 'AH_50' ;
+ &&USE_AL20 AS 'AH_50' ;
+ &&USE_AL21 AS 'AH_50' ;
+ &&USE_AL22 AS 'AH_50' ;
+ &&USE_AL23 AS 'AH_50' ;
+ &&USE_AL24 AS 'AH_50' ;
+ &&USE_AL25 AS 'AH_50' ;
+
+ &&USE_HTL1  AS 'HR_50' ;
+ &&USE_HTL2  AS 'HR_50' ;
+ &&USE_HTL3  AS 'HR_50' ;
+ &&USE_HTL4  AS 'HR_50' ;
+ &&USE_HTL5  AS 'HR_50' ;
+ &&USE_HTL6  AS 'HR_50' ;
+ &&USE_HTL7  AS 'HR_50' ;
+ &&USE_HTL8  AS 'HR_50' ;
+ &&USE_HTL9  AS 'HR_50' ;
+ &&USE_HTL10 AS 'HR_50' ;
+ &&USE_HTL11 AS 'HR_50' ;
+ &&USE_HTL12 AS 'HR_50' ;
+ &&USE_HTL13 AS 'HR_50' ;
+ &&USE_HTL14 AS 'HR_50' ;
+ &&USE_HTL15 AS 'HR_50' ;
+ &&USE_HTL16 AS 'HR_50' ;
+ &&USE_HTL17 AS 'HR_50' ;
+ &&USE_HTL18 AS 'HR_50' ;
+ &&USE_HTL19 AS 'HR_50' ;
+ &&USE_HTL20 AS 'HR_50' ;
+ &&USE_HTL21 AS 'HR_50' ;
+ &&USE_HTL22 AS 'HR_50' ;
+ &&USE_HTL23 AS 'HR_50' ;
+ &&USE_HTL24 AS 'HR_50' ;
+ &&USE_HTL25 AS 'HR_50' ;
+
+ &&USE_HREF
+ &&USE_ARPT
+ &&USE_CLNT
+ &&USE_ROLL
+ &&USE_ARAT
+ &&USE_PROP
+ &&USE_HCHN
+ &&USE_CITY
+ &&USE_BRAN
+ 
+END
+-*========================================================================
+-*                <---------------- STEP2 ---------------->
+-*========================================================================
+-*                   Loop Logic To Loop Through Databases
+-*========================================================================
+-IF &&LP1 GE 1 THEN GOTO MORE ;
+-RUN
+
+-SET &&LP0 = 0;
+-SET &&XP0 = 0;
+-SET &&LP1 = &&LP0 + 1;
+-SET &&XP1 = &&XP0 + 1;
+-SET &&DBASE = 'TCHOLD1' ;
+-GOTO GETDATA
+-RUN
+
+-MORE
+-SET &&LP1 = &&LP1 + 1 ;
+-SET &&XP1 = &&XP1 + 1 ;
+-SET &&DB1   = 'TCHOLD';
+-SET &&DCNT  = &&LP1 ;
+-SET &&DBASE = &&DB1||&&DCNT ;
+
+-RUN
+-*========================================================================
+-*                      Data Extract For Report Data
+-*========================================================================
+-GETDATA
+DEFINE FILE HR_50
+  CARD_NUM/A12 = EDIT(CREDIT_CARD, '$$999999999999$$$$');
+  CARD1_NUM/A4 = EDIT(CREDIT_CARD, '$$$$$$$$$$$$$$9999');
+  CITY_ST/A35 = PROP_CITY||(' '| PROP_STATE);
+  LEV_2/A15 = IF PASSNGR_NAME NE LAST PASSNGR_NAME THEN LEVEL2 ELSE ' ';
+  LEVEL_DESC/A60  = &&LDESC;
+  IN_DATE/MDYY = CHKIN_DATE;
+  INV_DATE/MDYY = INVOICE_DATE ;
+  NEW_ROOM_RATE/D12.2C = ROOM_RATE;
+  NEW_STD_RATE/D12.2C = STD_RATE;
+  NEW_TOTAL_AMT/D12.2C = TOTAL_AMT;
+  NBR_DAYS/D12 =  NUM_DAYS; 
+  NNROOMS/D12 = IF (NBR_DAYS LT 0) AND (NUM_ROOMS LT 0)
+                THEN ((NBR_DAYS*NUM_ROOMS)*(-1))
+                ELSE NBR_DAYS*NUM_ROOMS;
+  OUT_DATE/MDYY = CHKOUT_DATE;
+  ONLINE/A1 = IF AGENT EQ '00444' THEN 'Y' ELSE 'N';
+  PROP_ZIP5/A5=EDIT(PROP_ZIP, '99999$$$$$');
+-* RATE_GRP/A15 = IF ((ROOM_RATE GE 0 AND ROOM_RATE LT 150) OR
+-*                      (ROOM_RATE LE 0 AND ROOM_RATE GT (-150)))
+-*                  THEN '$0 - $149' ELSE
+-*                  IF ((ROOM_RATE GE 150 AND ROOM_RATE LE 199) OR
+-*                      (ROOM_RATE LE (-150) AND ROOM_RATE GE (-199)))
+-*                  THEN '$150 - $199' ELSE
+-*                  IF ((ROOM_RATE GE 200 AND ROOM_RATE LE 249) OR
+-*                      (ROOM_RATE LE (-200) AND ROOM_RATE GE (-249)))
+-*                  THEN '$200 - $249' ELSE '$250 OR GREATER';
+
+
+ RATE_GRP/A15 = IF ((ROOM_RATE GE 0 AND ROOM_RATE LT 149.50) OR
+                      (ROOM_RATE LE 0 AND ROOM_RATE GT (-149.50)))
+                   THEN '$0 - $149' ELSE
+                   IF ((ROOM_RATE GE 149.50 AND ROOM_RATE LT 199.50) OR
+                      (ROOM_RATE LE (-149.50) AND ROOM_RATE GT (-199.50)))
+                   THEN '$150 - $199' ELSE
+                   IF ((ROOM_RATE GE 199.50 AND ROOM_RATE LT 249.50) OR
+                      (ROOM_RATE LE (-199.50) AND ROOM_RATE GT (-249.50)))
+                   THEN '$200 - $249' ELSE '$250 OR GREATER';
+  REASON_CD/A2=EDIT(REFUSE_KEY,'$$$$$$$$99');
+  REFUSE_CD/A2=EDIT(REFUSE_KEY,'$$$$$$$$99');
+  RSNCDE/A48=REFUSE_CD|| '-' ||REFUSAL_DESC;
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+
+  TOTAL_STD/D12.2C = IF (NNROOMS LT 0) AND (NEW_STD_RATE LT 0) 
+                     THEN ((NNROOMS * NEW_STD_RATE)*(-1))
+                     ELSE NNROOMS * NEW_STD_RATE;
+
+-* ***DEFINES ON PREVIOUS DEFINED DEFINES***
+   SAVINGS/D12.2CS = TOTAL_STD - TOTAL_AMT;
+   TOTAL_SLSAV/D12.2C = TOTAL_STD - NEW_TOTAL_AMT;
+   XIN_DOW/WR = IN_DATE;
+   XOUT_DOW/WR = OUT_DATE;
+END
+
+TABLE FILE HR_50
+PRINT AIRPORT_CODE	
+  ALPHA_RATE	
+  AR_BRANCH
+  BR_CL_IDX
+  CARD_NUM
+  CARD1_NUM	
+  CHAIN_CODE 	
+  CHAIN_NAME 	
+  CITY_ST	
+  CREDIT_CARD	
+  HHL_CONFIRM 	
+  HOTEL_PHONE 	
+  HTL_KEY	
+  IN_DATE
+  INV_DATE	
+  INVOICE_DATE
+  INVOICE_NUM 	
+  LEV_2
+  LEVEL_DESC	
+  LEVEL1 	
+  LEVEL2 	
+  LEVEL3 	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NBR_DAYS	
+  NNROOMS	
+  NUM_DAYS 	
+  NUM_ROOMS	
+  ONLINE
+  OUT_DATE 	
+  PROP_ZIP5
+  PASSNGR_NAME 	
+  PNR_LOCATOR 	
+  PROP_ADDRESS 	
+  PROP_CITY 	
+  PROP_NAME 	
+  PROP_STATE_CD 	
+  RATE_GRP	
+  REFUSAL_DESC	
+  REFUSE_CD	
+  REFUSE_KEY	
+  RESV_BRANCH	
+  ROOM_RATE 	
+  ROOM_TYPE	
+  RSNCDE	
+  SAVINGS	
+  STD_RATE 	
+  TICKET_BRANCH	
+  TKT_NUM	
+  TOTAL_AMT 	
+  TOTAL_STD 	
+  TOTAL_SLSAV
+  XIN_DOW
+  XOUT_DOW
+
+-*WHERE INVOICE_DATE GE &&FROMDT.EVAL AND INVOICE_DATE LE &&TODT.EVAL
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS &&DBASE FORMAT FOCUS
+
+END
+-RUN
+-*========================================================================
+-*                <---------------- STEP3 ---------------->
+-*========================================================================
+-*              UPDATE PR_STAMP TO 'Z' = Rollup Code Processed
+-*========================================================================
+DEFINE FILE ROLLUPX
+XL01/A1 = 'Z' ;
+END
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT ROLLUP_CODE
+      XL01 AS 'PR_STAMP' 
+IF UPD_ENABLE EQ 'X'
+IF QTR_ENABLE EQ ' '
+IF PR_STAMP EQ 'T'
+IF RECORDLIMIT EQ 25
+ON TABLE HOLD 
+END
+MODIFY FILE ROLLUPX
+FIXFORM FROM HOLD
+MATCH ROLLUP_CODE
+ON MATCH UPDATE PR_STAMP
+ON NOMATCH REJECT
+DATA ON HOLD
+END
+-RUN
+USE CLEAR *
+-GOTO TCLOOP
+-RUN
+
+-STOP
+-RUN
+EX SUUSES
+-RUN
+EX TCDESC2
+-RUN
+FILEDEF TCUSE DISK TCUSE.FEX
+
+-RUN
+
+-SET &ZCNT = 1;
+-WRITE TCUSE USE ADD
+-REPEAT ENDREPEAT &&DCNT TIMES;
+-SET &&TDAT = 'TCHOLD' | '&ZCNT.EVAL' | '.FOC' | ' AS TCHOLDXX' ;
+-WRITE TCUSE &&TDAT
+-SET &ZCNT = &ZCNT + 1 ;
+-ENDREPEAT
+-WRITE TCUSE END
+-CLOSE TCUSE
+
+USE CLEAR *
+
+-INCLUDE TCUSE
+-RUN
+
+-*USE ADD CONG.FOC  AS TCHOLD1
+-*        KIMB.FOC  AS TCHOLD1
+-*        METX.FOC  AS TCHOLD1
+-*        UPTTL.FOC AS TCHOLD1
+-*END
+-*RUN
+
+-SET &&CTY_LMT = &&RANK_LIMIT;
+-SET &&HTL_LMT = &&RANK_LIMIT2;
+-SET &&RANK_METH = IF &&RANK_METH EQ 'ROOM_AMT' THEN 'ROOM_AMT'
+- ELSE IF &&RANK_METH EQ 'NMBR_DAYS' THEN 'NMBR_DAYS' 
+- ELSE 'NMBR_DAYS';
+
+TABLE FILE TCHOLDXX
+SUM CNT.NUM_DAYS AS 'BOOKINGS'	
+    NEW_ROOM_RATE
+    NEW_STD_RATE
+    NEW_TOTAL_AMT
+    NNROOMS	
+    NNROOMS/D8 AS 'NMBR_DAYS'	
+    REFUSE_CD	
+    RESV_BRANCH	
+    SAVINGS	
+    TOTAL_AMT/D12.2 AS 'ROOM_AMT'	
+    TOTAL_STD
+    TOTAL_SLSAV	
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY CHAIN_NAME
+BY PROP_NAME
+BY PROP_ZIP5
+BY PROP_ADDRESS
+BY HOTEL_PHONE
+BY CHAIN_CODE
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+
+TABLE FILE HOLD1
+PRINT 
+  BOOKINGS	
+  CHAIN_CODE	
+  CHAIN_NAME	
+  HOTEL_PHONE	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  PROP_ADDRESS	
+  PROP_NAME	
+  PROP_ZIP5	
+  REFUSE_CD	
+  RESV_BRANCH	
+  ROOM_AMT/D12.2	
+  SAVINGS
+  TOTAL_STD	
+  TOTAL_SLSAV
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+-* RANKED BY HIGHEST NMBR_DAYS NOPRINT
+RANKED BY HIGHEST &&RANK_METH NOPRINT
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+DEFINE FILE HOLD2
+ RANK_LIMIT/I5 = &&HTL_LMT;
+ DRANK/D5      = RANK;
+ ARANKX/A6 = FTOA(DRANK, '(D5)', 'A6');
+ ARANK/A5=EDIT(ARANKX,'$99999');
+ RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+-RUN
+
+TABLE FILE HOLD2
+PRINT 
+  BOOKINGS	
+  CHAIN_CODE	
+  CHAIN_NAME	
+  HOTEL_PHONE
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT	
+  NMBR_DAYS	
+  NNROOMS	
+  PROP_ADDRESS	
+  PROP_NAME	
+  PROP_ZIP5	
+  REFUSE_CD	
+  RESV_BRANCH	
+  ROOM_AMT	
+  SAVINGS
+  TOTAL_STD
+  TOTAL_SLSAV
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY RANK_VALUE
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+DEFINE FILE HOLD3
+  CHAIN_CD/A2= IF RANK_VALUE LE '&&HTL_LMT' THEN CHAIN_CODE ELSE ' ';	
+  CHAIN_NM/A35= IF RANK_VALUE LE '&&HTL_LMT' THEN CHAIN_NAME ELSE ' ';	
+  HTL_ADDRESS/A35= IF RANK_VALUE LE '&&HTL_LMT' THEN PROP_ADDRESS ELSE ' ';	
+  HTL_NAME/A35 = IF RANK_VALUE LE '&&HTL_LMT' THEN PROP_NAME ELSE 'ALL OTHER';	
+-************************IBI KR 
+-*PROP_PHONE/A14= IF RANK_VALUE LE '&&HTL_LMT' THEN HOTEL_PHONE ELSE ' ';	
+  PROP_PHONE/A15= IF RANK_VALUE LE '&&HTL_LMT' THEN HOTEL_PHONE ELSE ' ';	
+  ZIP5/A5 = IF RANK_VALUE LE '&&HTL_LMT' THEN PROP_ZIP5 ELSE ' ';	
+END
+-RUN
+
+TABLE FILE HOLD3
+SUM 
+  BOOKINGS	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  REFUSE_CD	
+  RESV_BRANCH	
+  ROOM_AMT	
+  SAVINGS	
+  TOTAL_STD
+  TOTAL_SLSAV
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY RANK_VALUE
+BY HTL_NAME
+BY ZIP5
+BY HTL_ADDRESS
+BY PROP_PHONE
+BY CHAIN_CD
+BY CHAIN_NM
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+TABLE FILE HOLD1
+SUM 
+  BOOKINGS	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  REFUSE_CD	
+  RESV_BRANCH	
+  ROOM_AMT	
+  SAVINGS
+  TOTAL_STD
+  TOTAL_SLSAV
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+ON TABLE HOLD AS RHOLD1
+END
+-RUN
+
+TABLE FILE RHOLD1
+PRINT *
+-* RANKED BY HIGHEST NMBR_DAYS AS 'DAYS_RANK'
+RANKED BY HIGHEST &&RANK_METH AS 'DAYS_RANK'
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+MATCH FILE HOLD4
+PRINT *
+BY CITY_ST
+ON TABLE HOLD
+RUN
+FILE RHOLD2
+SUM DAYS_RANK
+BY CITY_ST
+AFTER MATCH HOLD AS HOLD5 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD5
+PRINT *
+RANKED BY HIGHEST DAYS_RANK
+ON TABLE HOLD AS HOLD6
+END
+-RUN
+
+DEFINE FILE HOLD6
+  CTY_LIMIT/I2 = &&CTY_LMT;
+  CLIMIT/A2    = EDIT(CTY_LIMIT) ;
+  CRANK/D5     = RANK;    
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6 = IF CITY_ST NE LAST CITY_ST THEN (LAST LIST + 1) ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6=EDIT(FRANKX,'$999999');
+  CTY_VALUE/A9 = IF CTY_LIMIT EQ 0 THEN BRANK ELSE
+                 IF RANK GT CTY_LIMIT THEN 'ALL OTHER' ELSE BRANK;
+END
+-RUN
+
+TABLE FILE HOLD6
+PRINT 
+  BOOKINGS	
+  CLIMIT	
+  CTY_LIMIT	
+  DAYS_RANK 	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  REFUSE_CD	
+  RESV_BRANCH	
+  ROOM_AMT	
+  SAVINGS	
+  TOTAL_STD
+  TOTAL_SLSAV
+BY CTY_VALUE
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY CHAIN_CD
+BY CHAIN_NM
+BY RANK_VALUE
+BY HTL_NAME
+BY ZIP5
+BY HTL_ADDRESS
+BY PROP_PHONE
+ON TABLE HOLD AS HOLD7
+END
+-RUN
+
+
+
+TABLE FILE TCHOLDXX
+SUM NNROOMS/D8 AS 'CTLDAYS'
+    NEW_TOTAL_AMT AS 'CTLAMT'
+BY CITY_ST
+ON TABLE HOLD AS HOLD8
+END
+-RUN
+
+MATCH FILE HOLD7
+PRINT 
+  BOOKINGS	
+  CLIMIT	
+  CTY_LIMIT	
+  DAYS_RANK 	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  REFUSE_CD	
+  RESV_BRANCH	
+  ROOM_AMT	
+  SAVINGS	
+  TOTAL_STD
+  TOTAL_SLSAV
+  CTY_VALUE
+  PROP_CITY
+  PROP_STATE_CD
+  CHAIN_CD
+  CHAIN_NM
+  RANK_VALUE
+  HTL_NAME
+  ZIP5
+  HTL_ADDRESS
+  PROP_PHONE
+BY CITY_ST
+ON TABLE HOLD
+RUN
+FILE HOLD8
+SUM CTLDAYS
+    CTLAMT
+BY CITY_ST
+AFTER MATCH HOLD AS HOLD9 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD9
+PRINT
+   BOOKINGS
+   CTLAMT
+   CTLDAYS
+   CLIMIT
+   CTY_LIMIT
+   DAYS_RANK
+   NEW_ROOM_RATE
+   NEW_STD_RATE
+   NEW_TOTAL_AMT
+   NMBR_DAYS
+   NNROOMS
+   REFUSE_CD
+   RESV_BRANCH
+   ROOM_AMT
+   SAVINGS
+   TOTAL_STD
+   TOTAL_SLSAV
+COMPUTE PCTTAMT/D8.1S = IF ((CTLAMT LT 1) AND (CTLAMT GT (-1))) THEN 0
+                        ELSE ((NEW_TOTAL_AMT/CTLAMT)*100);
+BY CTY_VALUE
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY RANK_VALUE
+BY HTL_NAME
+BY ZIP5
+BY HTL_ADDRESS
+BY PROP_PHONE
+BY CHAIN_CD
+BY CHAIN_NM
+ON TABLE HOLD AS HOLD10
+END
+-RUN
+
+DEFINE FILE HOLD10
+  ADDRESS/A35 = IF CTY_VALUE NE 'ALL OTHER' THEN HTL_ADDRESS ELSE ' ';	
+  CHAIN_NAME/A35 = IF CTY_VALUE NE 'ALL OTHER' THEN CHAIN_NM ELSE ' ';	
+  CHAIN_PRNT/A2 = IF CTY_VALUE NE 'ALL OTHER' THEN CHAIN_CD ELSE ' ';	
+  CITY_PRNT/A35 = IF CTY_VALUE NE 'ALL OTHER' THEN PROP_CITY ELSE ' ';	
+  CTY_PRINT/A35 = IF CTY_VALUE NE 'ALL OTHER' THEN CITY_ST ELSE ' ';	
+-************************IBI KR  
+-*HTL_PHONE/A14 = IF CTY_VALUE NE 'ALL OTHER' THEN PROP_PHONE ELSE ' ';	
+  HTL_PHONE/A15 = IF CTY_VALUE NE 'ALL OTHER' THEN PROP_PHONE ELSE ' ';	
+  HTL_PRINT/A35 = IF CTY_VALUE NE 'ALL OTHER' THEN HTL_NAME ELSE ' ';	
+  HTL_RANK/A5 = IF CTY_VALUE NE 'ALL OTHER' THEN RANK_VALUE ELSE ' ';	
+  STATE_PRNT/A35 = IF CTY_VALUE NE 'ALL OTHER' THEN PROP_STATE_CD ELSE ' ';	
+  ZIP_PRINT/A5 = IF CTY_VALUE NE 'ALL OTHER' THEN ZIP5 ELSE ' ';	
+
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH CTY_VALUE = HHMMSS (NOWTOD);	
+END
+TABLE FILE HOLD10
+-INCLUDE HEADER
+"&&SUBHEAD"
+"</2"
+-*
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+
+-*
+-INCLUDE FOOTERSM
+-*
+-*ON TABLE SET STYLE &&SMSTY
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&SMSTY     
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-*IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-*INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+-*
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+-EXIT
+-*
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3

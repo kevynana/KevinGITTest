@@ -1,0 +1,207 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* 06/27/2017 - RSB - S-35418 Report view to be updated with standard footer (part 1)
+-* 09/12/2017 - RSB - S-39791 Footer changes to be backed out of story S-35418
+-*  
+-INCLUDE SETECHO
+
+SET ASNAMES = ON
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID/D12.2CS AS 'TFARE'	
+    MRK_TKT_CNT/D8CS AS 'TMKT'
+    NET_COMM/D12.2CS AS 'NCOMM'
+    NEW_SEG_AMT/D12.CS AS 'TBASE'
+BY LEVEL_DESC    
+ON TABLE HOLD AS HOLDONE
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT
+  AGENT_NUM
+  AIRLINE 	
+  AIRLINE_NAME
+  AROLL_LEV4
+  BASE_FARE
+  BASE_FARE1
+  BASE_FARE2
+  BR_CL_IDX
+  CGBOOK	
+  CLASS	
+  CLASS_CAT
+  DFARE
+  DL_BASE1
+  DL_BASE2
+  DTKT_CNT
+  EMB_APT_NM
+  EMB_CNTRY_CODE
+  FARE_BAS	
+  FARE_PAID
+  IFARE
+  ITKT_CNT
+  LEVEL1
+  LEVEL3	
+  MILEAGE
+  MRK_TKT_CNT
+  NET_COMM
+  NET_TKT_CNT
+  NEW_SEG_AMT
+  NEW_SEG_MILES
+  PASSNGR_NAME
+  SEG_CNT
+  SEG_COUNT
+  SEG_MILES
+  TRAN_MONTH
+  TRAN_MY
+  UA_BASE1
+  UA_BASE2
+  UPFARE	
+BY LEVEL_DESC
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT
+  AGENT_NUM
+  AIRLINE 	
+  AIRLINE_NAME
+  AROLL_LEV4
+  BASE_FARE
+  BASE_FARE1
+  BASE_FARE2
+  BR_CL_IDX
+  CGBOOK	
+  CLASS	
+  CLASS_CAT
+  DFARE
+  DL_BASE1
+  DL_BASE2
+  DTKT_CNT
+  EMB_APT_NM
+  EMB_CNTRY_CODE
+  FARE_BAS	
+  FARE_PAID
+  IFARE
+  ITKT_CNT
+  LEVEL1
+  LEVEL3
+  MILEAGE	
+  MRK_TKT_CNT
+  NET_COMM
+  NET_TKT_CNT
+  NEW_SEG_AMT
+  NEW_SEG_MILES
+  PASSNGR_NAME
+  SEG_CNT
+  SEG_COUNT
+  SEG_MILES
+  TRAN_MONTH
+  TRAN_MY
+  UA_BASE1
+  UA_BASE2	
+  UPFARE
+BY LEVEL_DESC
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM TBASE
+    TFARE
+    TMKT
+    NCOMM
+BY LEVEL_DESC
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW 
+END
+-RUN
+
+DEFINE FILE XTHREE
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+
+TABLE FILE XTHREE
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    &&S_SUBJ11
+    &&S_SUBJ12
+    &&S_SUBJ13
+    &&S_SUBJ14
+    &&S_SUBJ15
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYS
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3

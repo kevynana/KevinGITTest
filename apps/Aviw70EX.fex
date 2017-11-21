@@ -1,0 +1,442 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File AVIW70EX.FEX
+-********************************************************************
+-*
+-* This program extracts data for class of service report
+-* 01/28/02 - CREATED FROM AVIEW3EX.FEX 
+-* 01/28/02 ADDED DEFINE FOR CLCAT_F CLCAT_B CLCAT_C CLCAT_D 
+-*          CLCAT_O                                          - DEB
+-*7/23/07 - DEB - ADDED KB_AGT  DEFINE
+-*10/18/11 - Deb Changed define on BZSUMCLS per Laura Pankoke
+-*               to be the same as BZSUMCL2
+
+-* 3/18/13 changed defines to to class category changes - Deb
+-* ADDED TRANTYPE INCLUDE - JK 12/15/14 STORY ID S-06492 
+-*2/16/15 - DEB - S-0750 CORRECTED DEFINES USED FOR NDSUMCLS
+-*12/10/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-********************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-RUN
+
+-SET &&IDLEVELBREAK = '';
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+-IF '&&SETF.EVAL' EQ 'BZFCLS' THEN GOTO BOOZF ELSE 
+-IF '&&SETF.EVAL' EQ 'BZBCLS' THEN GOTO BOOZB ELSE GOTO EXTRACT;
+
+-BOOZF
+-SET &WHERE1 = 'WHERE BZ_FLAG EQ ''N''';
+-GOTO EXTRACT
+
+-BOOZB
+-SET &WHERE1 = 'WHERE BZ_FLAG1 EQ ''N''';
+
+
+
+
+
+-EXTRACT
+DEFINE FILE &&EXTRACT
+
+  BOOK_DT/MDYY         = RESV_DATE;
+-* BOOZ_CAT/A1 = IF ADIR_ALL CONTAINS '*U' THEN 'U' ELSE
+-*                 IF ADIR_ALL CONTAINS '*F' THEN 'F' ELSE 
+-*                 IF ADIR_ALL CONTAINS '*B' THEN 'B' ELSE 
+-*                 IF ADIR_ALL CONTAINS '*C' THEN 'C' ELSE 'D';
+-*  STD_CAT/A1 = IF ADIR_ALL CONTAINS '*F' THEN 'F' ELSE
+-*                 IF ADIR_ALL CONTAINS '*B' THEN 'B' ELSE 
+-*                 IF ADIR_ALL CONTAINS '*U' THEN 'U' ELSE 
+-*                 IF ADIR_ALL CONTAINS '*C' THEN 'C' ELSE 'D';     
+BOOZ_CAT/A1 = IF TKT_CL_CAT CONTAINS 'U' THEN 'U' ELSE
+                 IF TKT_CL_CAT CONTAINS 'F' THEN 'F' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'B' THEN 'B' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'P' THEN 'P' ELSE
+                 IF TKT_CL_CAT CONTAINS 'E' THEN 'E' ELSE 'D';
+            
+  ST_CAT/A1 = IF TKT_CL_CAT CONTAINS 'F' THEN 'F' ELSE
+                 IF TKT_CL_CAT CONTAINS 'B' THEN 'B' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'P' THEN 'P' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'U' THEN 'U' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'E' THEN 'E' ELSE 'D';  
+                 
+-*  NORDSN_CAT/A1 = IF ADIR_ALL CONTAINS '*F' THEN 'F' ELSE IF ADIR_ALL CONTAINS '*B' THEN 'B' ELSE 
+-*(           'C' ;
+-* NORDSN_CAT/A1 = IF TKT_CL_CAT CONTAINS 'F' THEN 'F' ELSE 
+-*                 IF TKT_CL_CAT CONTAINS 'B' THEN 'B' ELSE 
+-*                 IF TKT_CL_CAT CONTAINS 'U' THEN 'U' ELSE 'D' ;  
+ NORDSN_CAT/A1 = IF TKT_CL_CAT CONTAINS 'F' THEN 'F' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'B' THEN 'B' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'P' THEN 'P' ELSE
+                 IF TKT_CL_CAT CONTAINS 'E' THEN 'E' ELSE
+                 IF TKT_CL_CAT CONTAINS 'U' THEN 'U' ELSE 'D' ;  
+
+-*  ND_CAT/A8 = DECODE NORDSN_CAT ('F' 'FIRST'     'C' 'COACH'   
+-*                                'B' 'BUSINESS'); 
+
+-*  ND_CAT/A8 = DECODE NORDSN_CAT ('F' 'FIRST'     'U' 'UPGRADE'   
+-*                                'B' 'BUSINESS'  'D' 'ECONOMY'  ); 
+  ND_CAT/A15 = DECODE NORDSN_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+                              'D' 'DEFAULT'  'B' 'BUSINESS'
+                              'E' 'ECONOMY'   'U'  'UPGRADE' 
+                              ' ' 'DEFAULT');                   
+-*  CLASS_CAT/A8 = DECODE CL_CAT ('F' 'FIRST'     'C' 'COACH'   
+-*                              'D' 'DISCOUNT'  'B' 'BUSINESS'); 
+  CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+                              'D' 'DEFAULT'  'B' 'BUSINESS'
+                              'E' 'ECONOMY'   'U'  'UPGRADE' 
+                              ' ' 'DEFAULT'); 
+  LEVEL_DESC1/A80 = &&LDESC;
+  LEV/A1 = EDIT(LEVEL1, '9');
+  FARE_PAID/D11.2CS   = SEG_AMT + SEG_TAX;
+  KB_AGT/A9 = IF AGENT_NUM EQ '00111' THEN 'NO TOUCH' ELSE 'LOW TOUCH';
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID;
+  TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TRP_LEN/D9CS        = TRIP_LENGTH * SEG_COUNT;
+  VASAVINGS/D11.2CS   = SEG_DISCOUNT - FARE_PAID;
+  XARR_DOW/W           = ARR_DATE;
+  XARR_DT/MDYY         = ARR_DATE;
+  XCRDT_CD/A18 = 'AX9999999999999999';
+  XDPT_DOW/W           = DPT_DATE;
+  XDPT_DT/MDYY         = DPT_DATE;
+  XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XTRAN_DT/MDYY        = TRN_DATE;
+-* ****DEFINES ON PREVIOUS DEFINES****
+  AIRLINE_FEE/D8.2CS   = IF EMBARK EQ 'FP2' OR 'FP3' THEN FARE_PAID ELSE 0;
+  ARR_DAY/A3          = DECODE XARR_DOW (1 'MON' 2 'TUE' 3 'WED'
+                                 4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');  
+  BUSINESS/D12.2CS    = IF CL_CAT EQ 'B' THEN FARE_PAID ELSE 0;
+-*  COACH/D12.2CS       = IF CL_CAT EQ 'C' THEN FARE_PAID ELSE 0;
+-*  DISCOUNT/D12.2CS    = IF CL_CAT EQ 'D' THEN FARE_PAID ELSE 0;
+  PREM_ECON/D12.2CS       = IF CL_CAT EQ 'P' THEN FARE_PAID ELSE 0;
+  ECONOMY/D12.2CS    = IF CL_CAT EQ 'E' THEN FARE_PAID ELSE 0;
+  UPGRADE/D12.2CS       = IF CL_CAT EQ 'U' THEN FARE_PAID ELSE 0;
+
+  FIRST/D12.2CS       = IF CL_CAT EQ 'F' THEN FARE_PAID ELSE 0;
+-*  OTHER/D12.2CS       = IF CL_CAT EQ ' ' THEN FARE_PAID ELSE 0;
+  DEFAULT/D12.2CS       = IF CL_CAT EQ 'D' OR ' ' THEN FARE_PAID ELSE 0;
+
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  DPT_DAY/A3          = DECODE XDPT_DOW (1 'MON' 2 'TUE' 3 'WED'
+                                 4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+  ND_FIRST/D12.2CS = IF ND_CAT EQ 'FIRST' THEN FARE_PAID ELSE 0;
+  ND_BUSINESS/D12.2CS = IF ND_CAT EQ 'BUSINESS' THEN FARE_PAID ELSE 0;
+  ND_UP/D12.2CS = IF ND_CAT EQ 'UPGRADE' THEN FARE_PAID ELSE 0; 
+  ND_ECON/D12.2CS = IF ND_CAT EQ 'ECONOMY'  THEN FARE_PAID ELSE 0; 
+  ND_PECON/D12.2 CS = IF ND_CAT EQ 'PREMIUM ECONOMY' THEN FARE_PAID ELSE 0;  
+-INCLUDE TRANTYPE              
+-INCLUDE IDLEVDEFINE 
+  
+END
+ 
+
+ 
+
+TABLEF FILE &&EXTRACT
+-* Report column elements
+  PRINT ADIR_ALL
+        AGENT_NUM	
+        AIR_KEY	
+        AIR_MAIN.INTL_DOM	
+        AIRLINE	
+        AIRLINE_FEE	
+        AIRLINE_NAME	
+        AR_BRANCH	
+        ARR_DAY	
+        ARR_TIME
+        BOOK_DT	
+        BOOZ_CAT
+        BUSINESS
+        BR_CL_IDX
+        CASH_CREDIT
+        CITYPAIR.EMBARK      AS 'EMB_APT_CD'	
+        CITYPAIR.ROUTE       AS 'RTE_APT_CD'	
+        CLASS	
+        CLASS_CAT
+        CL_CAT
+        CLIENT_NAME
+-*        COACH	
+        CONJ_REL	
+        CREDIT_CARD
+ -*       DISCOUNT
+        DEFAULT
+        DISSAVINGS	
+        DOC_TYPE	
+        DPT_DAY	
+        DPT_TIME
+        DST_APC
+        DST_APCX
+        ECONOMY
+        EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'	
+        EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'	
+        EMB_CTY.EMB_CITY     AS 'EMB_CTY_CD'	
+        FARE_BAS	
+        FARE_PAID 
+        FIRST	
+        FLIGHT	
+        GSA_GTR	
+        INVOICE_NUM
+        KB_AGT
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        ND_CAT
+        ND_FIRST
+        ND_BUSINESS
+        ND_ECON
+        ND_UP
+        ND_PECON
+        NET_TKT_CNT
+-*        OTHER
+        PNR_LOCATOR
+        PREM_ECON
+        REF_EXCH_CNT	
+        REFUSAL_DESC	
+        REFUSE_CODE
+        REFUSE_KEY	
+        RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'	
+        RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'	
+        RTE_CTY.RTE_CITY     AS 'RTE_CTY_CD'	
+        SAVINGS	
+        SEG_AMT	
+        SEG_DESIG	
+        SEG_DISCOUNT	
+        SEG_LOWEST	
+        SEG_NBR	
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY	
+        ST_CAT
+        TICKET_BRANCH	
+        TKT_CL_CAT
+        TKT_NUM	
+        TKT_PURCH	
+        TKT_SORT	
+        TKT_TYPE
+        TRN_DATE	
+        TRP_LEN	
+        UPGRADE
+        VAL_AIRLINE	
+        VASAVINGS	
+        XARR_DT	
+        XCRDT_CD	
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT	
+                
+-INCLUDE &AIRDATES
+
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+-*
+ON TABLE HOLD AS RPTHLD
+END
+-RUN
+
+
+DEFINE FILE RPTHLD
+BZ_CAT/A1 = IF TKT_CL_CAT EQ 'U' THEN 'U' ELSE
+         IF TKT_CL_CAT EQ 'F' THEN 'F' ELSE
+         IF TKT_CL_CAT EQ 'B' THEN 'B' ELSE
+         IF TKT_CL_CAT EQ 'P' THEN 'P' ELSE
+         IF TKT_CL_CAT EQ 'E' THEN 'E' ELSE 'D';
+-Continue
+-*  CAT/A8 = DECODE BZ_CAT ('F' 'FIRST'     'C' 'COACH'   
+-*                          'D' 'DISCOUNT'  'B' 'BUSINESS'
+-*                          'U' 'UP');    
+  CAT/A15 = DECODE BZ_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+                          'D' 'DEFAULT'  'B' 'BUSINESS'  'E'  'ECONOMY' 
+                          'U' 'UPGRADE'    'D'  'DEFAULT'    );                              
+BZ_FLAG/A1 = IF BZ_CAT NE 'F' THEN 'Y' ELSE 'N';
+
+BZ_FLAG1/A1 = IF BZ_CAT NE 'B' THEN 'Y' ELSE 'N';
+             
+             
+        
+NW_LSEL/A13 = EDIT(LEVEL_DESC, '9999999999999');
+LVSEL/A80 = IF LEVEL_DESC EQ '(BOOZ-R) BOOZ & CO' THEN NW_LSEL ELSE 
+            IF LEVEL_DESC EQ '(BOOZB) BOOZ & CO BUSINESS' THEN NW_LSEL ELSE
+            IF LEVEL_DESC EQ '(BOOZP) BOOZ & CO PERSONAL' THEN NW_LSEL ELSE
+            IF LEVEL_DESC EQ '(BOOZL) BOOZ LEISURE' THEN NW_LSEL  ELSE
+            IF LEVEL_DESC EQ '(BOOZF) BOOZ & CO FINANCIAL' THEN NW_LSEL ELSE LEVEL_DESC;   
+
+-*CAT_BZ/A8 = DECODE BOOZ_CAT ('U' 'UP'    'F' 'FIRST'     'C' 'COACH'   
+-*                          'D' 'DISCOUNT'  'B' 'BUSINESS');    
+-*CAT2/A8 = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN CAT_BZ ELSE
+-*         DECODE STD_CAT ('F' 'FIRST'    'B' 'BUSINESS' 'U' 'UP'
+-*                        'C' 'COACHM'     'D' 'DISCOUNT');                              
+-*CAT_BZ/A15 = DECODE BOOZ_CAT ('U' 'UP'    'F' 'FIRST'     'C' 'COACH'   
+-*                          'D' 'DISCOUNT'  'B' 'BUSINESS');    
+-*CAT2/A15 = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN CAT_BZ ELSE
+-*         DECODE STD_CAT ('F' 'FIRST'    'B' 'BUSINESS' 'U' 'UP'
+-*                        'C' 'COACH'     'D' 'DISCOUNT');                    
+
+CAT_BZ/A15 = DECODE BOOZ_CAT ('U' 'UPGRADE'    'F' 'FIRST'     'B' 'BUSINESS'   
+                          'P' 'PREMIUM ECONOMY'  'E' 'ECONOMY'  'D' 'DEFAULT' );    
+CAT2/A15 = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN CAT_BZ ELSE
+         DECODE ST_CAT ('F' 'FIRST'    'B' 'BUSINESS'   'U' 'UPGRADE'
+                        'P' 'PREMIUM ECONOMY'     'E' 'ECONOMY'  'D' 'DEFAULT' )  ;        
+
+END
+-RUN
+
+TABLE FILE RPTHLD
+PRINT ADIR_ALL
+        AGENT_NUM	
+        AIR_KEY	
+        INTL_DOM	
+        AIRLINE	
+        AIRLINE_FEE	
+        AIRLINE_NAME	
+        AR_BRANCH	
+        ARR_DAY	
+        ARR_TIME
+        BOOK_DT	
+        BUSINESS
+        BR_CL_IDX
+        BZ_CAT
+        BZ_FLAG
+        CASH_CREDIT
+        CAT
+        CAT2
+        EMB_APT_CD	
+        RTE_APT_CD	
+        CLASS	
+        CLASS_CAT
+        CL_CAT
+        CLIENT_NAME
+        	
+        CONJ_REL	
+        CREDIT_CARD
+        DEFAULT	
+        DISSAVINGS	
+        DOC_TYPE	
+        DPT_DAY	
+        DPT_TIME
+        DST_APC
+        DST_APCX
+        ECONOMY
+        EMB_APT_NM	
+        EMB_CTY_NM	
+        EMB_CTY_CD	
+        FARE_BAS
+        FARE_PAID 
+        FIRST	
+        FLIGHT	
+        GSA_GTR	
+        INVOICE_NUM
+        KB_AGT
+        LVSEL
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3
+        ND_CAT
+        ND_FIRST
+        ND_BUSINESS
+        ND_ECON
+        ND_PECON
+        ND_UP
+        NET_TKT_CNT
+        PNR_LOCATOR
+        PREM_ECON
+        REF_EXCH_CNT	
+        REFUSAL_DESC	
+        REFUSE_CODE
+        REFUSE_KEY	
+        RTE_APT_NM	
+        RTE_CTY_NM	
+        RTE_CTY_CD	
+        SAVINGS	
+        SEG_AMT	
+        SEG_DESIG	
+        SEG_DISCOUNT	
+        SEG_LOWEST	
+        SEG_NBR
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY
+        ST_CAT
+        TICKET_BRANCH	
+        TKT_NUM	
+        TKT_PURCH	
+        TKT_SORT	
+        TKT_TYPE
+        TRN_DATE	
+        TRP_LEN	
+        UP
+        VAL_AIRLINE	
+        VASAVINGS	
+        XARR_DT	
+        XCRDT_CD	
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT        
+BY TKT_NUM
+-IF '&&SETF.EVAL' NE 'BZFCLS' OR 'BZBCLS' THEN GOTO NoWhere;
+&WHERE1
+-NoWhere
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+
+
+ 
+
+ 
+ 

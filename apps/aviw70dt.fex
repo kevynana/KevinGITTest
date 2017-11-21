@@ -1,0 +1,712 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-INCLUDE SETECHO
+-*                     FOCEXEC: APREPRT
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*01/28/02     TANDT-DB             CARRIED THROUGH BUSINESS COACH FIRST
+-*                                    DISCOUNT OTHER
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*7/23/07    DEB                CARRIED THROUGH KB_AGT
+-*3/22/13   DEB   ROUTINE FOR FC_ UDID COMMENTED OUT BECAUSE FC- UDID
+-*                INACTIVATED 2/20/13 IN AS400
+
+-*5/23/14   DEB                 UPDATED TICKET_NMBR DEFINE TO INCLUDE EX5
+-*2/16/15 - DEB - S-0750        CARRIED THROUGH ND_PECON FOR  NDSUMCLS
+-*12/10/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-* 08/04/2017 - JEM - S-37368 Updated LOW_AMT field to use SRT_DT instead of TKT_SORT
+-* 08/08/2017 - RSB - S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                             Added: -SET &FTR_AddlLines = #;
+-*********************************************************************
+SET ASNAMES=ON
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM DISSAVINGS AS 'DTSAVE'	
+  FARE_PAID AS 'TFARE'	
+  NET_TKT_CNT AS 'TTKT'	
+  REF_EXCH_CNT AS 'TRFEX'	
+  SAVINGS AS 'TSAVE'	
+  SEG_AMT AS 'TSEG'	
+  SEG_DISCOUNT AS 'TDISC'	
+  SEG_LOWEST AS 'TLOW'	
+  SEG_STANDARD AS 'TSTD'	
+  SEG_TAX AS 'TTAX'	
+  TKT_PURCH AS 'TPURCH'	
+  VASAVINGS AS 'VTSAVE'	
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+PRINT AGENT_NUM	
+  AIRLINE	
+  AIRLINE_FEE	
+  AIRLINE_NAME	
+  AIR_KEY
+  AR_BRANCH	
+  ARR_DAY	
+  ARR_TIME
+  BOOK_DT	
+  BR_CL_IDX
+  BUSINESS
+  CASH_CREDIT
+  CAT
+  CAT2
+  CLASS	
+  CLASS_CAT
+  CL_CAT
+  CLIENT_NAME	
+-*  COACH
+  CONJ_REL	
+  CREDIT_CARD
+-*  DISCOUNT	
+  DISSAVINGS	
+  DOC_TYPE	
+  DPT_DAY	
+  DPT_TIME
+  DST_APC
+  DST_APCX
+  EMB_APT_CD	
+  EMB_APT_NM	
+  EMB_CTY_CD	
+  EMB_CTY_NM	
+  FARE_BAS	
+  FARE_PAID
+  FIRST	
+  FLIGHT
+  INTL_DOM	
+  INVOICE_NUM
+  KB_AGT
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  LVSEL
+  ND_CAT
+  ND_FIRST
+  ND_BUSINESS
+  ND_ECON
+  ND_UP
+  ND_PECON
+  NET_TKT_CNT	
+-*  OTHER
+  PNR_LOCATOR	
+  REF_EXCH_CNT	
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  RTE_APT_CD	
+  RTE_APT_NM	
+  RTE_CTY_CD	
+  RTE_CTY_NM	
+  SEG_AMT	
+  SEG_DESIG	
+  SEG_DISCOUNT	
+  SEG_LOWEST	
+  SEG_TAX	
+  STAY 	
+  ST_CAT
+  TICKET_BRANCH	
+  TKT_NUM	
+  TKT_PURCH	
+  TKT_TYPE
+  TRP_LEN	
+  VAL_AIRLINE	
+  VASAVINGS	
+  XARR_DT	
+  XCRDT_CD	
+  XDPT_DT	
+  XTRAN_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT AGENT_NUM	
+  AIRLINE	
+  AIRLINE_FEE	
+  AIRLINE_NAME	
+  AIR_KEY
+  AR_BRANCH	
+  ARR_DAY	
+  ARR_TIME
+  BOOK_DT	
+  BR_CL_IDX
+  BUSINESS
+  CASH_CREDIT
+  CAT
+  CAT2
+  CLASS	
+  CLASS_CAT
+  CL_CAT
+  CLIENT_NAME
+-*  COACH	
+  CONJ_REL	
+  CREDIT_CARD
+-*  DISCOUNT	
+  DISSAVINGS	
+  DOC_TYPE	
+  DPT_DAY	
+  DPT_TIME
+  DST_APC
+  DST_APCX
+  EMB_APT_CD	
+  EMB_APT_NM	
+  EMB_CTY_CD	
+  EMB_CTY_NM	
+  FARE_BAS	
+  FARE_PAID
+  FIRST	
+  FLIGHT
+  INTL_DOM	
+  INVOICE_NUM
+  KB_AGT
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  LVSEL
+  ND_CAT
+  ND_FIRST
+  ND_BUSINESS
+  ND_ECON
+  ND_PECON
+  ND_UP
+  NET_TKT_CNT
+-*  OTHER	
+  PNR_LOCATOR	
+  REF_EXCH_CNT	
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  RTE_APT_CD	
+  RTE_APT_NM	
+  RTE_CTY_CD	
+  RTE_CTY_NM	
+  SEG_AMT	
+  SEG_DESIG	
+  SEG_DISCOUNT	
+  SEG_LOWEST	
+  SEG_TAX	
+  STAY 	
+  ST_CAT
+  TICKET_BRANCH	
+  TKT_NUM	
+  TKT_PURCH	
+  TKT_TYPE
+  TRP_LEN	
+  VAL_AIRLINE	
+  VASAVINGS	
+  XARR_DT	
+  XCRDT_CD	
+  XDPT_DT	
+  XTRAN_DT	
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT DTSAVE	
+  TDISC	
+  TFARE	
+  TLOW	
+  TPURCH	
+  TRFEX	
+  TSAVE	
+  TSEG	
+  TSTD	
+  TTAX	
+  TTKT	
+  VTSAVE	
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+
+
+-IF '&&SETF.EVAL' EQ 'NDSUMCLS' THEN GOTO NORDSN;
+-*-IF '&&SETF.EVAL' EQ 'BZSUMCLS' OR 'BZSUMCL2' THEN GOTO BOOZ;
+
+TABLE FILE AIRHOLD2
+PRINT AGENT_NUM	
+  AIRLINE	
+  AIRLINE_FEE	
+  AIRLINE_NAME	
+  AR_BRANCH	
+  ARR_DAY	
+  ARR_TIME
+  BOOK_DT	
+  BR_CL_IDX
+  BUSINESS
+  CASH_CREDIT
+  CAT
+  CAT2
+  CLASS	
+  CLASS_CAT
+  CL_CAT
+  CLIENT_NAME
+-*  COACH	
+  CONJ_REL	
+  CREDIT_CARD
+-*  DISCOUNT	
+  DISSAVINGS	
+  DOC_TYPE	
+  DPT_DAY	
+  DPT_TIME
+  DST_APC
+  DST_APCX
+  DTSAVE	
+  EMB_APT_CD	
+  EMB_APT_NM	
+  EMB_CTY_CD	
+  EMB_CTY_NM	
+  FARE_BAS	
+  FARE_PAID
+  FIRST	
+  FLIGHT	
+  INTL_DOM	
+  INVOICE_NUM
+  KB_AGT
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  LVSEL
+  ND_CAT
+  ND_FIRST
+  ND_BUSINESS
+  ND_ECON
+    ND_UP
+  NET_TKT_CNT	
+-*  OTHER	
+  PNR_LOCATOR	
+  REF_EXCH_CNT	
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  RTE_APT_CD	
+  RTE_APT_NM	
+  RTE_CTY_CD	
+  RTE_CTY_NM	
+  SEG_AMT	
+  SEG_DESIG	
+  SEG_DISCOUNT	
+  SEG_LOWEST	
+  SEG_TAX	
+  STAY	
+  ST_CAT
+  TDISC	
+  TFARE	
+  TICKET_BRANCH	
+  TKT_NUM	
+  TKT_PURCH	
+  TKT_TYPE	
+  TLOW
+  TPURCH	
+  TRFEX	
+  TRN_DATE	
+  TRP_LEN	
+  TSAVE	
+  TSEG	
+  TSTD	
+  TTAX	
+  TTKT	
+  VAL_AIRLINE	
+  VASAVINGS	
+  VTSAVE	
+  XARR_DT	
+  XCRDT_CD	
+  XDPT_DT	
+  XPSNGR_NM	
+  XTRAN_DT	
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+-GOTO Continue;
+
+
+-BOOZ
+
+-INCLUDE RETUDID
+-RUN
+
+
+EX UDBOOZFC
+-RUN
+
+-GOTO Continue;
+
+-NORDSN
+ 
+
+JOIN AIRHOLD2.DST_APCX IN AIRHOLD2 TO AIRPORT.APCODEX IN AIRPORT AS J1
+
+TABLE FILE AIRHOLD2
+PRINT AGENT_NUM	
+  AIRLINE	
+  AIRLINE_FEE	
+  AIRLINE_NAME	
+  AR_BRANCH	
+  ARR_DAY	
+  ARR_TIME
+  BOOK_DT	
+  BR_CL_IDX
+  BUSINESS	
+  CASH_CREDIT
+  CAT
+  CAT2
+  CLASS	
+  CLASS_CAT
+  CL_CAT
+  CLIENT_NAME
+-*  COACH	
+  CONJ_REL	
+  CREDIT_CARD
+-*  DISCOUNT	
+  DISSAVINGS	
+  DOC_TYPE	
+  DPT_DAY	
+  DPT_TIME
+  DST_APC
+  DTSAVE	
+  EMB_APT_CD	
+  EMB_APT_NM	
+  EMB_CTY_CD	
+  EMB_CTY_NM	
+  FARE_BAS	
+  FARE_PAID
+  FIRST	
+  FLIGHT	
+  INTL_DOM	
+  INVOICE_NUM
+  KB_AGT
+  LEVEL_DESC
+  LVSEL
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  ND_CAT
+  ND_FIRST
+  ND_BUSINESS
+  ND_ECON
+  ND_UP
+  ND_PECON
+  NET_TKT_CNT	
+-*  OTHER	
+  PNR_LOCATOR	
+  REF_EXCH_CNT	
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  RTE_APT_CD	
+  RTE_APT_NM	
+  RTE_CTY_CD	
+  RTE_CTY_NM	
+  SEG_AMT	
+  SEG_DESIG	
+  SEG_DISCOUNT	
+  SEG_LOWEST
+  SEG_NBR
+  SEG_TAX	
+  STAY	
+  TDISC	
+  TFARE	
+  TICKET_BRANCH	
+  TKT_NUM	
+  TKT_PURCH
+  TKT_SORT
+  TKT_TYPE	
+  TLOW
+  TPURCH	
+  TRFEX	
+  TRN_DATE	
+  TRP_LEN	
+  TSAVE	
+  TSEG	
+  TSTD	
+  TTAX	
+  TTKT	
+  VAL_AIRLINE	
+  VASAVINGS	
+  VTSAVE	
+  XARR_DT	
+  XCRDT_CD	
+  XDPT_DT	
+  XPSNGR_NM	
+  XTRAN_DT
+  AIRPORT.GEO_ZONE
+BY LEVEL_DESC
+ON TABLE HOLD AS XTHREE
+END
+-RUN
+
+DEFINE FILE XTHREE
+REGION/A15 = IF GEO_ZONE EQ 'EUR' THEN 'EUROPE' ELSE
+             IF GEO_ZONE EQ 'ASA' THEN 'ASIA' ELSE
+             IF GEO_ZONE EQ 'LAM' THEN 'LATIN AMERICA' ELSE
+             IF GEO_ZONE EQ 'SAM' THEN 'SOUTH AMERICA' ELSE
+             IF GEO_ZONE EQ 'AFR' THEN 'AFRICA' ELSE
+             IF GEO_ZONE EQ 'PAC' THEN 'SOUTH PACIFIC' ELSE
+             IF GEO_ZONE EQ 'MES' THEN 'MIDDLE EAST' ELSE 'USA';
+END             
+TABLE FILE XTHREE
+PRINT AGENT_NUM	
+  AIRLINE	
+  AIRLINE_FEE	
+  AIRLINE_NAME	
+  AR_BRANCH	
+  ARR_DAY	
+  ARR_TIME
+  BOOK_DT	
+  BR_CL_IDX
+  BUSINESS	
+  CASH_CREDIT
+  CAT
+  CAT2
+  CLASS	
+  CLASS_CAT
+  CL_CAT
+  CLIENT_NAME
+-*  COACH	
+  CONJ_REL	
+  CREDIT_CARD
+-*  DISCOUNT	
+  DISSAVINGS	
+  DOC_TYPE	
+  DPT_DAY	
+  DPT_TIME
+  DST_APC
+  DTSAVE	
+  EMB_APT_CD	
+  EMB_APT_NM	
+  EMB_CTY_CD	
+  EMB_CTY_NM	
+  FARE_BAS	
+  FARE_PAID
+  FIRST	
+  FLIGHT
+  INTL_DOM	
+  INVOICE_NUM
+  KB_AGT
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3
+  LVSEL
+  ND_CAT
+  ND_FIRST
+  ND_BUSINESS
+  ND_PECON
+  ND_UP
+  NET_TKT_CNT	
+-*  OTHER	
+  PNR_LOCATOR	
+  REF_EXCH_CNT	
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  RTE_APT_CD	
+  RTE_APT_NM	
+  RTE_CTY_CD	
+  RTE_CTY_NM	
+  SEG_AMT	
+  SEG_DESIG	
+  SEG_DISCOUNT	
+  SEG_LOWEST	
+  SEG_TAX	
+  STAY	
+  TDISC	
+  TFARE	
+  TICKET_BRANCH	
+  TKT_NUM	
+  TKT_PURCH
+  TKT_TYPE	
+  TLOW
+  TPURCH	
+  TRFEX	
+  TRN_DATE	
+  TRP_LEN	
+  TSAVE	
+  TSEG	
+  TSTD	
+  TTAX	
+  TTKT	
+  VAL_AIRLINE	
+  VASAVINGS	
+  VTSAVE	
+  XARR_DT	
+  XCRDT_CD	
+  XDPT_DT	
+  XPSNGR_NM	
+  XTRAN_DT
+  REGION
+  DST_APC
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+ 
+-Continue 
+
+DEFINE FILE AIRHOLD3
+  LEV_3/A15 = IF TKT_NUM NE LAST TKT_NUM THEN LEVEL3 ELSE ' ';
+
+  PASNGR_NAME/A15 =  IF TKT_NUM NE LAST TKT_NUM THEN XPSNGR_NM ELSE ' ';
+  REASON_CD/A2 =  IF TKT_NUM NE LAST TKT_NUM THEN REFUSE_CODE ELSE ' ';
+  REASON_DESC/A40 = IF TKT_NUM NE LAST TKT_NUM THEN REFUSAL_DESC ELSE ' '; 
+  RREFUSE_CODE/A2 = IF TKT_SORT NE LAST TKT_SORT THEN REFUSE_CODE ELSE ' ';	
+
+  TICKET_NMBR/A10 = IF (TKT_SORT NE LAST TKT_SORT) AND
+                     (EMB_APT_CD NE 'FP2' OR 'EX1' OR 'RF1' OR 'EX5')
+                      THEN TKT_NUM ELSE ' ';
+  TKT_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+  XT_DTE/A8=EDIT(TRN_DATE);
+  XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');
+  
+-* ****DEFINES ON PREVIOUS DEFINES****
+  SRT_DT/A120 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+  FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+  TSEG_AMT/D10.2CS = IF SRT_DT NE LAST SRT_DT THEN TSEG ELSE 0;
+  TSEG_TAX/D10.2CS = IF SRT_DT NE LAST SRT_DT THEN TTAX ELSE 0; 
+  XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;
+-IF '&&SETF.EVAL' NE 'BZSUMCLS' OR 'BZSUMCL2' THEN GOTO SkipDefine;
+-*FCRSN/A25 = IF TKT_SORT NE LAST TKT_SORT THEN FC_RSN ELSE ' ';
+ BOOZ_KEY/A1 = IF CAT EQ 'UP' THEN 'A' ELSE
+               IF CAT EQ 'FIRST' THEN 'B' ELSE
+               IF CAT EQ 'BUSINESS' THEN 'C' ELSE
+               IF CAT EQ 'PREMIUM' THEN 'D' ELSE
+               IF CAT EQ 'ECONOMY' THEN 'E' ELSE 'F';
+-SkipDefine
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-*********************************************************************
+NOWTOD/A8 WITH TKT_SORT = HHMMSS(NOWTOD);
+CONV_AMT/D10.2CS = IF SRT_DT NE LAST SRT_DT THEN TDISC ELSE 0;
+LOST_SAV_AMT/D10.2CS = IF SRT_DT NE LAST SRT_DT THEN DTSAVE ELSE 0;
+LOW_AMT/D10.2CS = IF SRT_DT NE LAST SRT_DT THEN TLOW ELSE 0;
+SAVE_AMT/D10.2CS = IF SRT_DT NE LAST SRT_DT THEN TSAVE ELSE 0;
+STD_FARE/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TSTD ELSE 0;
+  VAL_SAVE/D10.2CS = IF SRT_DT NE LAST SRT_DT THEN VTSAVE ELSE 0;
+
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD3';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+TABLE FILE AIRHOLD3
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-IF '&&SETF.EVAL' NE 'BZFCLS' OR 'BZBCLS' THEN GOTO NormalFoot;
+-*
+-SET &FTR_AddlLines = 3;
+FOOTING BOTTOM
+" "
+" "
+"Excludes Amtrak"
+-**********
+-NormalFoot
+-**********
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT 
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&DTSTY 
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT

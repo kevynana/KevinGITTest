@@ -1,0 +1,45 @@
+
+-SET &&AH = AH_50;
+-SET &&DAH = AH_50 || '.';
+-SET &&EXTRACT = HR_50;
+-SET &&EXTJOIN = HR_JOIN;
+-SET &&COMPNY1  = &&COMP ;
+
+-SET &&AIR_PATH = 'D:\TNT\TTRACKER\DATA\';
+-SET &&COM_PATH = 'D:\TNT\TTRACKER\SYSTEM\DATA\';
+-SET &&SU_PATH  = 'D:\TNT\TTRACKER\SUDATA\';
+-*========================================================================
+-*                    USE AL DATABASES
+-*========================================================================
+-SET &&AH_DB1 = 'AL' || &&COMPNY1 || '.FOC';
+
+-SET &&USE_AH1 = &&AIR_PATH || &&AH_DB1;
+
+-SET &&USE_HREF = &&COM_PATH || 'HTL_REF.FOC';
+-SET &&USE_ARPT = &&COM_PATH || 'AIRPORT.FOC';
+-SET &&USE_CLNT = &&COM_PATH || 'CLIENT.FOC';
+-SET &&USE_ROLL = &&COM_PATH || 'ROLLUPX.FOC';
+-SET &&USE_ARAT = &&COM_PATH || 'AL_RATE.FOC';
+-SET &&USE_CITY = &&COM_PATH || 'CITY.FOC';
+-SET &&USE_PROP = &&COM_PATH || 'HOTL_PRP.FOC';
+-SET &&USE_HCHN = &&COM_PATH || 'HOTL_CHN.FOC';
+-SET &&USE_BRAN = &&COM_PATH || 'BRANCH.FOC';
+
+-SET &&COMP1A = 'H_' ||&&COMPNY1 || '.FOC';
+
+USE CLEAR *
+
+USE
+D:\TNT\TTRACKER\DATA\&&COMP1A AS &&EXTRACT
+ &&USE_AH1                    AS AH_50
+ &&USE_HREF
+ &&USE_ARPT
+ &&USE_CLNT
+ &&USE_ROLL
+ &&USE_ARAT
+ &&USE_PROP
+ &&USE_HCHN
+ &&USE_CITY
+ &&USE_BRAN
+
+END

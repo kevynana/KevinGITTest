@@ -1,0 +1,174 @@
+-***************************************************************************
+-* REPORT NAME: QUARTERLY REVIEW (AIR EXTRACT)
+-* TOTAL COMPANY REPORTING
+-* Steve - temporary change to include Domestic only - 06/18/2004
+-*2/22/05        JK                 ADDED TNT_COMPANY WHERE STATEMENT
+-***************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED IN STEP3
+-*========================================================================
+DEFINE FILE &&EXTRACT
+
+FARE_PAID/D12 = SEG_AMT + SEG_TAX;
+  NET_TKT_CNT/D8CS  =   IF (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) THEN 1 ELSE 
+                        IF (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') AND (SEG_COUNT EQ -1)
+				   THEN (-1) ELSE 
+                        IF (DOC_TYPE NE '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') AND
+				   (SEG_COUNT EQ -1)
+				   THEN (-1) ELSE 0;
+
+TKT_PURCH/D8.2CS      = IF (TICKET_CODE EQ '1') AND
+                             (SEG_NBR EQ '01') AND
+                             (FARE_PAID GE 0) AND
+                             (SEG_COUNT EQ 1) AND 
+                             (CONJ_REL EQ 1) THEN 1 ELSE 0;
+
+-* Defines on Previous Defines
+  DISSAVINGS/D12 = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  VASAVINGS/D12 = SEG_DISCOUNT - FARE_PAID;
+-* Defines on Previously Defined Defines
+  
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+
+PRINT AIR_MAIN.INTL_DOM AS 'INTL_DOM'
+  AIR_KEY
+  DISSAVINGS
+  DOC_TYPE	
+  DOD_TYPE
+  DPT_DATE	
+  EMBARK	
+  EX_FLAG	
+  EXCHG_SALE
+  FARE_PAID	
+  NET_TKT_CNT
+  RF_FLAG
+  SEG_AMT/D12	
+  SEG_COM/D12	
+  SEG_COUNT
+  SEG_NBR 	
+  SEG_TAX/D12 
+  TKT_NUM
+  TKT_PURCH	
+  TRN_DATE
+  VASAVINGS
+  VOID_DATE 	
+  VOID_STATUS 	
+
+WHERE (TRN_DATE GE &&FROMDT.EVAL) AND (TRN_DATE LE &&TODT.EVAL) OR
+      (TRN_DATE GE &&FXDATE.EVAL) AND (TRN_DATE LE &&TXDATE.EVAL)
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TC_AREV
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*                <---------------- STEP5 ---------------->
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM STEP4 - HOLD TO FOCUS DATABASE TCAREV       
+-*========================================================================
+DEFINE FILE TC_AREV
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TC_AREV
+-* SUM DISSAVINGS
+PRINT DISSAVINGS
+      AIR_KEY
+      DOC_TYPE
+      DOD_TYPE
+      DPT_DATE
+      EMBARK
+      EX_FLAG
+      EXCHG_SALE
+      FARE_PAID
+      INTL_DOM
+      NET_TKT_CNT
+      RF_FLAG
+      SEG_AMT
+      SEG_COM
+      SEG_NBR
+      SEG_TAX
+      TKT_PURCH
+      TRN_DATE 
+-*      SEG_COUNT
+      VASAVINGS
+      VOID_DATE
+      VOID_STATUS 
+BY ROLLCD
+BY TKT_NUM
+BY SEG_COUNT
+-*BY TRN_DATE
+-*BY VOID_DATE
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+DEFINE FILE HOLD2
+  NMB/I5 = NMB + 1;  
+END
+TABLE FILE HOLD2
+SUM DISSAVINGS
+      DOC_TYPE
+      DOD_TYPE
+      DPT_DATE
+      EMBARK
+      EX_FLAG
+      EXCHG_SALE
+      INTL_DOM
+      FARE_PAID
+      NET_TKT_CNT
+      RF_FLAG
+      SEG_AMT
+      SEG_COM
+      SEG_NBR
+      SEG_TAX
+-*      SEG_COUNT
+      TKT_PURCH
+      TRN_DATE
+      VASAVINGS
+      VOID_DATE
+      VOID_STATUS 
+BY ROLLCD
+BY NMB
+BY TKT_NUM
+BY SEG_COUNT
+-* BY TRN_DATE
+-* BY VOID_DATE
+ON TABLE HOLD AS TCM1
+END
+-RUN
+
+MODIFY FILE TCAREV
+FIXFORM FROM TCM1
+MATCH ROLLCD NMB
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON TCM1
+END
+-RUN
+
+-NEXTONE

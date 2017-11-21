@@ -1,0 +1,226 @@
+-* 08/04/2017 RSB S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                         Removed: FOOTING BOTTOM since it is not needed.
+-*
+SET ASNAMES = ON
+-RUN
+
+
+TABLE FILE CNTRYHLD
+PRINT AIRLINE
+  AIR_KEY
+  EMB_APT_NM
+  FARE_PAID
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3	
+  MRK_TKT_CNT
+  NEW_SEG_MILES
+  NEW_STAY	
+  ORG_APC
+  PASSNGR_NAME	
+  RTE_APT_NM  
+  SEG_NBR
+  TKT_DATE
+  TKT_NUM
+  TKT_SORT
+  TKT_TYPE	
+  TRIPS
+  TRIP_LENGTH
+  TRN_DATE	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+BY ORG_APC AS 'AIRPORT_CODE'
+ON TABLE HOLD AS CNTRY1 FORMAT FOCUS INDEX ORG_APC
+END
+-RUN
+
+
+JOIN AIRPORT_CODE IN CNTRY1 TO AIRPORT_CODE IN AIRPORT
+END
+
+TABLE FILE CNTRY1
+PRINT AIRLINE
+  AIR_KEY
+  AIRPORT_CODE AS 'ORG'
+  DST_APC AS 'DEST'
+  EMB_APT_NM
+  FARE_PAID
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3	
+  MRK_TKT_CNT
+  NEW_SEG_MILES
+  NEW_STAY	
+  PASSNGR_NAME	
+  RTE_APT_NM
+  SEG_NBR
+  TKT_DATE
+  TKT_NUM
+  TKT_SORT
+  TKT_TYPE	
+  TRIPS
+  TRIP_LENGTH
+  TRN_DATE	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+BY COUNTRY_CODE
+ON TABLE HOLD AS CNTRY2 FORMAT FOCUS INDEX COUNTRY_CODE
+END
+-RUN
+
+JOIN COUNTRY_CODE IN CNTRY2 TO COUNTRY_CODE IN COUNTRY
+END
+
+TABLE FILE CNTRY2
+PRINT AIRLINE
+      AIR_KEY
+  EMB_APT_NM
+  DEST
+  FARE_PAID
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3	
+  MRK_TKT_CNT
+  NEW_SEG_MILES
+  NEW_STAY	
+  PASSNGR_NAME	
+  RTE_APT_NM
+  SEG_NBR
+  TKT_DATE
+  TKT_NUM
+  TKT_SORT
+  TKT_TYPE	
+  TRIPS
+  TRIP_LENGTH
+  TRN_DATE	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+BY ORG
+BY DEST
+BY COUNTRY_NAME
+ON TABLE HOLD AS CNTRY3
+END
+-RUN
+
+-SET &&RPTSUF = 'CNTRYDTL';
+
+-INCLUDE FDEFRPTS
+-RUN
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'CNTRY3';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+DEFINE FILE CNTRY3
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+END
+-RUN
+
+TABLE FILE CNTRY3
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+WHERE NEW_STAY NE 0
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+
+
+
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+
+

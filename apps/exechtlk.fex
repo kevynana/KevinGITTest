@@ -1,0 +1,299 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File EXECHTLK.FEX
+-*************************************************************************
+-*DATE          NAME            DESCRIPTION
+-* 3/07/01   TANDT-SS           CHANGE ALL NUMERIC FORMATS FROM P (PACKED) TO
+-*                              D (FLOATING-POINT DOUBLE PRECISION) TO PROVIDE
+-*                              CONSISTENCY IN ROUNDING AND PERCENTAGES.
+-* 4/30/01    TANDT-SS          ADDED CODE TO CALCULATIONS TO KEEP NEGATIVE
+-*                              NUMBER IN PLACE FOR BACK-OUT OF CANCELLATIONS
+-*                              AND DUPLICATES
+-* 7/27/01    TANDT-SS          CHANGED TO LOOK AT CITY.INTL_DOM INSTEAD OF
+-*                              COUNTRY CODE
+-*************************************************************************
+
+
+DEFINE FILE &&EXTRACT
+INTL_DOM/A1 =IF (CITY.INTL_DOM EQ 'D') THEN 'D' ELSE 'I';
+-* INTL_DOM/A1 =IF (CITY.COUNTRY_CODE EQ 'US' OR ' ') THEN 'D' ELSE 'I';
+ CM/A1 = IF INVOICE_DATE GE &&CMFMDT.EVAL AND 
+INVOICE_DATE LE &&CMTODT.EVAL THEN 'Y' ELSE 'N';
+ CY/A1 = IF INVOICE_DATE GE &&CYFMDT.EVAL AND 
+INVOICE_DATE LE &&CYTODT.EVAL THEN 'Y' ELSE 'N';
+ PM/A1 = IF INVOICE_DATE GE &&PMFMDT.EVAL AND 
+INVOICE_DATE LE &&PMTODT.EVAL THEN 'Y' ELSE 'N';
+ PY/A1 = IF INVOICE_DATE GE &&PYFMDT.EVAL AND 
+INVOICE_DATE LE &&PYTODT.EVAL THEN 'Y' ELSE 'N';
+
+
+-*DOMESTIC PERIOD
+-* CURRENT HOTEL AMOUNT DOMESTIC CALCULATION
+      CDM1HTL_AMT/D12.2 = IF ((INTL_DOM IS 'D')
+                      AND (CM EQ 'Y'))       
+                      THEN HTL_MAIN.TOTAL_AMT
+                      ELSE 0;
+
+-* CURRENT HOTEL DAYS DOMESTIC CALCULATION
+      CDM1HTL_DAY/D12.2 = IF ((INTL_DOM IS 'D') AND (CM EQ 'Y')
+                      AND (HTL_MAIN.NUM_DAYS LT 0) 
+                      AND (HTL_MAIN.NUM_ROOMS LT 0))
+                      THEN ((HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS) * (-1))
+                      ELSE IF ((INTL_DOM IS 'D') AND (CM EQ 'Y'))
+                      THEN HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+-* CURRENT HOTEL ROOMS DOMESTIC CALCULATION
+      CDM1HTL_RMS/D12.2 = IF ((INTL_DOM IS 'D')
+                      AND (CM EQ 'Y'))       
+                      THEN HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+
+-*INT'L PERIOD
+-* CURRENT HOTEL AMOUNT INT'L CALCULATION
+      CIM1HTL_AMT/D12.2 = IF ((INTL_DOM IS 'I')
+                      AND (CM EQ 'Y'))       
+                      THEN HTL_MAIN.TOTAL_AMT
+                      ELSE 0;
+
+-* CURRENT HOTEL DAYS INT'L CALCULATION
+      CIM1HTL_DAY/D12.2 = IF ((INTL_DOM IS 'I') AND (CM EQ 'Y')
+                      AND (HTL_MAIN.NUM_DAYS LT 0)
+                      AND (HTL_MAIN.NUM_ROOMS LT 0))
+                      THEN ((HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS) * (-1))
+                      ELSE IF ((INTL_DOM IS 'I') AND (CM EQ 'Y'))
+                      THEN HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+-* CURRENT HOTEL ROOMS INT'L CALCULATION
+      CIM1HTL_RMS/D12.2 = IF ((INTL_DOM IS 'I')
+                      AND (CM EQ 'Y'))       
+                      THEN HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+
+-*DOMESTIC PERIOD
+-* PRIOR HOTEL AMOUNT DOMESTIC CALCULATION
+      PDM1HTL_AMT/D12.2 = IF ((INTL_DOM IS 'D')
+                      AND (PM EQ 'Y'))       
+                      THEN HTL_MAIN.TOTAL_AMT
+                      ELSE 0;
+-* PRIOR HOTEL DAYS DOMESTIC CALCULATION
+      PDM1HTL_DAY/D12.2 = IF ((INTL_DOM IS 'D') AND (PM EQ 'Y')
+                      AND (HTL_MAIN.NUM_DAYS LT 0)
+                      AND (HTL_MAIN.NUM_ROOMS LT 0))
+                      THEN ((HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS) * (-1))
+                      ELSE IF ((INTL_DOM IS 'D') AND (PM EQ 'Y'))
+                      THEN HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+-* PRIOR HOTEL ROOMS DOMESTIC CALCULATION
+      PDM1HTL_RMS/D12.2 = IF ((INTL_DOM IS 'D')
+                      AND (PM EQ 'Y'))       
+                      THEN HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+
+-*INT'L PERIOD
+-* PRIOR HOTEL AMOUNT INT'L CALCULATION
+      PIM1HTL_AMT/D12.2 = IF ((INTL_DOM IS 'I')
+                      AND (PM EQ 'Y'))       
+                      THEN HTL_MAIN.TOTAL_AMT
+                      ELSE 0;
+
+-* PRIOR HOTEL DAYS INT'L CALCULATION
+      PIM1HTL_DAY/D12.2 = IF ((INTL_DOM IS 'I') AND (PM EQ 'Y')
+                      AND (HTL_MAIN.NUM_DAYS LT 0)
+                      AND (HTL_MAIN.NUM_ROOMS LT 0))
+                      THEN ((HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS) * (-1))
+                      ELSE IF ((INTL_DOM IS 'I') AND (PM EQ 'Y'))
+                      THEN HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+-* PRIOR HOTEL ROOMS INT'L CALCULATION
+      PIM1HTL_RMS/D12.2 = IF ((INTL_DOM IS 'I')
+                      AND (PM EQ 'Y'))       
+                      THEN HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+
+-*DOMESTIC YTD 
+-* CURRENT HOTEL AMOUNT DOMESTIC CALCULATION
+      CDY1HTL_AMT/D12.2 = IF ((INTL_DOM IS 'D')
+                      AND (CY EQ 'Y'))       
+                      THEN HTL_MAIN.TOTAL_AMT
+                      ELSE 0;
+
+-* CURRENT HOTEL DAYS DOMESTIC CALCULATION
+      CDY1HTL_DAY/D12.2 = IF ((INTL_DOM IS 'D') AND (CY EQ 'Y')
+                      AND (HTL_MAIN.NUM_DAYS LT 0)
+                      AND (HTL_MAIN.NUM_ROOMS LT 0))
+                      THEN ((HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS) * (-1))
+                      ELSE IF ((INTL_DOM IS 'D') AND (CY EQ 'Y'))
+                      THEN HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+-* CURRENT HOTEL ROOMS DOMESTIC CALCULATION
+      CDY1HTL_RMS/D12.2 = IF ((INTL_DOM IS 'D')
+                      AND (CY EQ 'Y'))       
+                      THEN HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+
+-*INT'L YTD
+-* CURRENT HOTEL AMOUNT INT'L CALCULATION
+      CIY1HTL_AMT/D12.2 = IF ((INTL_DOM IS 'I')
+                      AND (CY EQ 'Y'))       
+                      THEN HTL_MAIN.TOTAL_AMT
+                      ELSE 0;
+
+-* CURRENT HOTEL DAYS INT'L CALCULATION
+      CIY1HTL_DAY/D12.2 = IF ((INTL_DOM IS 'I') AND (CY EQ 'Y')
+                      AND (HTL_MAIN.NUM_DAYS LT 0)
+                      AND (HTL_MAIN.NUM_ROOMS LT 0))
+                      THEN ((HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS) * (-1))
+                      ELSE IF ((INTL_DOM IS 'I') AND (CY EQ 'Y'))
+                      THEN HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+-* CURRENT HOTEL ROOMS INT'L CALCULATION
+      CIY1HTL_RMS/D12.2 = IF ((INTL_DOM IS 'I')
+                      AND (CY EQ 'Y'))       
+                      THEN HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+
+-*DOMESTIC YTD
+-* PRIOR HOTEL AMOUNT DOMESTIC CALCULATION
+      PDY1HTL_AMT/D12.2 = IF ((INTL_DOM IS 'D')
+                      AND (PY EQ 'Y'))       
+                      THEN HTL_MAIN.TOTAL_AMT
+                      ELSE 0;
+-* PRIOR HOTEL DAYS DOMESTIC CALCULATION
+      PDY1HTL_DAY/D12.2 = IF ((INTL_DOM IS 'D') AND (PY EQ 'Y')
+                      AND (HTL_MAIN.NUM_DAYS LT 0)
+                      AND (HTL_MAIN.NUM_ROOMS LT 0))
+                      THEN ((HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS) * (-1))
+                      ELSE IF ((INTL_DOM IS 'D') AND (PY EQ 'Y'))
+                      THEN HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+-* PRIOR HOTEL ROOMS DOMESTIC CALCULATION
+      PDY1HTL_RMS/D12.2 = IF ((INTL_DOM IS 'D')
+                      AND (PY EQ 'Y'))       
+                      THEN HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+-*INT'L YTD
+-* PRIOR HOTEL AMOUNT INT'L CALCULATION
+      PIY1HTL_AMT/D12.2 = IF ((INTL_DOM IS 'I')
+                      AND (PY EQ 'Y'))       
+                      THEN HTL_MAIN.TOTAL_AMT
+                      ELSE 0;
+
+-* PRIOR HOTEL DAYS INT'L CALCULATION
+      PIY1HTL_DAY/D12.2 = IF ((INTL_DOM IS 'I') AND (PY EQ 'Y')
+                      AND (HTL_MAIN.NUM_DAYS LT 0)
+                      AND (HTL_MAIN.NUM_ROOMS LT 0))
+                      THEN ((HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS) * (-1))
+                      ELSE IF ((INTL_DOM IS 'I') AND (PY EQ 'Y'))
+                      THEN HTL_MAIN.NUM_DAYS * HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+
+-* PRIOR HOTEL ROOMS INT'L CALCULATION
+      PIY1HTL_RMS/D12.2 = IF ((INTL_DOM IS 'I')
+                      AND (PY EQ 'Y'))       
+                      THEN HTL_MAIN.NUM_ROOMS
+                      ELSE 0;
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+SUM
+CDM1HTL_AMT/D10 CDM1HTL_DAY/D10 CDM1HTL_RMS/D10 
+CIM1HTL_AMT/D10 CIM1HTL_DAY/D10 CIM1HTL_RMS/D10
+PDM1HTL_AMT/D10 PDM1HTL_DAY/D10 PDM1HTL_RMS/D10 
+PIM1HTL_AMT/D10 PIM1HTL_DAY/D10 PIM1HTL_RMS/D10
+CDY1HTL_AMT/D10 CDY1HTL_DAY/D10 CDY1HTL_RMS/D10 
+CIY1HTL_AMT/D10 CIY1HTL_DAY/D10 CIY1HTL_RMS/D10
+PDY1HTL_AMT/D10 PDY1HTL_DAY/D10 PDY1HTL_RMS/D10 
+PIY1HTL_AMT/D10 PIY1HTL_DAY/D10 PIY1HTL_RMS/D10
+AND COMPUTE 
+CDM1AVG_RATE/D10=IF CDM1HTL_AMT LT 0 AND CDM1HTL_DAY LT 0
+                 THEN ((CDM1HTL_AMT/CDM1HTL_DAY) * (-1)) ELSE
+                 IF ((CDM1HTL_DAY LT 1) AND (CDM1HTL_DAY GT (-1))) THEN 0 ELSE
+                    (CDM1HTL_AMT/CDM1HTL_DAY);
+CIM1AVG_RATE/D10=IF CIM1HTL_AMT LT 0 AND CIM1HTL_DAY LT 0
+                 THEN ((CIM1HTL_AMT/CIM1HTL_DAY) * (-1)) ELSE
+                 IF ((CIM1HTL_DAY LT 1) AND (CIM1HTL_DAY GT (-1))) THEN 0 ELSE
+                    (CIM1HTL_AMT/CIM1HTL_DAY);
+PDM1AVG_RATE/D10=IF PDM1HTL_AMT LT 0 AND PDM1HTL_DAY LT 0
+                 THEN ((PDM1HTL_AMT/PDM1HTL_DAY) * (-1)) ELSE
+                 IF ((PDM1HTL_DAY LT 1) AND (PDM1HTL_DAY GT (-1))) THEN 0 ELSE
+                    (PDM1HTL_AMT/PDM1HTL_DAY);
+PIM1AVG_RATE/D10=IF PIM1HTL_AMT LT 0 AND PIM1HTL_DAY LT 0
+                 THEN ((PIM1HTL_AMT/PIM1HTL_DAY) * (-1)) ELSE
+                 IF ((PIM1HTL_DAY LT 1) AND (PIM1HTL_DAY GT (-1))) THEN 0 ELSE
+                    (PIM1HTL_AMT/PIM1HTL_DAY);
+CDY1AVG_RATE/D10=IF CDY1HTL_AMT LT 0 AND CDY1HTL_DAY LT 0
+                 THEN ((CDY1HTL_AMT/CDY1HTL_DAY) * (-1)) ELSE
+                 IF ((CDY1HTL_DAY LT 1) AND (CDY1HTL_DAY GT (-1))) THEN 0 ELSE
+                    (CDY1HTL_AMT/CDY1HTL_DAY);
+CIY1AVG_RATE/D10=IF CIY1HTL_AMT LT 0 AND CIY1HTL_DAY LT 0
+                 THEN ((CIY1HTL_AMT/CIY1HTL_DAY) * (-1)) ELSE
+                 IF ((CIY1HTL_DAY LT 1) AND (CIY1HTL_DAY GT (-1))) THEN 0 ELSE
+                    (CIY1HTL_AMT/CIY1HTL_DAY);
+PDY1AVG_RATE/D10=IF PDY1HTL_AMT LT 0 AND PDY1HTL_DAY LT 0
+                 THEN ((PDY1HTL_AMT/PDY1HTL_DAY) * (-1)) ELSE
+                 IF ((PDY1HTL_DAY LT 1) AND (PDY1HTL_DAY GT (-1))) THEN 0 ELSE
+                    (PDY1HTL_AMT/PDY1HTL_DAY);
+PIY1AVG_RATE/D10=IF PIY1HTL_AMT LT 0 AND PIY1HTL_DAY LT 0
+                 THEN ((PIY1HTL_AMT/PIY1HTL_DAY) * (-1)) ELSE
+                 IF ((PIY1HTL_DAY LT 1) AND (PIY1HTL_DAY GT (-1))) THEN 0 ELSE
+                    (PIY1HTL_AMT/PIY1HTL_DAY);
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+WHERE (HTL_MAIN.INVOICE_DATE GE &&CYFMDT.EVAL
+      AND HTL_MAIN.INVOICE_DATE LE &&CYTODT.EVAL)
+ OR (HTL_MAIN.INVOICE_DATE GE &&PYFMDT.EVAL
+      AND HTL_MAIN.INVOICE_DATE LE &&PYTODT.EVAL)
+ OR (HTL_MAIN.INVOICE_DATE GE &&CMFMDT.EVAL 
+      AND HTL_MAIN.INVOICE_DATE LE &&CMTODT.EVAL) 
+ OR (HTL_MAIN.INVOICE_DATE GE &&PMFMDT.EVAL 
+      AND HTL_MAIN.INVOICE_DATE LE &&PMTODT.EVAL);
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+TABLEF FILE HOLD3
+PRINT
+CDM1HTL_AMT CDM1HTL_DAY CDM1HTL_RMS
+CIM1HTL_AMT CIM1HTL_DAY CIM1HTL_RMS
+PDM1HTL_AMT PDM1HTL_DAY PDM1HTL_RMS
+PIM1HTL_AMT PIM1HTL_DAY PIM1HTL_RMS
+CDY1HTL_AMT CDY1HTL_DAY CDY1HTL_RMS
+CIY1HTL_AMT CIY1HTL_DAY CIY1HTL_RMS
+PDY1HTL_AMT PDY1HTL_DAY PDY1HTL_RMS
+PIY1HTL_AMT PIY1HTL_DAY PIY1HTL_RMS
+CDM1AVG_RATE
+CIM1AVG_RATE
+PDM1AVG_RATE
+PIM1AVG_RATE
+CDY1AVG_RATE
+CIY1AVG_RATE
+PDY1AVG_RATE
+PIY1AVG_RATE
+ON TABLE HOLD AS HTLSUMLD
+END
+-*-EXIT

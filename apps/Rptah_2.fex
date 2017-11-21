@@ -1,0 +1,76 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File RPTAH_2.FEX
+-***************** M O D I F I C A T I O N S *******************
+-**********************************************************************
+-* Continuation of REPORT following COVERPG
+-*********************************************************************
+-*
+
+-**********************************************************************
+-* Produce a summary report if the user has requested
+-**********************************************************************
+-*
+-SUMMARY_RPT
+-*
+-IF &&SUMFLAG EQ 'N' THEN GOTO DETAIL_RPT;
+-*
+-IF &&REPTTYPE EQ 'AIR' THEN GOTO SMRYAIR;
+-IF &&REPTTYPE EQ 'CAR' THEN GOTO SMRYCAR;
+-IF &&REPTTYPE EQ 'HTL' THEN GOTO SMRYHTL;
+-RUN
+
+-SMRYAIR
+
+EX &&SMPARM
+-GOTO XXIT
+
+-SMRYCAR
+-TYPE Running Summary Car
+EX SMRYCAR
+-GOTO XXIT
+
+-SMRYHTL
+
+EX SMRYHTL
+-GOTO XXIT
+
+-SUMFLAG
+-IF &&SUMONLY EQ 'Y' THEN GOTO XXIT;
+
+-IF &&UNAME EQ 'sample' GOTO XXIT; 
+
+-IF &&SUMONLY EQ 'N' THEN GOTO DETAIL_RPT;
+-RUN
+-*
+-**********************************************************************
+-* Produce a detail report if the user has requested
+-**********************************************************************
+-*
+-DETAIL_RPT
+-*
+-IF &&REPTTYPE EQ 'AIR' THEN GOTO AIR;
+-IF &&REPTTYPE EQ 'CAR' THEN GOTO CAR;
+-IF &&REPTTYPE EQ 'HTL' THEN GOTO HTL;
+-IF &&REPTTYPE EQ 'CP'  THEN GOTO CP;
+-RUN
+-GOTO XXIT
+-*
+-AIR
+EX &&DTPARM
+-GOTO XXIT
+-*
+-CAR
+EX CARRPT
+-GOTO XXIT
+-*
+-HTL
+EX HTLRPT
+-GOTO XXIT
+-*
+-CP
+EX CPRPT
+-GOTO XXIT
+-*
+-XXIT
+-*-EXIT

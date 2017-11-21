@@ -1,0 +1,88 @@
+-***************************************************************************
+-* REPORT NAME: QUARTERLY REVIEW (HOTEL EXTRACT)
+-* TOTAL COMPANY REPORTING
+-*2/22/05        JK                 ADDED TNT_COMPANY WHERE STATEMENT
+-***************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+DEFINE FILE HR_50
+  NBR_DAYS/D12 = IF (NUM_DAYS LT 0) AND (NUM_ROOMS LT 0) THEN
+                    ((NUM_DAYS * NUM_ROOMS) * (-1)) ELSE
+                    (NUM_DAYS * NUM_ROOMS);
+  NBR_ROOMS/D12 = NUM_ROOMS;
+  NEW_TOTAL_AMT/P12.2CS = TOTAL_AMT;
+-*   INT_DOM/A1 = IF COUNTRY_CODE EQ 'US' THEN 'D' ELSE 'I';
+  INT_DOM/A1 =IF (CITY.INTL_DOM EQ 'I') THEN 'I' ELSE 'D';
+ 
+END
+-RUN
+
+TABLEF FILE HR_50
+PRINT INVOICE_DATE
+  HTL_KEY	
+  INT_DOM
+  NBR_DAYS	
+  NBR_ROOMS
+  NEW_TOTAL_AMT
+    
+WHERE (INVOICE_DATE GE &&FROMDT.EVAL) AND (INVOICE_DATE LE &&TODT.EVAL) OR
+      (INVOICE_DATE GE &&FXDATE.EVAL AND INVOICE_DATE LE &&TXDATE.EVAL)
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS HTLHLD
+END
+-RUN
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+
+DEFINE FILE HTLHLD
+ROLLCD/A8 = '&&ROLL';
+END
+
+TABLE FILE HTLHLD
+PRINT INVOICE_DATE	
+  INT_DOM
+  NBR_DAYS	
+  NBR_ROOMS
+  NEW_TOTAL_AMT
+BY ROLLCD
+BY HTL_KEY
+ON TABLE HOLD AS HTLHLD1 
+END
+-RUN
+
+DEFINE FILE HTLHLD1
+  NMB/I5 = NMB + 1;
+END
+TABLE FILE HTLHLD1
+PRINT  INT_DOM
+      INVOICE_DATE
+      NBR_DAYS
+      NBR_ROOMS
+      NEW_TOTAL_AMT
+BY ROLLCD
+BY NMB
+BY HTL_KEY
+ON TABLE HOLD AS TCH1
+END
+-RUN
+
+MODIFY FILE TCHREV
+FIXFORM FROM TCH1
+DATA ON TCH1
+END
+-RUN
+
+-NEXTONE

@@ -1,0 +1,351 @@
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*  08/23/2016  REJ  S-17914 Changes for ER5.
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+
+-*******************************************************************
+ 
+-INCLUDE SETECHO
+SET ASNAMES=ON
+SET ALL=OFF
+ 
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+-RUN
+ 
+-INCLUDE SETPARMTIME
+-RUN
+ 
+-TYPE &&OUTPUTDEST
+-IF &&OUTLINE2 EQ 'OFFLINE' THEN GOTO XOFFLINE ELSE GOTO XONLINE;
+ 
+-XONLINE
+-TYPE Before ONLINE
+ONLINE
+-TYPE After ONLINE
+-RUN
+-GOTO CONT
+ 
+-XOFFLINE
+-SET &&OUTLINE2 = '';
+-TYPE Before OFFLINE
+OFFLINE
+-TYPE After OFFLINE
+-RUN
+-GOTO CONT
+ 
+-CONT
+-SET &&RPT_HOLD = 'RPTHOLD';
+ 
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+ 
+ 
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-INCLUDE SELCATQT
+-RUN
+ 
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+ 
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+ 
+EX AIRUSE
+-RUN
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+DEFINE FILE &&EXTRACT
+ 
+  BOOK_DT/MDYY         = RESV_DATE;
+  CGC/A6 = EDIT(CREDIT_CARD, '999999$$$$$$$$$$$$');
+  CGC1/A3 = EDIT(CREDIT_CARD, '$$$$$$$$$$$$$$$999');
+  CGC2/A9 = 'XXXXXXXXX';
+  COM_AMT/D12.2CS = SEG_COM;
+  FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+  LEVEL_DESC/A60      = &&LDESC;
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND
+                           (CONJ_REL EQ 1) THEN 1 ELSE
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NEW_ADV_PURCH/D9    = ADV_PURCH;
+  ORG_SALE/D12.2CS    = PARENT_FARE + PARENT_TAX;
+  REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND
+                           (CONJ_REL EQ 1) THEN 0 ELSE
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (EX_FLAG EQ 'F') THEN 1 ELSE
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  REF_EXCH_FARE/D12.2CS =IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (EX_FLAG EQ 'F') THEN SEG_AMT + SEG_TAX ELSE
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN SEG_AMT + SEG_TAX ELSE 0;
+  SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID;
+  TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  XARR_DT/MDYY         = ARR_DATE;
+  XDPT_DT/MDYY         = DPT_DATE;
+  XPSNGR_NM/A15        =
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+XFARE_PD/D12.2CS    = IF ((DOC_TYPE EQ '1') AND (RF_FLAG NE ' ')) THEN
+                      SEG_AMT ELSE
+                      IF ((DOC_TYPE EQ '1') AND (RF_FLAG EQ ' ') AND
+                       (EX_FLAG EQ ' ') AND (EXCHG_SALE EQ ' ')) THEN SEG_AMT
+                      ELSE IF (DOC_TYPE EQ '1') THEN 0 ELSE
+                      IF ((RF_FLAG EQ 'P') OR (EMBARK EQ 'RF1'))
+                       THEN (SEG_AMT + SEG_TAX) ELSE
+                      IF ((RF_FLAG EQ 'F') OR (EX_FLAG NE ' '))
+                       THEN ((TICKET_AMT + TAX_AMT) * (-1)) ELSE
+                      IF (EXCHG_SALE NE ' ') THEN EXCH_NET_FARE
+                         ELSE (TICKET_AMT + TAX_AMT);
+  XTRAN_DT/MDYY        = TRN_DATE;
+  PENALTY/A7 = IF EMBARK EQ 'FP2' OR 'FP3' THEN 'PENALTY' ELSE ' ';
+  NON_REF/A15 = DECODE NONREF_FLAG ('N' 'NON-REFUNDABLE'
+                                   'R' 'REFUNDABLE'
+                                   ' ' 'REFUNDABLE');
+ 
+-* ****DEFINES ON PREVIOUS DEFINES****
+  AIRLINE_FEE/D8.2CS   = IF EMBARK EQ 'FP2' OR 'FP3' THEN FARE_PAID ELSE 0;
+  CGCARD/A18 = CGC||CGC2||CGC1;
+  COMM_FLAG/D8CS       = IF COMM_AMT EQ 0 THEN NET_TKT_CNT ELSE 0;
+  DISSAVINGS/D12.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  EXCH_FARE/D12.2CS   = IF (SEG_NBR EQ '01') OR (DOC_TYPE EQ '1')
+                        OR (RF_FLAG EQ 'P') OR (EMBARK EQ 'RF1')
+                        THEN XFARE_PD ELSE
+                        IF ((DOC_TYPE EQ '1') AND (RF_FLAG EQ ' ') AND
+                         (EX_FLAG EQ ' ') AND (EXCHG_SALE EQ ' ')) THEN SEG_AMT
+                        ELSE IF (EMBARK EQ 'FP3') THEN SEG_AMT ELSE 0;
+ 
+  EXCH_AC/D11.2CS     = IF (EXCHG_SALE EQ 'A') AND (SEG_NBR EQ '01') THEN
+                        EXCH_NET_FARE + EXCH_NET_TAX ELSE 0;
+  PENALTY_CNT/D8CS    = IF PENALTY EQ 'PENALTY' THEN 1 ELSE 0;
+ 
+-INCLUDE TRANTYPE
+END
+-RUN
+ 
+ 
+ 
+ 
+TABLEF FILE &&EXTRACT
+PRINT
+  DOC_NUMBER
+  EX_FLAG
+  EXCHG_SALE
+  FARE_PAID
+  INVOICE_NUM
+  RF_FLAG
+  TKT_NUM
+  VAL_AIRLINE
+  XPSNGR_NM
+  XTRAN_DT
+ 
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF0;
+-INCLUDE AVRP_SUBFOOT
+-:AVSF0
+ 
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID TKT_NUM XPSNGR_NM
+BY DOC_NUMBER AS 'TKTN'
+BY XTRAN_DT
+BY INVOICE_NUM
+BY VAL_AIRLINE
+WHERE EXCHG_SALE EQ 'R'
+WHERE RF_FLAG EQ ' '
+ON TABLE HOLD AS FRHLD1
+END
+-RUN
+ 
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-RUN
+ 
+ 
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID AS 'FARE' TKT_NUM AS 'TICKET'
+BY TKT_NUM AS 'TKTN'
+BY EX_FLAG
+WHERE EX_FLAG NE ' '
+ON TABLE HOLD AS FRHLD2
+END
+-RUN
+ 
+MATCH FILE FRHLD1
+PRINT FARE_PAID TKT_NUM XPSNGR_NM XTRAN_DT INVOICE_NUM VAL_AIRLINE
+BY TKTN
+ON TABLE HOLD
+RUN
+FILE FRHLD2
+PRINT FARE TICKET EX_FLAG
+BY TKTN
+AFTER MATCH HOLD AS TTLMATCH1 OLD-AND-NEW
+END
+-RUN
+ 
+TABLE FILE TTLMATCH1
+PRINT FARE_PAID TKT_NUM XPSNGR_NM XTRAN_DT INVOICE_NUM VAL_AIRLINE
+      FARE TICKET EX_FLAG
+BY TKTN
+ON TABLE HOLD AS TTLMATCH
+WHERE TICKET NE ' '
+END
+-RUN
+ 
+ 
+-SET &&RPTSUF = 'SMY';
+-INCLUDE FDEFRPTS
+-RUN
+ 
+ 
+DEFINE FILE TTLMATCH
+NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+END
+ 
+TABLE FILE TTLMATCH
+-INCLUDE HEADER
+"&&SUBHEAD </1"
+   &&S_SUBJ1
+   &&S_SUBJ2
+   &&S_SUBJ3
+   &&S_SUBJ4
+   &&S_SUBJ5
+   &&S_SUBJ6
+   &&S_SUBJ7
+   &&S_SUBJ8
+   &&S_SUBJ9
+   &&S_SUBJ10
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+-INCLUDE FOOTERSM
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ 
+ON TABLE SET STYLE *
+ 
+-INCLUDE &&SMSTY
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+ 
+-GOTO XXIT
+ 
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='EXCH_AIR';
+-INCLUDE ERRORCHK
+-IF &&RET GT 1 GOTO XXIT;
+-* REJ ADDED TO TRAP ERRORS
+ 
+-NORECORDS
+-SET &&RPTSUF = 'MSG';
+-INCLUDE FDEFRPTS
+-RUN
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE HEADAIR
+PRINT EMPTY AS 'REPORT,MESSAGE'
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+ 
+-XXIT

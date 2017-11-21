@@ -1,0 +1,18 @@
+-* File FOOTERSM.FEX
+
+-****************************************************************************
+-*DATE         NAME                 DESCRIPTION
+-*7/31/00    IBISTL-KR              REPLACED &FOCSYSTOD WITH NOWTOD DEFINED
+-*                                  FOR HHMMSS SUBROUTINE
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-****************************************************************************
+
+FOOTING BOTTOM
+"&&FOOTER1"
+"&&FOOTER2"
+"** POTENTIALSVGS1=IF 25% OF TICKETS PURCHASED 0-6 DAYS ARE MOVED TO 7-13"
+"** POTENTIALSVGS2=IF 25% OF TICKETS PURCHASED 0-6 DAYS ARE MOVED TO 14-20"
+"** POTENTIALSVGS3=IF 25% OF TICKETS PURCHASED 7-13 DAYS ARE MOVED TO 14-20"
+"** POTENTIALTOTAL=TOTAL POTENTIAL SAVINGS FOR MOVES"
+"eTTek Review &DATE AT <NOWTOD <75 &&FOOTR"
+"&&CRIGHT"

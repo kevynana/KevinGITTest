@@ -1,0 +1,72 @@
+
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File ADV_PUR.FEX
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*----           ----                 ---------------------
+-*6/2/98         JK                   SR10USE TO SR12USE
+-*
+-*6/2/98         JK                   AIREXTRT TO AIREXT1
+-*
+-*6/19/98        LP                   EX AIRUSE FOR DYNAMIC RPTS
+-*5/21/01      TANDT-SS               ADDED DEFINE TO NORECORDS SO MESSAGE
+-*                                    "NO RECORDS FOUNDS FOR THIS SELECTION" 
+-*                                    WILL APPEAR IN EXCEL 97
+-*****************************************************************  
+
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+
+-IF &&OUTLINE2 EQ 'OFFLINE' THEN GOTO XOFFLINE ELSE GOTO XONLINE;
+
+-XONLINE
+-TYPE Before ONLINE
+ONLINE
+-TYPE After ONLINE
+-RUN
+-GOTO CONT
+
+-XOFFLINE
+-SET &&OUTLINE2 = '';
+OFFLINE
+-RUN
+-GOTO CONT
+
+-CONT
+-SET &&RPT_HOLD = 'RPTHOLD';
+
+-TYPE "AIRUSE"
+EX AIRUSE
+-RUN
+
+-TYPE APEXTRT
+EX &&USEPARM
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-RUN
+
+-TYPE APRPT
+EX APRPT
+-GOTO XXIT
+
+-NORECORDS
+
+DEFINE FILE &&XHIER
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+END
+TABLE FILE &&XHIER
+ON TABLE SET PAGE-NUM OFF
+-* HEADING CENTER
+-* "NO RECORDS FOUND FOR THIS SELECTION"
+PRINT EMPTY AS '' ROLL_KEY NOPRINT
+WHERE RECORDLIMIT EQ 1
+END
+-RUN
+
+-XXIT
+
+-* REJ EX RESTART 
+
+  

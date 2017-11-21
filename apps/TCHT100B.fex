@@ -1,0 +1,352 @@
+-*========================================================================
+-* 08/16/2003
+-*
+-*04/29/10   DEB         CHANGED RATE_GRP FOR ROUNDING
+
+-*    TOTAL COMPANY HOTEL SUMMARY RANKED BY CITY - QUARTERED DATABASES
+-* 
+-*========================================================================
+-*                <---------------- STEP1 ---------------->
+-*========================================================================
+-*      CLEAR ROLLUPX PROCESS STAMPS BEFORE TOTAL COMPANY REPORT RUN
+-*========================================================================
+-* -INCLUDE SETECHO
+-SET HOLDATTR = ON;
+
+-SET &&LP0 = 0;
+-SET &&XP0 = 0;
+-SET &&LP1 = 0;
+
+SET ASNAMES = ON
+
+USE
+D:\TNT\TTRACKER\SYSTEM\DATA\ROLLUPX.FOC
+END
+
+FILEDEF WLT DISK D:\FOCTEMP\WLT.DAT
+-RUN
+
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-*========================================================================
+-*              SET PROCESS STAMP TO ' ' (FIELD = PR_STAMP)
+-*========================================================================
+DEFINE FILE ROLLUPX
+XL01/A1 = ' ' ;
+END
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT ROLLUP_CODE
+      XL01 AS 'PR_STAMP' 
+IF UPD_ENABLE EQ 'X'
+IF QTR_ENABLE EQ 'X'
+ON TABLE HOLD 
+END
+MODIFY FILE ROLLUPX
+FIXFORM FROM HOLD
+MATCH ROLLUP_CODE
+ON MATCH UPDATE PR_STAMP
+ON NOMATCH REJECT
+DATA ON HOLD
+END
+-*========================================================================
+-* SET PROCESS STAMP TO 'T' (FIELD = PR_STAMP) - ROLLUP CODES TO PROCESS
+-*========================================================================
+DEFINE FILE ROLLUPX
+XL01/A1 = 'T' ;
+END
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT ROLLUP_CODE
+      XL01 AS 'PR_STAMP'
+IF UPD_ENABLE EQ 'X'
+IF QTR_ENABLE EQ 'X'
+ON TABLE HOLD 
+END
+MODIFY FILE ROLLUPX
+FIXFORM FROM HOLD
+MATCH ROLLUP_CODE
+ON MATCH UPDATE PR_STAMP
+ON NOMATCH REJECT
+DATA ON HOLD
+END
+-RUN
+-*========================================================================
+-*       FIND CLIENTS TO PROCESS (SETS OF 25 - THIS IS THE MAXIMUM
+-*========================================================================
+-TCLOOP
+USE CLEAR *
+
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT COMP
+IF PR_STAMP EQ 'T'
+IF QTR_ENABLE EQ 'X'
+IF RECORDLIMIT EQ 1
+ON TABLE SAVE
+END
+-RUN
+-IF &RECORDS EQ 0 GOTO STOP;
+-SET &&HTL_PATH = 'D:\TNT\TTRACKER\DATA\' ;
+-SET &&COM_PATH = 'D:\TNT\TTRACKER\SYSTEM\DATA\' ;
+-SET &&SU_PATH = 'D:\TNT\TTRACKER\SUDATA\' ;
+-SET &CNT  = 1;
+-RUN
+-REPEAT GETROLL WHILE &CNT LE &RECORDS;
+-READ SAVE &&XX.A6.
+-SET &&COMP.&CNT = &&XX ;
+-*========================================================================
+-*                SET-UP DIALOUGE MANAGER FOR 'AL' DATABASES
+-*========================================================================
+-SET &&AL_DB  = 'AL'||&&XX|||'.FOC' ;
+-SET &&USE_AL = &&HTL_PATH||&&AL_DB ;
+-*========================================================================
+-*                SET-UP DIALOUGE MANAGER FOR 'H_' DATABASES
+-*========================================================================
+-SET &&HTL_DB0  = 'H0'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL0 = &&HTL_PATH||&&HTL_DB0 ;
+
+-SET &&HTL_DB1  = 'H1'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL1 = &&HTL_PATH||&&HTL_DB1 ;
+
+-SET &&HTL_DB2  = 'H2'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL2 = &&HTL_PATH||&&HTL_DB2 ;
+
+-SET &&HTL_DB3  = 'H3'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL3 = &&HTL_PATH||&&HTL_DB3 ;
+
+-SET &&HTL_DB4  = 'H4'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL4 = &&HTL_PATH||&&HTL_DB4 ;
+
+-SET &&HTL_DB5  = 'H5'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL5 = &&HTL_PATH||&&HTL_DB5 ;
+
+-SET &&HTL_DB6  = 'H6'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL6 = &&HTL_PATH||&&HTL_DB6 ;
+
+-SET &&HTL_DB7  = 'H7'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL7 = &&HTL_PATH||&&HTL_DB7 ;
+
+-SET &&HTL_DB8  = 'H8'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL8 = &&HTL_PATH||&&HTL_DB8 ;
+
+-SET &&HTL_DB9  = 'H9'||&&XX|||'.FOC'   ;
+-SET &&USE_HTL9 = &&HTL_PATH||&&HTL_DB9 ;
+
+-SET &&HTL_DBY  = 'HY'||&&XX|||'.FOC'   ;
+-SET &&USE_HTLY = &&HTL_PATH||&&HTL_DBY ;
+
+-SET &&HTL_DBZ  = 'HZ'||&&XX|||'.FOC'   ;
+-SET &&USE_HTLZ = &&HTL_PATH||&&HTL_DBZ ;
+
+-SET &CNT = &CNT + 1;
+-GETROLL
+-*========================================================================
+-*                        SET-UP USE STATEMENTS
+-*========================================================================
+-SET &&USE_HREF = &&COM_PATH || 'HTL_REF.FOC';
+-SET &&USE_ARPT = &&COM_PATH || 'AIRPORT.FOC';
+-SET &&USE_CLNT = &&COM_PATH || 'CLIENT.FOC';
+-SET &&USE_ROLL = &&COM_PATH || 'ROLLUPX.FOC';
+-SET &&USE_ARAT = &&COM_PATH || 'AL_RATE.FOC';
+-SET &&USE_CITY = &&COM_PATH || 'CITY.FOC';
+-SET &&USE_PROP = &&COM_PATH || 'HOTL_PRP.FOC';
+-SET &&USE_HCHN = &&COM_PATH || 'HOTL_CHN.FOC';
+-SET &&USE_BRAN = &&COM_PATH || 'BRANCH.FOC';
+
+USE 
+ &&USE_AL   AS 'AH_50' ;
+
+ &&USE_HTL0  AS 'HR_50' ;
+ &&USE_HTL1  AS 'HR_50' ;
+ &&USE_HTL2  AS 'HR_50' ;
+ &&USE_HTL3  AS 'HR_50' ;
+ &&USE_HTL4  AS 'HR_50' ;
+ &&USE_HTL5  AS 'HR_50' ;
+ &&USE_HTL6  AS 'HR_50' ;
+ &&USE_HTL7  AS 'HR_50' ;
+ &&USE_HTL8  AS 'HR_50' ;
+ &&USE_HTL9  AS 'HR_50' ;
+ &&USE_HTLY  AS 'HR_50' ;
+ &&USE_HTLZ  AS 'HR_50' ;
+ 
+ &&USE_HREF
+ &&USE_ARPT
+ &&USE_CLNT
+ &&USE_ROLL
+ &&USE_ARAT
+ &&USE_PROP
+ &&USE_HCHN
+ &&USE_CITY
+ &&USE_BRAN
+ 
+END
+-*========================================================================
+-*                <---------------- STEP2 ---------------->
+-*========================================================================
+-*                      Data Extract For Report Data
+-*========================================================================
+DEFINE FILE HR_50
+  CARD_NUM/A12 = EDIT(CREDIT_CARD, '$$999999999999$$$$');
+  CARD1_NUM/A4 = EDIT(CREDIT_CARD, '$$$$$$$$$$$$$$9999');
+  CITY_ST/A35 = PROP_CITY||(' '| PROP_STATE);
+  LEV_2/A15 = IF PASSNGR_NAME NE LAST PASSNGR_NAME THEN LEVEL2 ELSE ' ';
+  LEVEL_DESC/A60  = &&LDESC;
+  IN_DATE/MDYY = CHKIN_DATE;
+  INV_DATE/MDYY = INVOICE_DATE;
+  NEW_ROOM_RATE/D12.2C = ROOM_RATE;
+  NEW_STD_RATE/D12.2C = STD_RATE;
+  NEW_TOTAL_AMT/D12.2C = TOTAL_AMT;
+  NBR_DAYS/D12 =  NUM_DAYS; 
+  NNROOMS/D12 = IF (NBR_DAYS LT 0) AND (NUM_ROOMS LT 0)
+                THEN ((NBR_DAYS*NUM_ROOMS)*(-1))
+                ELSE NBR_DAYS*NUM_ROOMS;
+  OUT_DATE/MDYY = CHKOUT_DATE;
+  ONLINE/A1 = IF AGENT EQ '00444' THEN 'Y' ELSE 'N';
+  PROP_ZIP5/A5=EDIT(PROP_ZIP, '99999$$$$$');
+-* RATE_GRP/A15 = IF ((ROOM_RATE GE 0 AND ROOM_RATE LT 150) OR
+-*                      (ROOM_RATE LE 0 AND ROOM_RATE GT (-150)))
+-*                  THEN '$0 - $149' ELSE
+-*                  IF ((ROOM_RATE GE 150 AND ROOM_RATE LE 199) OR
+-*                      (ROOM_RATE LE (-150) AND ROOM_RATE GE (-199)))
+-*                  THEN '$150 - $199' ELSE
+-*                  IF ((ROOM_RATE GE 200 AND ROOM_RATE LE 249) OR
+-*                      (ROOM_RATE LE (-200) AND ROOM_RATE GE (-249)))
+-*                  THEN '$200 - $249' ELSE '$250 OR GREATER';
+
+
+  RATE_GRP/A15 = IF ((ROOM_RATE GE 0 AND ROOM_RATE LT 149.50) OR
+                      (ROOM_RATE LE 0 AND ROOM_RATE GT (-149.50)))
+                   THEN '$0 - $149' ELSE
+                   IF ((ROOM_RATE GE 149.50 AND ROOM_RATE LT 199.50) OR
+                      (ROOM_RATE LE (-149.50) AND ROOM_RATE GT (-199.50)))
+                   THEN '$150 - $199' ELSE
+                   IF ((ROOM_RATE GE 199.50 AND ROOM_RATE LT 249.50) OR
+                      (ROOM_RATE LE (-199.50) AND ROOM_RATE GT (-249.50)))
+                   THEN '$200 - $249' ELSE '$250 OR GREATER';
+
+  REASON_CD/A2=EDIT(REFUSE_KEY,'$$$$$$$$99');
+  REFUSE_CD/A2=EDIT(REFUSE_KEY,'$$$$$$$$99');
+  RSNCDE/A48=REFUSE_CD|| '-' ||REFUSAL_DESC;
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+
+  TOTAL_STD/D12.2C = IF (NNROOMS LT 0) AND (NEW_STD_RATE LT 0) 
+                     THEN ((NNROOMS * NEW_STD_RATE)*(-1))
+                     ELSE NNROOMS * NEW_STD_RATE;
+
+-* ***DEFINES ON PREVIOUS DEFINED DEFINES***
+   SAVINGS/D12.2CS = TOTAL_STD - TOTAL_AMT;
+   TOTAL_SLSAV/D12.2C = TOTAL_STD - NEW_TOTAL_AMT;
+   XIN_DOW/WR = IN_DATE;
+   XOUT_DOW/WR = OUT_DATE;
+END
+-RUN
+
+TABLEF FILE HR_50
+PRINT AIRPORT_CODE	
+  ALPHA_RATE	
+  AR_BRANCH
+  BR_CL_IDX
+  CARD_NUM
+  CARD1_NUM	
+  CHAIN_CODE 	
+  CHAIN_NAME 	
+  CITY_ST	
+  CREDIT_CARD	
+  HHL_CONFIRM 	
+  HOTEL_PHONE 	
+  HTL_KEY	
+  IN_DATE 	
+  INV_DATE	
+  INVOICE_DATE 	
+  INVOICE_NUM 	
+  LEV_2
+  LEVEL_DESC	
+  LEVEL1 	
+  LEVEL2 	
+  LEVEL3 	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NBR_DAYS	
+  NNROOMS	
+  NUM_DAYS 	
+  NUM_ROOMS	
+  ONLINE
+  OUT_DATE 	
+  PROP_ZIP5
+  PASSNGR_NAME 	
+  PNR_LOCATOR 	
+  PROP_ADDRESS 	
+  PROP_CITY 	
+  PROP_NAME 	
+  PROP_STATE_CD 	
+  RATE_GRP	
+  REFUSAL_DESC	
+  REFUSE_CD	
+  REFUSE_KEY	
+  RESV_BRANCH	
+  ROOM_RATE 	
+  ROOM_TYPE	
+  RSNCDE	
+  SAVINGS	
+  STD_RATE 	
+  TICKET_BRANCH	
+  TKT_NUM	
+  TOTAL_AMT 	
+  TOTAL_STD 	
+  TOTAL_SLSAV
+  XIN_DOW
+  XOUT_DOW
+
+WHERE INVOICE_DATE GE &&FROMDT.EVAL AND INVOICE_DATE LE &&TODT.EVAL
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS '&&XX' FORMAT FOCUS
+END
+-RUN
+-*========================================================================
+-*                <---------------- STEP3 ---------------->
+-*========================================================================
+-*              UPDATE PR_STAMP TO 'Z' = Rollup Code Processed
+-*========================================================================
+DEFINE FILE ROLLUPX
+XL01/A1 = 'Z' ;
+END
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT ROLLUP_CODE
+      XL01 AS 'PR_STAMP' 
+IF UPD_ENABLE EQ 'X'
+IF QTR_ENABLE EQ 'X'
+IF PR_STAMP EQ 'T'
+IF COMP EQ &&XX
+ON TABLE HOLD 
+END
+MODIFY FILE ROLLUPX
+FIXFORM FROM HOLD
+MATCH ROLLUP_CODE
+ON MATCH UPDATE PR_STAMP
+ON NOMATCH REJECT
+DATA ON HOLD
+END
+-RUN
+USE CLEAR *
+-GOTO TCLOOP
+-RUN
+
+-STOP

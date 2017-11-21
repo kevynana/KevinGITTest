@@ -1,0 +1,52 @@
+-******************************************************************************
+-* SetParmtime.fex
+-* DETERMINE DATE AND TIME FOR FILE TO SAVE
+-******************************************************************************
+-DEFAULT &&LOOPCOUNTER = 1;
+
+-* LS - 05/06/2012 add random number for drill down reports
+TABLE FILE BRPTINST
+PRINT ROLLUP_CODE NOPRINT
+COMPUTE RND/D10.8 = RDNORM(RND);
+ON TABLE SAVE AS SAVEHGETC
+END
+-RUN
+-READ SAVEHGETC &X.10. &RNDNUM.8.
+-TYPE RANDOM NUMBER: &RNDNUM
+
+-*add hierarchy member as a part of &&DTTMID
+-*-GOTO DONTADDMEM;
+-IF '&&BURST.EVAL' NE 'Y' THEN GOTO DONTADDMEM;
+TABLE FILE BRPTFLDS
+PRINT MEMBER
+WHERE INST_KEY EQ &&IKEY 
+WHERE MEMBER NE ' '
+ON TABLE SAVE AS HORGMEMX
+END
+-RUN
+-IF &LINES EQ 0 THEN GOTO DONTADDMEM;
+
+-READ HORGMEMX NOCLOSE &MEM.15.
+
+-SET &LEN=ARGLEN(15, '&MEM.EVAL', 'I2');
+-SET &MEM = SUBSTR(15,'&MEM.EVAL',1,&LEN, &LEN, 'A&LEN.EVAL');
+
+-SET &RNDNUM = '&RNDNUM.EVAL' || '&MEM.EVAL';
+
+-DONTADDMEM
+
+-SET &&INSTID = TRIM('L', &&INSTID, 11, ' ', 1, &&INSTID);
+-SET &IID = &&INSTID;
+-SET &NOWTM = HHMMSS ('A8');
+
+-SET &NOWTM = EDIT(&NOWTM,'99$99$99');
+-SET &NOWDT = &YYMD;
+
+-SET &NOWDTTM = &NOWDT || '_' || &NOWTM | &RNDNUM;
+-*Replace &RNDNUM with &&SCHED as the RDNORM generates duplicates.
+-*-SET &NOWDTTM = &NOWDT || '_' || &NOWTM | &&SCHED;
+
+-SET &STRMID = &&STREAM || '_' || &IID;
+-SET &&DTTMSTRM = &NOWDTTM || '_' || &STRMID;
+-SET &&DTTMID = &NOWDTTM || '_' || &IID;
+-SET &&NOWDTTM = &NOWDTTM;

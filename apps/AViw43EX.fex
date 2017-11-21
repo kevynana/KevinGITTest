@@ -1,0 +1,256 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-********************************************************************
+-* MODIFICAIONS:
+-* 4/29/02 CHANGED MRK_TKT_CNT DEFINE TO CORRECTLY BACK OUT PARTIAL
+-*         REFUNDS AND EXCHANGES - SC DB
+-*10/22/02 CHANGED ALL ADV_C AND ADV_F DEFINES TO REFLECT COMPANY
+-*         STANDARD 0-6, 7-13, 14-20, 21+  PER PATTI C     - DEB
+-*02/28/13  CHANGED CLASS_CAT DEFINE DUE TO CLASS CATEGORY CHANGES - DV
+-* ADDED TRANTYPE INCLUDE - JK 12/10/14 STORY ID S-06492
+-*12/08/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-*7/11/16 S-20630 DLV  Added EMP_ID to extract
+
+-*******************************************************************
+-* File APEXTRT.FEX
+-********************************************************************
+-*
+-* This program extracts data for the series of basic ticket listing
+-* reports.  Based on the user profile selected, one of many report
+-* formats will be produced.  
+-*
+-********************************************************************
+-INCLUDE SETECHO
+-RUN
+SET ASNAMES = ON
+-DEFAULT &&OVERDRILL = 'N';
+
+-SET &&IDLEVELBREAK = '';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+DEFINE FILE &&EXTRACT
+
+  BOOK_DT/MDYY         = RESV_DATE;
+-*  CLASS_CAT/A8 = DECODE CL_CAT ('F' 'FIRST'     'C' 'COACH'   
+-*                              'D' 'DISCOUNT'  'B' 'BUSINESS');
+ CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+			        'D' 'DEFAULT'   'B' 'BUSINESS'
+			        'E' 'ECONOMY'   'U'  'UPGRADE' 
+                                ' ' 'DEFAULT'); 
+  FARE_PAID/D11.2CS   = SEG_AMT + SEG_TAX;
+  GRP_ADV_PUR/A8    = IF ADV_PURCH LT 7 THEN '0 - 6' ELSE
+                      IF ADV_PURCH GE 7 AND ADV_PURCH LE 13 
+                        THEN '07 - 13' ELSE
+                      IF ADV_PURCH GE 14 AND ADV_PURCH LE 20 
+                         THEN '14 - 20' ELSE
+                      IF ADV_PURCH GT 20 THEN '21 +';
+  LEVEL_DESC1/A80    = &&LDESC;
+  MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+  MX_ADV_PUR/A8    = IF ADV_PURCH LT 7 THEN '0 - 6' ELSE
+                      IF ADV_PURCH GE 7 AND ADV_PURCH LE 13 THEN 
+                      '07 - 13' ELSE
+                      IF ADV_PURCH GE 14 AND ADV_PURCH LE 20 THEN 
+                      '14 - 20' ELSE
+                      IF ADV_PURCH GT 20 THEN '21 +';
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NEW_ADV_PURCH/D9    = ADV_PURCH;
+  REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID;
+  TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TRP_LEN/D9CS        = TRIP_LENGTH * SEG_COUNT;
+  UP_ADV_PUR/A8    = IF ADV_PURCH LT 8 THEN '0 - 7' ELSE
+                     IF ADV_PURCH GE 8 AND ADV_PURCH LE 14 THEN 
+                     '08 - 14' ELSE
+                     IF ADV_PURCH GE 15 AND ADV_PURCH LE 21 THEN 
+                     '15 - 21' ELSE
+                     IF ADV_PURCH GT 21 THEN '22 +';
+  VASAVINGS/D11.2CS   = SEG_DISCOUNT - FARE_PAID;
+  XAP/A8 = EDIT(ADV_PURCH);
+  XARR_DOW/W           = ARR_DATE;
+  XARR_DT/MDYY         = ARR_DATE;
+  XCRDT_CD/A18 = 'AX9999999999999999';
+  XDPT_DOW/W           = DPT_DATE;
+  XDPT_DT/MDYY         = DPT_DATE;
+  XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XTRAN_DT/MDYY        = TRN_DATE;
+
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+  AIRLINE_FEE/D8.2CS   = IF EMBARK EQ 'FP2' OR 'FP3' THEN FARE_PAID ELSE 0;
+  ADV_C/D8CS = IF ADV_PURCH LT 7 THEN NET_TKT_CNT ELSE 0;
+  ADV_C1/D8CS = IF ADV_PURCH GE 7 AND ADV_PURCH LE 13 THEN NET_TKT_CNT ELSE 0;
+  ADV_C2/D8CS = IF ADV_PURCH GE 14 AND ADV_PURCH LE 20 THEN NET_TKT_CNT ELSE 0;
+  ADV_C3/D8CS = IF ADV_PURCH GT 20 THEN NET_TKT_CNT ELSE 0;
+  ADV_F/D11.2CS = IF ADV_PURCH LT 7 THEN FARE_PAID ELSE 0;
+  ADV_F1/D11.2CS = IF ADV_PURCH GE 7 AND ADV_PURCH LE 13 THEN FARE_PAID ELSE 0;
+  ADV_F2/D11.2CS = IF ADV_PURCH GE 14 AND ADV_PURCH LE 20 THEN 
+                   FARE_PAID ELSE 0;
+  ADV_F3/D11.2CS = IF ADV_PURCH GT 20 THEN FARE_PAID ELSE 0;
+  ARR_DAY/A3          = DECODE XARR_DOW (1 'MON' 2 'TUE' 3 'WED'
+                                 4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  DPT_DAY/A3          = DECODE XDPT_DOW (1 'MON' 2 'TUE' 3 'WED'
+                                 4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+  MX_DAYS/A8 =  IF ADV_PURCH LT 21 THEN XAP ELSE MX_ADV_PUR;
+  UP_DAYS/A8 =  IF ADV_PURCH LT 22 THEN XAP ELSE UP_ADV_PUR;
+
+-INCLUDE TRANTYPE
+-INCLUDE IDLEVDEFINE 
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+-* Report column elements
+  PRINT ADV_C
+        ADV_C1
+        ADV_C2
+        ADV_C3
+        ADV_F
+        ADV_F1
+        ADV_F2
+        ADV_F3 
+        AGENT_NUM	
+        AIR_KEY	
+        AIR_MAIN.INTL_DOM	
+        AIRLINE	
+        AIRLINE_FEE	
+        AIRLINE_NAME	
+        AR_BRANCH	
+        ARR_DAY	
+        ARR_TIME
+        BOOK_DT	
+        BR_CL_IDX	
+        CASH_CREDIT	
+        CITYPAIR.EMBARK      AS 'EMB_APT_CD'	
+        CITYPAIR.ROUTE       AS 'RTE_APT_CD'	
+        CLASS	
+        CLASS_CAT	
+        CONJ_REL	
+        CREDIT_CARD	
+        DISSAVINGS	
+        DOC_TYPE	
+        DPT_DAY	
+        DPT_TIME	
+        EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'	
+        EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'	
+        EMB_CTY.EMB_CITY     AS 'EMB_CTY_CD'	
+        EMP_ID
+        FARE_BAS	
+        FARE_PAID	
+        FLIGHT	
+        GRP_ADV_PUR	
+        GSA_GTR	
+        INVOICE_NUM	
+        LEVEL_DESC	
+        LEVEL1	
+        LEVEL2	
+        LEVEL3	
+        MRK_TKT_CNT	
+        MX_ADV_PUR
+        MX_DAYS
+        NET_TKT_CNT	
+        NEW_ADV_PURCH	
+        PNR_LOCATOR	
+        REF_EXCH_CNT	
+        REFUSAL_DESC	
+        REFUSE_CODE
+        REFUSE_KEY	
+        RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'	
+        RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'	
+        RTE_CTY.RTE_CITY     AS 'RTE_CTY_CD'	
+        SAVINGS	
+        SEG_AMT	
+        SEG_DESIG	
+        SEG_DISCOUNT	
+        SEG_LOWEST	
+        SEG_NBR	
+        SEG_STANDARD	
+        SEG_TAX	
+        STAY	
+        TICKET_BRANCH	
+        TKT_NUM	
+        TKT_PURCH	
+        TKT_SORT	
+        TKT_TYPE	
+        TRN_DATE	
+        TRP_LEN	
+        TRVL_AUTH	
+        UP_ADV_PUR
+        UP_DAYS
+        VAL_AIRLINE	
+        VASAVINGS	
+        XARR_DT	
+        XCRDT_CD	
+        XDPT_DT	
+        XPSNGR_NM	
+        XTRAN_DT	
+                
+WHERE TRN_DATE GE &&FROMDT.EVAL AND TRN_DATE LE &&TODT.EVAL
+WHERE VOID_DATE EQ 0
+
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+-*
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-*
+
+-*-EXIT
+

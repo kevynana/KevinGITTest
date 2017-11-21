@@ -1,0 +1,11 @@
+-* 08/01/2017 RSB S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*
+-* Position date/time stamp in the image footer.
+-*
+-DEFAULT &FTR_DateTimeLine = 4;
+-DEFAULT &FTR_DatePosL     = '3.75 8.35';
+-DEFAULT &FTR_DatePosP     = '3.10 10.625';
+-DEFAULT &&ORIENTATION     = 'LANDSCAPE';
+-*
+-SET &FTR_DatePosit = IF &&ORIENTATION EQ 'LANDSCAPE' THEN &FTR_DatePosL ELSE &FTR_DatePosP;  
+-*  

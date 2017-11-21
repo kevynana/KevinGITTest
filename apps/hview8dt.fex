@@ -1,0 +1,935 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: HVIEW1DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*05/05/05   DEB                ADDED CODE FOR GLOBAL CURRENCY
+-*2/25/08     DEB               ADDED ADDITIONAL CODE FOR HDRR REPORT NOT 
+-*                              DRILLING CORRECTELY - HDHPN
+-*9/24/14     JOY               ADDED LOGIC FOR PREF/NON-PREF PERCENTAGES   
+-*5/14/15 - joy - STORY ID - S-08873 - Changed to correct Global Currency Error
+-*6/8/15 - joy - STORY ID - S-08873 - Update story id had a transposed number within line above
+-* 10/19/15 - DLV - S-11791 - Added routine for ABHPCITY
+-*12/9/15 - DLV - S-13284   Updated to allow reports to sort/subtotal by id-levels
+-*03/28/16-JEM-S-17203 Corrected ABHCITY report bug fix non-negotiated amounts were not showing on the report 
+-*3/31/16 - JEK - S-17346 corrected issue on preferred record selection on ABHPCITY needed to use chkin/chkout to select records and a join instead of a match
+-*03/13/17 - DLV - S-22486 - updated ettek Review to Post-trip Reporting
+-*08/09/2017 RSB S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                        Added: -SET &FTR_AddlLines = #;  
+-**************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES=ON
+-RUN  
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-IF &&DRILLED_RUN EQ 'Y' GOTO DRIL_CHK;
+-DRIL_CHK
+-IF &&BYFLD1 EQ 'B' OR 'C' OR 'D' THEN GOTO SKIPTHIS;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = HTLHLD2;
+-INCLUDE DRILWHRS
+
+-************************************************************
+-SKIP_DRIL
+
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+
+-* -IF '&&SETF.EVAL' EQ 'NYHNPF3' OR 'NYHNPF4' OR 'NYHNPF5' OR 'NYHNPF7' THEN GOTO NYLCTY;
+
+
+
+DEFINE FILE HTLHLD2
+AROLL_DSC3_CENTERED/A60 = CTRFLD(AROLL_DSC3, 60, 'A60');
+AROLL_DSC4_CENTERED/A60 = CTRFLD(AROLL_DSC4, 60, 'A60');
+AROLL_DSC5_CENTERED/A60 = CTRFLD(AROLL_DSC5, 60, 'A60');
+AROLL_DSC7_CENTERED/A60 = CTRFLD(AROLL_DSC7, 60, 'A60');
+END
+TABLE FILE HTLHLD2
+SUM NNROOMS AS 'TNROOMS'
+BY LEVEL_DESC
+BY CITY_ST
+BY PREF_NON
+BY HTL_PREF_DESC
+ON TABLE HOLD AS DEBTEST
+END
+-RUN
+
+MATCH FILE HTLHLD2
+PRINT AMT_TOTL1
+      AROLL_DSC5
+      CHKIN_DATE
+      CHKOUT_DATE
+      HOTEL_PHONE
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7
+      NNROOMS
+      NNROOMS3
+      NBR_DAYS
+      NBR_ROOMS
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      NEW_TOTAL_AMT
+      TOTAL_AMT
+      TOTAL_SLSAV
+      PASSNGR_NAME
+      NAMEC
+      REFUSE_CD
+      REFUSAL_DESC
+      INVOICE_NUM
+      PREF_RATE
+      PROP_NAME
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_STATE
+      IN_DATE
+      OUT_DATE
+      AROLL_DSC3_CENTERED
+      AROLL_DSC4_CENTERED
+      AROLL_DSC5_CENTERED
+      AROLL_DSC7_CENTERED
+      HOTEL_PHONE
+      PNR_LOCATOR
+BY LEVEL_DESC
+BY CITY_ST
+BY PREF_NON
+BY HTL_PREF_DESC
+ON TABLE HOLD
+RUN
+FILE DEBTEST
+SUM TNROOMS
+BY LEVEL_DESC 
+BY CITY_ST
+BY PREF_NON
+BY HTL_PREF_DESC
+AFTER MATCH HOLD AS MATCHONE OLD-OR-NEW
+END
+-RUN
+
+-IF '&&SETF.EVAL' EQ 'ABHPCITY' THEN GOTO PrefRate;
+
+
+DEFINE FILE MATCHONE
+FLAG/A1 = 'A';
+HTLPDSC/A41 = '*'||HTL_PREF_DESC;
+HTLPDESC/A41 = IF NNROOMS3 EQ 0 THEN HTL_PREF_DESC ELSE HTLPDSC;
+PREF_NON1/A30 = IF PREF_NON EQ 'PREFERRED' AND NNROOMS3 NE 0 THEN 'PREFERRED' ELSE
+                IF PREF_NON EQ 'NON-PREFERRED' AND NNROOMS3 NE 0 THEN 'NON-PREFERRED' ELSE
+                IF NNROOMS3 EQ 0 THEN 'NOT INCLUDED IN CALCULATION' ELSE ' ';
+PFLAG/A1 = IF PREF_NON1 EQ 'PREFERRED' THEN 'A' ELSE
+           IF PREF_NON1 EQ 'NON-PREFERRED' THEN 'B' ELSE 'C';
+
+END
+TABLE FILE MATCHONE
+PRINT AMT_TOTL1
+      FLAG
+      AROLL_DSC5
+      HOTEL_PHONE
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7
+      NNROOMS
+      NNROOMS3
+      NBR_DAYS
+      NBR_ROOMS
+      TOTAL_AMT
+      TOTAL_SLSAV
+      NAMEC
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      PASSNGR_NAME
+      PREF_RATE
+      REFUSE_CD
+      REFUSAL_DESC
+      INVOICE_NUM
+      PROP_NAME
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_STATE
+      IN_DATE
+      OUT_DATE
+      TNROOMS
+      AROLL_DSC3_CENTERED
+      AROLL_DSC4_CENTERED
+      AROLL_DSC5_CENTERED
+      AROLL_DSC7_CENTERED
+      PREF_NON1 
+      PFLAG
+BY LEVEL_DESC
+BY CITY_ST
+BY PREF_NON 
+BY HTLPDESC
+ON TABLE HOLD AS HTLHLD3
+END
+-RUN
+ 
+
+-IF '&&SETF.EVAL' NE 'ABHPCITY' THEN GOTO SKIPpref;
+
+-PrefRate
+
+
+DEFINE FILE PREFHTL
+FDATE/YYMD = RATE_BEGIN_DATE;
+TDATE/YYMD = RATE_END_DATE;
+END
+-RUN
+TABLE FILE PREFHTL
+PRINT GDS_PROPERTY_NUMBER STANDARD_SINGLE_RATE AS 'PREF_RATE' FDATE AS 'RBEGIN_DATE' TDATE AS 'REND_DATE'
+BY HOTEL_PHONE  
+WHERE PREFHTL.CLIENT_ID EQ '&&ROLLUP.EVAL'
+WHERE STANDARD_SINGLE_RATE NE 0
+ON TABLE HOLD AS HPRFPHONE 
+END
+-RUN
+
+
+
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS; 
+
+DEFINE FILE HPRFPHONE
+PRFRATE/D12.2CS = PREF_RATE;
+P_RATE/D12.2CS = IF PRFRATE LT 0 THEN (PRFRATE * (-1)) ELSE PRFRATE;
+END
+TABLE FILE HPRFPHONE
+PRINT PRFRATE  GDS_PROPERTY_NUMBER RBEGIN_DATE REND_DATE
+BY HOTEL_PHONE
+ON TABLE HOLD AS HPRFPHONE2
+END
+-RUN
+
+
+TABLE FILE HPRFPHONE2
+PRINT PRFRATE AS 'P_RATE1' GDS_PROPERTY_NUMBER AS 'PRFHCODE' RBEGIN_DATE REND_DATE
+BY HOTEL_PHONE
+ON TABLE HOLD AS CTYPREF FORMAT FOCUS INDEX HOTEL_PHONE
+END
+-RUN
+
+TABLE FILE MATCHONE
+PRINT AMT_TOTL1
+      AROLL_DSC5
+      CHKIN_DATE
+      CHKOUT_DATE
+      CITY_ST
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7
+      NNROOMS
+      NNROOMS3
+      NBR_DAYS
+      NBR_ROOMS
+      TOTAL_AMT
+      TOTAL_SLSAV
+      NEW_TOTAL_AMT
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      PASSNGR_NAME
+      NAMEC
+      REFUSE_CD
+      REFUSAL_DESC
+      INVOICE_NUM
+      PREF_RATE
+      PROP_NAME
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_STATE
+      IN_DATE
+      OUT_DATE
+      AROLL_DSC3_CENTERED
+      AROLL_DSC4_CENTERED
+      AROLL_DSC5_CENTERED
+      AROLL_DSC7_CENTERED
+       LEVEL_DESC
+       PREF_NON
+       HTL_PREF_DESC
+       TNROOMS
+       HOTEL_PHONE
+       PNR_LOCATOR
+BY HOTEL_PHONE
+ON TABLE HOLD AS XONE FORMAT FOCUS INDEX HOTEL_PHONE
+END
+-RUN
+
+JOIN HOTEL_PHONE IN XONE TO ALL HOTEL_PHONE IN CTYPREF AS JOINPR
+-RUN
+
+ 
+DEFINE FILE CTYPREF
+PRFPHONE/A17 =''''||HOTEL_PHONE||'''';
+END
+TABLE FILE CTYPREF
+SUM PRFPHONE
+BY HOTEL_PHONE NOPRINT
+ON TABLE SAVE AS PREFPROP
+END
+-RUN
+
+
+TABLE FILE XONE
+PRINT AMT_TOTL1
+      AROLL_DSC5
+      CHKIN_DATE
+      CHKOUT_DATE
+      CITY_ST
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7
+      NNROOMS
+      NNROOMS3
+      NBR_DAYS
+      NBR_ROOMS
+      TOTAL_AMT
+      TOTAL_SLSAV
+      NEW_TOTAL_AMT
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      PASSNGR_NAME
+      NAMEC
+      REFUSE_CD
+      REFUSAL_DESC
+      INVOICE_NUM
+      PREF_RATE
+      PROP_NAME
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_STATE
+      IN_DATE
+      OUT_DATE
+      AROLL_DSC3_CENTERED
+      AROLL_DSC4_CENTERED
+      AROLL_DSC5_CENTERED
+      AROLL_DSC7_CENTERED
+       LEVEL_DESC
+       PREF_NON
+       HTL_PREF_DESC
+       TNROOMS
+       HOTEL_PHONE
+       PNR_LOCATOR
+       P_RATE1
+       PRFHCODE
+BY HOTEL_PHONE      
+WHERE CHKIN_DATE GE RBEGIN_DATE AND CHKOUT_DATE LE REND_DATE
+ON TABLE HOLD AS XONEA
+END
+-RUN
+
+
+
+
+DEFINE FILE XONEA
+FLAG/A1 = 'A';
+HTLPDSC/A41 = '*'||HTL_PREF_DESC;
+HTLPDESC/A41 = IF NNROOMS3 EQ 0 THEN HTL_PREF_DESC ELSE HTLPDSC;
+PREF_NON1/A30 = IF PREF_NON EQ 'PREFERRED' AND NNROOMS3 NE 0 THEN 'PREFERRED' ELSE
+                IF PREF_NON EQ 'NON-PREFERRED' AND NNROOMS3 NE 0 THEN 'NON-PREFERRED' ELSE
+                IF NNROOMS3 EQ 0 THEN 'NOT INCLUDED IN CALCULATION' ELSE ' ';
+PFLAG/A1 = IF PREF_NON1 EQ 'PREFERRED' THEN 'A' ELSE
+           IF PREF_NON1 EQ 'NON-PREFERRED' THEN 'B' ELSE 'C';
+PREF_RATE2/D12.2CS = IF (NEW_TOTAL_AMT LT 0) AND (NNROOMS LT 0) THEN P_RATE1 * (-1) ELSE P_RATE1;
+NEW_PREF_RATE/D12.2CS = IF NNROOMS EQ 0 THEN 0 ELSE P_RATE1 * NNROOMS;
+END
+
+
+
+TABLE FILE XONEA
+PRINT AMT_TOTL1
+      FLAG
+      AROLL_DSC5
+      HOTEL_PHONE
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7
+      NNROOMS
+      NNROOMS3
+      NBR_DAYS
+      NBR_ROOMS
+      TOTAL_AMT
+      TOTAL_SLSAV
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      NEW_TOTAL_AMT
+      NAMEC
+      PASSNGR_NAME
+      REFUSE_CD
+      REFUSAL_DESC
+      INVOICE_NUM
+      P_RATE1
+      PROP_NAME
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_STATE
+      PREF_RATE
+      IN_DATE
+      OUT_DATE
+      TNROOMS
+      AROLL_DSC3_CENTERED
+      AROLL_DSC4_CENTERED
+      AROLL_DSC5_CENTERED
+      AROLL_DSC7_CENTERED
+      PREF_NON1 
+      PFLAG
+      P_RATE1
+      PRFHCODE
+      HOTEL_PHONE
+      PREF_RATE2
+      NEW_PREF_RATE
+      PNR_LOCATOR
+      
+BY LEVEL_DESC
+BY CITY_ST
+BY PREF_NON 
+BY HTLPDESC
+WHERE HOTEL_PHONE IN FILE PREFPROP
+WHERE NEW_ROOM_RATE NE PREF_RATE2
+
+ON TABLE HOLD AS HTLHLD3
+
+END
+-RUN
+
+
+
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS; 
+
+-SET &&RPTSUF = 'DTL';
+-INCLUDE FDEFRPTS
+-RUN
+ 
+-SKIPpref
+
+
+-INCLUDE DATAVROLL
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO SKIPTHIS;
+
+
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = ' TOTAL,AMOUNT, (' | &&CURRENCY || ')';
+-SET &CAVG_CUR = 'AVG,DAILY,RATE, (' | &&CURRENCY || ')';
+-SET &&PRINT2 ='AMT_TOTL1/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+-SET &&PRINT3='COMPUTE AVGDR/D16.2CS=IF (AMT_TOTL1 LT 0) AND (NNROOMS LT 0)';
+-SET &&PRINT4='THEN ((AMT_TOTL1/NNROOMS)*(-1)) ELSE IF ((NNROOMS LT 1) AND';
+-SET &&PRINT5='(NNROOMS GT (-1))) THEN 0 ELSE (AMT_TOTL1/NNROOMS);';
+-SET &&PRINT6='AS ' | '''&CAVG_CUR.EVAL''';
+
+
+-SKIPTHIS;
+
+
+-SET &&RPT_TTL2=IF &&SETF EQ 'NYHNPF3' THEN '<AROLL_DSC3_CENTERED' ELSE 
+-               IF &&SETF EQ 'NYHNPF4' THEN '<AROLL_DSC4_CENTERED' ELSE 
+-               IF &&SETF EQ 'NYHNPF7' THEN '<AROLL_DSC7_CENTERED' ELSE 
+-               IF &&SETF EQ 'NYHNPF5' THEN '<AROLL_DSC5_CENTERED' ELSE &&RPT_TTL2;
+
+
+DEFINE FILE HTLHLD3 ADD
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+-* HTLPDSC/A41 = '*'||HTL_PREF_DESC;
+-* HTLPDESC/A41 = IF NNROOMS3 EQ 0 THEN HTL_PREF_DESC ELSE HTLPDSC;
+PRP_NM/A25 = EDIT(PROP_NAME, '999999999999999999999999'); 
+PRP_ADDRS/A25 = EDIT(PROP_ADDRESS, '999999999999999999999999');  
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HTLHLD3
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+
+
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+
+
+
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*-IF EDIT(&&SETF,'999999') EQ 'NYHNPF' THEN GOTO NYL;
+-IF '&&SETF.EVAL' EQ 'NYHNPF' THEN GOTO NYL; 
+-IF &&SETF EQ 'UPHPN' THEN GOTO UPHPN;
+-IF &&SETF EQ 'UPHPN1' THEN GOTO UPHPN1;
+-IF &&SETF EQ 'UPHPN2' THEN GOTO UPHPN2;
+-IF &&SETF EQ 'UPHPN3' THEN GOTO UPHPN3;
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-GOTO Continue;
+-*
+-****
+-NYL
+-****
+-SET &FTR_AddlLines = 11;
+FOOTING BOTTOM
+" "
+" "
+" "
+"Preferred Cities include: Addison TX, Albany NY, Alpharetta GA, Austin TX, Bethesda MD, Bloomington MN, Boston MA, Charleston SC, Chicago IL"
+"Cleveland OH, Dallas TX, Denver CO, Detroit MI, Dublin OH, Franklin TN, Ft.Lauderdale FL, Houston TX, Lebanon NJ, Little Rock AR,Los Angeles CA"
+"New Orleans LA, Newton MA, New York NY, Norfolk VA, Norwood MA, Omaha NE, Orlando FL, Overland Park KS, Oxnard CA, Parsippany NJ"
+"Philadelphia PA, Reno NV, San Francisco CA, Scottsdale AZ, St.Louis MO, Tampa FL, Tarrytown NY, Walnut Creek CA, Washingon DC, Westminster CO"
+" "
+"Lost Savings is Based on The Following Calculation:"
+"Non-Preferred Average Nightly Rate - Preferred Average Nightly Rate"
+"Multiplied by Non-Preferred Number of Nights"
+-*
+-GOTO Continue
+-******
+-UPHPN
+-******
+-SET &FTR_AddlLines = 7;
+FOOTING BOTTOM
+"</2"
+"INCLUDES ALL BUT REASON CODE E"
+"LOST SAVINGS IS BASED ON THE FOLLOWING CALCULATION:"
+"NON-PREFERRED AVERAGE NIGHTLY RATE - PREFERRED AVERAGE NIGHTLY RATE"
+"MULTIPLIED BY NON-PREFERRED NUMBER OF NIGHTS"
+-*
+-GOTO Continue
+-******
+-UPHPN1
+-******
+-SET &FTR_AddlLines = 7;
+FOOTING BOTTOM
+"</2"
+"INCLUDES REASON CODES G & M ONLY"
+"LOST SAVINGS IS BASED ON THE FOLLOWING CALCULATION:"
+"NON-PREFERRED AVERAGE NIGHTLY RATE - PREFERRED AVERAGE NIGHTLY RATE"
+"MULTIPLIED BY NON-PREFERRED NUMBER OF NIGHTS"
+-*
+-GOTO Continue
+-******
+-UPHPN2
+-******
+-SET &FTR_AddlLines = 7;
+FOOTING BOTTOM
+"</2"
+"INCLUDES ALL BUT REASON CODES E, G, & M"
+"LOST SAVINGS IS BASED ON THE FOLLOWING CALCULATION:"
+"NON-PREFERRED AVERAGE NIGHTLY RATE - PREFERRED AVERAGE NIGHTLY RATE"
+"MULTIPLIED BY NON-PREFERRED NUMBER OF NIGHTS"
+-*
+-GOTO Continue
+-******
+-UPHPN3
+-******
+-SET &FTR_AddlLines = 7;
+FOOTING BOTTOM
+"</2"
+"INCLUDES ALL BUT REASON CODES C, E, G, N, M, S, T, U, & X"
+"LOST SAVINGS IS BASED ON THE FOLLOWING CALCULATION:"
+"NON-PREFERRED AVERAGE NIGHTLY RATE - PREFERRED AVERAGE NIGHTLY RATE"
+"MULTIPLIED BY NON-PREFERRED NUMBER OF NIGHTS"
+-*
+-********
+-Continue
+-********
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+ 
+ 
+
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT
+
+-SKIPTHIS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+
+-NYLCTY;
+
+DEFINE FILE PRFHLD
+AROLL_DSC3_CENTERED/A60 = CTRFLD(AROLL_DSC3, 60, 'A60');
+AROLL_DSC4_CENTERED/A60 = CTRFLD(AROLL_DSC4, 60, 'A60');
+AROLL_DSC5_CENTERED/A60 = CTRFLD(AROLL_DSC5, 60, 'A60');
+AROLL_DSC7_CENTERED/A60 = CTRFLD(AROLL_DSC7, 60, 'A60');
+END
+TABLE FILE PRFHLD
+SUM NNROOMS AS 'TNROOMS'
+BY LEVEL_DESC
+BY CITY_ST
+BY PREF_NON
+ON TABLE HOLD AS DEBTEST
+END
+-RUN
+
+MATCH FILE PRFHLD
+PRINT 
+      AROLL_DSC5
+      HTLHLD3
+      NNROOMS
+      NBR_DAYS
+      NBR_ROOMS
+      TOTAL_AMT
+      TOTAL_SLSAV
+      PASSNGR_NAME
+      REFUSE_CD
+      REFUSAL_DESC
+      INVOICE_NUM
+      PROP_NAME
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_STATE
+      IN_DATE
+      OUT_DATE
+      AROLL_DSC3_CENTERED
+      AROLL_DSC4_CENTERED
+      AROLL_DSC5_CENTERED
+      AROLL_DSC7_CENTERED
+BY LEVEL_DESC
+BY CITY_ST
+BY PREF_NON
+ON TABLE HOLD
+RUN
+FILE DEBTEST
+SUM TNROOMS
+BY LEVEL_DESC
+BY CITY_ST
+BY PREF_NON
+AFTER MATCH HOLD AS MATCHONE OLD-OR-NEW
+END
+-RUN
+
+
+DEFINE FILE MATCHONE
+FLAG/A1 = 'A';
+END
+TABLE FILE MATCHONE
+PRINT FLAG
+      AROLL_DSC5
+      HTLHLD3
+      NNROOMS
+      NBR_DAYS
+      NBR_ROOMS
+      TOTAL_AMT
+      TOTAL_SLSAV
+      PASSNGR_NAME
+      REFUSE_CD
+      REFUSAL_DESC
+      INVOICE_NUM
+      PROP_NAME
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_STATE
+      IN_DATE
+      OUT_DATE
+      TNROOMS
+      AROLL_DSC3_CENTERED
+      AROLL_DSC4_CENTERED
+      AROLL_DSC5_CENTERED
+      AROLL_DSC7_CENTERED
+BY LEVEL_DESC
+BY CITY_ST
+BY PREF_NON      
+ON TABLE HOLD AS HTLHLD3
+END
+-RUN
+
+
+-SET &&RPT_TTL2=IF &&SETF EQ 'NYHNPF3' THEN '<AROLL_DSC3_CENTERED' ELSE 
+-               IF &&SETF EQ 'NYHNPF4' THEN '<AROLL_DSC4_CENTERED' ELSE 
+-               IF &&SETF EQ 'NYHNPF7' THEN '<AROLL_DSC7_CENTERED' ELSE 
+-               IF &&SETF EQ 'NYHNPF5' THEN '<AROLL_DSC5_CENTERED' ELSE &&RPT_TTL2;
+
+
+DEFINE FILE HTLHLD3 ADD
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+
+TABLE FILE HTLHLD3
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+
+
+
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT
+
+-SKIPTHIS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+
+
+-NORECORDS
+ 
+
+ 
+
+-SET &&RPTSUF = 'MSG';
+-INCLUDE FDEFRPTS
+-RUN
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE HEADAIR
+PRINT EMPTY AS 'REPORT,MESSAGE'
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ
+ '&&IKEY.EVAL'
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-XXIT;
+
+

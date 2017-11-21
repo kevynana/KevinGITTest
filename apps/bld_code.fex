@@ -1,0 +1,906 @@
+-* File BLD_CODE.FEX                                                            
+-*                                                                              
+-*****   This subroutine builds the FOCUS report code for a Report Instance     
+-*****     Called from RPT_INST or VARSETS.                                     
+-*****   AUTHOR:  Dave Kuzanek                                                  
+-*****   PRODUCTION DATE:                                                       
+-**********************************************************************         
+-*DATE           NAME               DESCRIPTION                                 
+-*7/31/00      IBISTL-KR            ADDED PARENS TO BETTER QUALIFY CODE         
+-*9/11/00      IBISTL-RJ            Removed the show Form1 code.  There         
+-*                                  are not Winforms for this subroutine.       
+-**********************************************************************         
+                                                                                
+MAINTAIN FILE ihier_bk AND rpt_inst AND inst_fld AND IHIER_SL                   
+ AND rollup AND i_summ AND isel_lst                                             
+FROM inst_parm roll_stack                                                       
+                                                                                
+COMPUTE Inst_Parm/A72 = ;                                                       
+COMPUTE Cnt1/I4 = ;                                                             
+COMPUTE Cnt2/I4 = ;                                                             
+COMPUTE Cnt3/I4 = ;                                                             
+COMPUTE FName/A18 = ;                                                           
+COMPUTE Data_Type/A1 = ;                                                        
+COMPUTE Line_Length/I2 = ;                                                      
+COMPUTE Token_Length/I2 = ;                                                     
+COMPUTE Build_Line/A65 = ;                                                      
+COMPUTE Hold_Line/A65 = ;                                                       
+COMPUTE Summ_Line/A45 = ;                                                       
+COMPUTE Build_Token/A65 = ;                                                     
+COMPUTE Print_Cnt/I2 = 1;                                                       
+COMPUTE By_Cnt/I2 = 1;                                                          
+COMPUTE If_Cnt/I2 = 1;                                                          
+COMPUTE On_Cnt/I2 = 1;                                                          
+COMPUTE NoprintX/A7 = 'NOPRINT';                                                
+COMPUTE PrintX/A5 = 'PRINT';                                                    
+COMPUTE SumX/A3 = 'SUM';                                                        
+COMPUTE AsX/A2 = 'AS';                                                          
+COMPUTE IfX/A2 = 'IF';                                                          
+COMPUTE ByX/A2 = 'BY';                                                          
+COMPUTE HighestX/A7 = 'HIGHEST';                                                
+COMPUTE OnX/A2 = 'ON';                                                          
+COMPUTE OrX/A2 = 'OR';                                                          
+COMPUTE AndX/A3 = 'AND';                                                        
+COMPUTE SqX/A2 = HEXBYT(39, SqX) || HEXBYT(39, SqX);                            
+COMPUTE DqX/A2 = HEXBYT(34, DqX);                                               
+COMPUTE SpX/A1 = HEXBYT(64, SpX);                                               
+COMPUTE AmpX/A1 = HEXBYT(38, AmpX);                                             
+COMPUTE OParX/A1 = HEXBYT(40, OParX);                                           
+COMPUTE CParX/A1 = HEXBYT(41, CParX);                                           
+COMPUTE GeX/A2 = 'GE';                                                          
+COMPUTE LeX/A2 = 'LE';                                                          
+COMPUTE NeX/A2 = 'NE';                                                          
+COMPUTE EqX/A2 = 'EQ';                                                          
+COMPUTE FmX/A4 = 'FROM';                                                        
+COMPUTE ToX/A2 = 'TO';                                                          
+COMPUTE IsX/A2 = 'IS';                                                          
+COMPUTE PbX/A10 = 'PAGE-BREAK';                                                 
+COMPUTE SlX/A9 = 'SKIP-LINE';                                                   
+COMPUTE Alph_Lim/A4 = '';                                                       
+COMPUTE From_Lev/A34 = ;                                                        
+COMPUTE To_Lev/A34 = ;                                                          
+                                                                                
+INFER RPT_INST.INST_KEY I_CODE.PRT_LN1 INTO RI_Temp                             
+-*INFER I_SUMM.INST_KEY INTO ISM_Stack                                          
+INFER IHIER_BK INTO IH_Stack                                                    
+INFER ISEL_LST INTO IS_Stack                                                    
+INFER INST_FLD INTO IF_Stack                                                    
+INFER INST_FLD INTO IF_Work                                                     
+INFER INST_FLD INTO IF_Work2                                                    
+INFER ROLLUP INTO Roll_Stack                                                    
+INFER IHIER_SL INTO ISL_Stack                                                   
+                                                                                
+REPOSITION RPT_INST.INST_KEY                                                    
+-*STACK CLEAR RI_Stack ISM_Stack                                                
+NEXT RPT_INST.INST_KEY I_CODE.PRT_LN1 INTO RI_Stack                             
+  WHERE RPT_INST.INST_KEY EQ Inst_Parm                                          
+-*NEXT I_SUMM.INST_KEY INTO ISM_Stack                                           
+-*WHERE I_SUMM.INST_KEY EQ Inst_Parm                                            
+                                                                                
+REPOSITION IHIER_SL.INST_KEY                                                    
+STACK CLEAR ISL_Stack                                                           
+FOR ALL NEXT IHIER_SL.INST_KEY INTO ISL_Stack                                   
+  WHERE IHIER_SL.INST_KEY EQ Inst_Parm                                          
+                                                                                
+REPOSITION INST_FLD.IFLD_KEY                                                    
+STACK CLEAR IF_Stack                                                            
+FOR ALL NEXT INST_FLD.IFLD_KEY INTO IF_Stack                                    
+  WHERE INST_FLD.INST_KEY EQ RI_Stack(1).INST_KEY                               
+                                                                                
+REPOSITION IHIER_BK.INST_KEY                                                    
+STACK CLEAR IH_Stack                                                            
+FOR ALL NEXT IHIER_BK.INST_KEY INTO IH_Stack                                    
+  WHERE IHIER_BK.INST_KEY EQ RI_Stack(1).INST_KEY AND                           
+        IHIER_BK.SORT_SELECT EQ 'Y'                                             
+                                                                                
+IF RI_Stack(1).RPT_TYPE EQ 'SPC' OR                                             
+   RI_Stack(1).RPT_TYPE EQ 'STS' OR                                             
+   RI_Stack(1).RPT_TYPE EQ 'SPD' OR                                             
+   RI_Stack(1).RPT_TYPE EQ 'ETS' THEN                                           
+BEGIN                                                                           
+  PERFORM SPC_If                                                                
+  PERFORM Strip_If                                                              
+  PERFORM Update_Inst                                                           
+  GOTO END RESET                                                                
+ENDBEGIN                                                                        
+ELSE BEGIN                                                                      
+  PERFORM Blank_Code                                                            
+  PERFORM Bld_Print                                                             
+  PERFORM Strip_Print                                                           
+  PERFORM Bld_By                                                                
+  PERFORM Strip_By                                                              
+  PERFORM Bld_If                                                                
+  PERFORM Strip_If                                                              
+  PERFORM Bld_On                                                                
+  PERFORM Strip_On                                                              
+-*  PERFORM Bld_Targets                                                         
+-*  PERFORM Strip_Targ                                                          
+-*  PERFORM Bld_Subjects                                                        
+-*  PERFORM Strip_Subj                                                          
+                                                                                
+  PERFORM Update_Inst                                                           
+  GOTO END RESET                                                                
+ENDBEGIN                                                                        
+                                                                                
+CASE Blank_Code                                                                 
+  COMPUTE RI_Stack(1).PRT_LN1 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN2 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN3 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN4 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN5 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN6 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN7 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN8 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN9 = '';                                             
+  COMPUTE RI_Stack(1).PRT_LN10 = '';                                            
+  COMPUTE RI_Stack(1).BY_LN1 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN2 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN3 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN4 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN5 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN6 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN7 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN8 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN9 = '';                                              
+  COMPUTE RI_Stack(1).BY_LN10 = '';                                             
+  COMPUTE RI_Stack(1).IF_LN1 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN2 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN3 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN4 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN5 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN6 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN7 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN8 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN9 = '';                                              
+  COMPUTE RI_Stack(1).IF_LN10 = '';                                             
+  COMPUTE RI_Stack(1).ON_LN1 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN2 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN3 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN4 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN5 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN6 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN7 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN8 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN9 = '';                                              
+  COMPUTE RI_Stack(1).ON_LN10 = '';                                             
+endcase                                                                         
+                                                                                
+CASE Strip_Print                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN1;                                      
+  COMPUTE RI_Stack(1).PRT_LN1 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN1);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN2;                                      
+  COMPUTE RI_Stack(1).PRT_LN2 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN2);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN3;                                      
+  COMPUTE RI_Stack(1).PRT_LN3 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN3);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN4;                                      
+  COMPUTE RI_Stack(1).PRT_LN4 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN4);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN5;                                      
+  COMPUTE RI_Stack(1).PRT_LN5 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN5);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN6;                                      
+  COMPUTE RI_Stack(1).PRT_LN6 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN6);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN7;                                      
+  COMPUTE RI_Stack(1).PRT_LN7 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN7);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN8;                                      
+  COMPUTE RI_Stack(1).PRT_LN8 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN8);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN9;                                      
+  COMPUTE RI_Stack(1).PRT_LN9 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN9);                           
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).PRT_LN10;                                     
+  COMPUTE RI_Stack(1).PRT_LN10 =                                                
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).PRT_LN10);                          
+endcase                                                                         
+                                                                                
+CASE Bld_Print                                                                  
+  STACK CLEAR IF_Work                                                           
+-**********************************************************************         
+-*DATE           NAME               DESCRIPTION                                 
+-*7/31/00      IBISTL-KR            ADDED PARENS TO BETTER QUALIFY CODE         
+-**********************************************************************         
+  STACK COPY FROM IF_Stack INTO IF_Work                                         
+    WHERE (PRT_OPTION EQ 'N' OR PRT_SELECT EQ 'Y') AND (SORT_SELECT EQ 'N')     
+  STACK SORT IF_Work BY PRT_SEQ                                                 
+  IF IF_Work(1).DEF_NAME GT ' ' THEN                                            
+  BEGIN                                                                         
+    IF RI_Stack(1).RPT_TYPE EQ 'DET'                                            
+      THEN COMPUTE Build_Line = 'PRINT' || SpX || IF_Work(1).DEF_NAME;          
+      ELSE COMPUTE Build_Line = 'SUM' || SpX || IF_Work(1).DEF_NAME;            
+  ENDBEGIN                                                                      
+  ELSE BEGIN                                                                    
+    IF RI_Stack(1).RPT_TYPE EQ 'DET'                                            
+      THEN COMPUTE Build_Line = 'PRINT' || SpX || IF_Work(1).FLD_NAME;          
+      ELSE COMPUTE Build_Line = 'SUM' || SpX || IF_Work(1).FLD_NAME;            
+  ENDBEGIN                                                                      
+  IF IF_Work(1).PRT_AS GT ' ' THEN                                              
+    COMPUTE Build_Line =                                                        
+      Build_Line || SpX || AsX || SpX || SqX || IF_Work(1).PRT_AS || SqX;       
+  COMPUTE Cnt1 = 2;                                                             
+  REPEAT WHILE Cnt1 LE IF_Work.FocCount                                         
+    IF IF_Work(Cnt1).DEF_NAME GT ' '                                            
+      THEN COMPUTE Build_Token =                                                
+        SpX || AndX || SpX || IF_Work(Cnt1).DEF_NAME;                           
+      ELSE COMPUTE Build_Token =                                                
+        SpX || AndX || SpX || IF_Work(Cnt1).FLD_NAME;                           
+    IF IF_Work(Cnt1).PRT_AS GT ' ' THEN                                         
+      COMPUTE Build_Token =                                                     
+        Build_Token || SpX || AsX || SpX || SqX || IF_Work(Cnt1).PRT_AS ||      
+          SqX;                                                                  
+    COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);                  
+    COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);               
+    IF Line_Length + Token_Length GT 65 THEN                                    
+    BEGIN                                                                       
+      PERFORM Move_Prt                                                          
+      COMPUTE Print_Cnt = Print_Cnt + 1;                                        
+    ENDBEGIN                                                                    
+    PERFORM Stub_Line                                                           
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+  PERFORM Move_Prt                                                              
+endcase                                                                         
+                                                                                
+CASE Move_Prt                                                                   
+  IF Print_Cnt EQ 1 THEN COMPUTE RI_Stack(1).PRT_LN1 = Build_Line;              
+  IF Print_Cnt EQ 2 THEN COMPUTE RI_Stack(1).PRT_LN2 = Build_Line;              
+  IF Print_Cnt EQ 3 THEN COMPUTE RI_Stack(1).PRT_LN3 = Build_Line;              
+  IF Print_Cnt EQ 4 THEN COMPUTE RI_Stack(1).PRT_LN4 = Build_Line;              
+  IF Print_Cnt EQ 5 THEN COMPUTE RI_Stack(1).PRT_LN5 = Build_Line;              
+  IF Print_Cnt EQ 6 THEN COMPUTE RI_Stack(1).PRT_LN6 = Build_Line;              
+  IF Print_Cnt EQ 7 THEN COMPUTE RI_Stack(1).PRT_LN7 = Build_Line;              
+  IF Print_Cnt EQ 8 THEN COMPUTE RI_Stack(1).PRT_LN8 = Build_Line;              
+  IF Print_Cnt EQ 9 THEN COMPUTE RI_Stack(1).PRT_LN9 = Build_Line;              
+  IF Print_Cnt EQ 10 THEN COMPUTE RI_Stack(1).PRT_LN10 = Build_Line;            
+  COMPUTE Build_Line = '';                                                      
+endcase                                                                         
+                                                                                
+CASE Strip_By                                                                   
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN1;                                       
+  COMPUTE RI_Stack(1).BY_LN1 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN1);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN2;                                       
+  COMPUTE RI_Stack(1).BY_LN2 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN2);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN3;                                       
+  COMPUTE RI_Stack(1).BY_LN3 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN3);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN4;                                       
+  COMPUTE RI_Stack(1).BY_LN4 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN4);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN5;                                       
+  COMPUTE RI_Stack(1).BY_LN5 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN5);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN6;                                       
+  COMPUTE RI_Stack(1).BY_LN6 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN6);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN7;                                       
+  COMPUTE RI_Stack(1).BY_LN7 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN7);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN8;                                       
+  COMPUTE RI_Stack(1).BY_LN8 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN8);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN9;                                       
+  COMPUTE RI_Stack(1).BY_LN9 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN9);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).BY_LN10;                                      
+  COMPUTE RI_Stack(1).BY_LN10 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).BY_LN10);                           
+                                                                                
+endcase                                                                         
+                                                                                
+CASE Bld_By                                                                     
+  STACK SORT IH_Stack BY SORT_SEQ                                               
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IH_Stack.FocCount                                        
+    IF IH_Stack(Cnt1).SORT_ORDER EQ 'H'                                         
+      THEN COMPUTE Build_Token =                                                
+          SpX || ByX || SpX || HighestX || SpX ||                               
+            IH_Stack(Cnt1).FLD_NAME || SpX || NoPrintX;                         
+      ELSE COMPUTE Build_Token =                                                
+          SpX || ByX || SpX || IH_Stack(Cnt1).FLD_NAME || SpX || NoPrintX;      
+    COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);                  
+    COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);               
+    IF Line_Length + Token_Length GT 65 THEN                                    
+    BEGIN                                                                       
+      PERFORM Move_By                                                           
+      COMPUTE By_Cnt = By_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    PERFORM Stub_Line                                                           
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+                                                                                
+  STACK CLEAR IF_Work                                                           
+  STACK COPY FROM IF_Stack INTO IF_Work WHERE SORT_SELECT EQ 'Y'                
+  STACK SORT IF_Work BY SORT_SEQ                                                
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IF_Work.FocCount                                         
+    IF IF_Work(Cnt1).SORT_ORDER EQ 'H'                                          
+      THEN COMPUTE Build_Token =                                                
+          SpX || ByX || SpX || HighestX || SpX || IF_Work(Cnt1).FLD_NAME;       
+      ELSE COMPUTE Build_Token =                                                
+          SpX || ByX || SpX || IF_Work(Cnt1).FLD_NAME;                          
+    IF IF_Work(Cnt1).PRT_SELECT EQ 'N' THEN                                     
+      COMPUTE Build_Token = Build_Token || Spx || NoPrintX;                     
+    ELSE IF IF_Work(Cnt1).PRT_AS GT ' ' THEN                                    
+      COMPUTE Build_Token =                                                     
+        Build_Token || SpX || AsX || SpX || SqX || IF_Work(Cnt1).PRT_AS ||      
+          SqX;                                                                  
+    COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);                  
+    COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);               
+    IF Line_Length + Token_Length GT 65 THEN                                    
+    BEGIN                                                                       
+      PERFORM Move_By                                                           
+      COMPUTE By_Cnt = By_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    PERFORM Stub_Line                                                           
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+  IF RI_Stack(1).RPT_GROUP EQ 'AIR' THEN PERFORM AirTail_By                     
+  IF RI_Stack(1).RPT_GROUP EQ 'CAR' THEN PERFORM CarTail_By                     
+  IF RI_Stack(1).RPT_GROUP EQ 'HTL' THEN PERFORM HtlTail_By                     
+  IF RI_Stack(1).RPT_GROUP EQ 'C/P' THEN PERFORM CPTail_By                      
+endcase                                                                         
+                                                                                
+CASE AirTail_By                                                                 
+  COMPUTE Cnt1 = 1                                                              
+  REPEAT WHILE Cnt1 LE 4                                                        
+    IF Cnt1 EQ 1 THEN COMPUTE FName = 'CONJ_GROUP';                             
+    IF Cnt1 EQ 2 THEN COMPUTE FName = 'TICKET_CODE';                            
+    IF Cnt1 EQ 3 THEN COMPUTE FName = 'CONJ_REL';                               
+    IF Cnt1 EQ 4 THEN COMPUTE FName = 'SEG_NBR';                                
+    COMPUTE Build_Token =                                                       
+          SpX || ByX || SpX || FName || SpX || NoPrintX;                        
+    COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);                  
+    COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);               
+    IF Line_Length + Token_Length GT 65 THEN                                    
+    BEGIN                                                                       
+      PERFORM Move_By                                                           
+      COMPUTE By_Cnt = By_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    PERFORM Stub_Line                                                           
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+  PERFORM Move_By                                                               
+endcase                                                                         
+                                                                                
+CASE CarTail_By                                                                 
+endcase                                                                         
+                                                                                
+CASE HtlTail_By                                                                 
+endcase                                                                         
+                                                                                
+CASE CPTail_By                                                                  
+endcase                                                                         
+                                                                                
+CASE Move_By                                                                    
+  IF By_Cnt EQ 1 THEN COMPUTE RI_Stack(1).BY_LN1 = Build_Line;                  
+  IF By_Cnt EQ 2 THEN COMPUTE RI_Stack(1).BY_LN2 = Build_Line;                  
+  IF By_Cnt EQ 3 THEN COMPUTE RI_Stack(1).BY_LN3 = Build_Line;                  
+  IF By_Cnt EQ 4 THEN COMPUTE RI_Stack(1).BY_LN4 = Build_Line;                  
+  IF By_Cnt EQ 5 THEN COMPUTE RI_Stack(1).BY_LN5 = Build_Line;                  
+  IF By_Cnt EQ 6 THEN COMPUTE RI_Stack(1).BY_LN6 = Build_Line;                  
+  IF By_Cnt EQ 7 THEN COMPUTE RI_Stack(1).BY_LN7 = Build_Line;                  
+  IF By_Cnt EQ 8 THEN COMPUTE RI_Stack(1).BY_LN8 = Build_Line;                  
+  IF By_Cnt EQ 9 THEN COMPUTE RI_Stack(1).BY_LN9 = Build_Line;                  
+  IF By_Cnt EQ 10 THEN COMPUTE RI_Stack(1).BY_LN10 = Build_Line;                
+  COMPUTE Build_Line = '';                                                      
+endcase                                                                         
+                                                                                
+CASE Strip_If                                                                   
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN1;                                       
+  COMPUTE RI_Stack(1).IF_LN1 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN1);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN2;                                       
+  COMPUTE RI_Stack(1).IF_LN2 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN2);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN3;                                       
+  COMPUTE RI_Stack(1).IF_LN3 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN3);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN4;                                       
+  COMPUTE RI_Stack(1).IF_LN4 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN4);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN5;                                       
+  COMPUTE RI_Stack(1).IF_LN5 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN5);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN6;                                       
+  COMPUTE RI_Stack(1).IF_LN6 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN6);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN7;                                       
+  COMPUTE RI_Stack(1).IF_LN7 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN7);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN8;                                       
+  COMPUTE RI_Stack(1).IF_LN8 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN8);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN9;                                       
+  COMPUTE RI_Stack(1).IF_LN9 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN9);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).IF_LN10;                                      
+  COMPUTE RI_Stack(1).IF_LN10 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).IF_LN10);                           
+                                                                                
+endcase                                                                         
+                                                                                
+CASE SPC_If                                                                     
+    IF RI_Stack(1).LEVEL_KEY NE Roll_Stack(1).ROLLUP_CODE THEN                  
+    BEGIN                                                                       
+      COMPUTE Build_Token = '';
+-* 10/18/00   IBISTL-RJ  changed the code to allow for wildcard                 
+-*                       character in roll_key                                  
+-*          FmX ;                                                               
+-*                                                                              
+      PERFORM Stub_Line                                                         
+      COMPUTE Cnt1 = 1;                                                         
+      COMPUTE From_Lev = ISL_Stack(Cnt1).SEL_KEY;                               
+-* 10/18/00   IBISTL-RJ  changed the code to allow for wildcard                 
+-*                       character in roll_key                                  
+      COMPUTE From_Lev = CTRAN(34, From_Lev, 48, 32, From_Lev) || '$*';         
+-*      COMPUTE To_Lev = CTRAN(34, From_Lev, 48, 90, To_Lev);                   
+      COMPUTE Build_Token = SpX || SqX || From_Lev || SqX;                      
+      COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);                
+      COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);             
+-*      IF Line_Length + Token_Length GT 65 THEN                                
+-*      BEGIN                                                                   
+-*        PERFORM Move_If                                                       
+-*        COMPUTE If_Cnt = If_Cnt + 1;                                          
+-*      ENDBEGIN                                                                
+-*      PERFORM Stub_Line                                                       
+-*      COMPUTE Build_Token = SpX || ToX || SpX || SqX || To_Lev || SqX;        
+-*      COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);              
+-*      COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);           
+-*      IF Line_Length + Token_Length GT 65 THEN                                
+-*      BEGIN                                                                   
+-*        PERFORM Move_If                                                       
+-*        COMPUTE If_Cnt = If_Cnt + 1;                                          
+-*      ENDBEGIN                                                                
+      PERFORM Stub_Line                                                         
+      PERFORM Move_If                                                           
+    ENDBEGIN                                                                    
+endcase                                                                         
+                                                                                
+CASE Bld_If                                                                     
+    IF RI_Stack(1).LEVEL_KEY NE Roll_Stack(1).ROLLUP_CODE THEN                  
+    BEGIN                                                                       
+      COMPUTE Build_Token = '';
+          
+      PERFORM Stub_Line                                                         
+      COMPUTE Cnt1 = 1;                                                         
+      REPEAT WHILE Cnt1 LE ISL_Stack.FocCount                                   
+        COMPUTE From_Lev = ISL_Stack(Cnt1).SEL_KEY;                             
+        COMPUTE To_Lev = CTRAN(34, From_Lev, 48, 90, To_Lev);                   
+        COMPUTE Build_Token = SpX || SqX || From_Lev || SqX;                    
+        COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);              
+        COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);           
+        IF Line_Length + Token_Length GT 65 THEN                                
+        BEGIN                                                                   
+          PERFORM Move_If                                                       
+          COMPUTE If_Cnt = If_Cnt + 1;                                          
+        ENDBEGIN                                                                
+        PERFORM Stub_Line                                                       
+        COMPUTE Build_Token = SpX || ToX || SpX || SqX || To_Lev || SqX;        
+        COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);              
+        COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);           
+        IF Line_Length + Token_Length GT 65 THEN                                
+        BEGIN                                                                   
+          PERFORM Move_If                                                       
+          COMPUTE If_Cnt = If_Cnt + 1;                                          
+        ENDBEGIN                                                                
+        PERFORM Stub_Line                                                       
+        IF Cnt1 LT ISL_Stack.FocCount THEN                                      
+          COMPUTE Build_Token = SpX || OrX;                                     
+        COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);              
+        COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);           
+        IF Line_Length + Token_Length GT 65 THEN                                
+        BEGIN                                                                   
+          PERFORM Move_If                                                       
+          COMPUTE If_Cnt = If_Cnt + 1;                                          
+        ENDBEGIN                                                                
+        PERFORM Stub_Line                                                       
+        COMPUTE Cnt1 = Cnt1 + 1;                                                
+      ENDREPEAT                                                                 
+      PERFORM Stub_Line                                                         
+      PERFORM Move_If                                                           
+      COMPUTE If_Cnt = If_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+-*  This COMPUTE will need to test for AIR, CAR, or HTL report type and         
+-*  use the respective date field for range determination                       
+  COMPUTE Build_Token = IfX || SpX || 'TRN_DATE' || SpX || FmX ||               
+          SpX || SqX || RI_Stack(1).FM_DATE || SqX || SpX || ToX || SpX ||      
+          SqX || RI_Stack(1).TO_DATE || SqX;                                    
+  PERFORM Stub_Line                                                             
+  PERFORM Move_If                                                               
+  COMPUTE If_Cnt = If_Cnt + 1;                                                  
+                                                                                
+  STACK CLEAR IF_Work                                                           
+  STACK COPY FROM IF_Stack INTO IF_Work WHERE SELECT_OPTION EQ 'Y'              
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IF_Work.FocCount                                         
+    IF IF_Work(Cnt1).SELECT_FLAG EQ 'R' THEN                                    
+    BEGIN                                                                       
+      PERFORM Check_DataType                                                    
+      IF Data_Type EQ 'A' THEN                                                  
+        COMPUTE Build_Token = IfX || SpX || IF_Work(Cnt1).FLD_NAME ||           
+          SpX || FmX || SpX || SqX || IF_Work(Cnt1).SELECT_FROM ||              
+          SqX || SpX || ToX || SpX || SqX || IF_Work(Cnt1).SELECT_TO || SqX;    
+      ELSE                                                                      
+        COMPUTE Build_Token = IfX || SpX || IF_Work(Cnt1).FLD_NAME ||           
+          SpX || FmX || SpX || IF_Work(Cnt1).SELECT_FROM ||                     
+          SpX || ToX || SpX || IF_Work(Cnt1).SELECT_TO;                         
+      PERFORM Stub_Line                                                         
+      PERFORM Move_If                                                           
+      COMPUTE If_Cnt = If_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    IF IF_Work(Cnt1).SELECT_FLAG EQ 'D' THEN                                    
+    BEGIN                                                                       
+      COMPUTE Build_Token = IfX || SpX || IF_Work(Cnt1).FLD_NAME ||             
+        SpX || FmX || SpX || SqX || IF_Work(Cnt1).SEL_FRM_DT || SqX ||          
+        SpX || ToX || SpX || SqX || IF_Work(Cnt1).SEL_TO_DT || SqX;             
+      PERFORM Stub_Line                                                         
+      PERFORM Move_If                                                           
+      COMPUTE If_Cnt = If_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    IF IF_Work(Cnt1).SELECT_FLAG EQ 'L' THEN                                    
+      IF IF_Work(Cnt1).SELECT_NOT EQ 'N'                                        
+        THEN PERFORM Select_EQ                                                  
+        ELSE PERFORM Select_NE                                                  
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+endcase                                                                         
+                                                                                
+CASE Select_EQ                                                                  
+  REPOSITION ISEL_LST.IFLD_KEY                                                  
+  STACK CLEAR IS_Stack                                                          
+  COMPUTE Cnt2 = 1;                                                             
+  FOR ALL NEXT ISEL_LST.IFLD_KEY INTO IS_Stack                                  
+    WHERE ISEL_LST.IFLD_KEY EQ IF_Work(Cnt1).IFLD_KEY                           
+  PERFORM Check_DataType                                                        
+  IF Data_Type EQ 'A' THEN COMPUTE Build_Token = IfX || SpX ||                  
+    IF_Work(Cnt1).FLD_NAME || SpX || EqX || SpX || SqX ||                       
+      IS_Stack(1).FLD_SELECT || SqX;                                            
+    ELSE COMPUTE Build_Token = IfX || SpX || IF_Work(Cnt1).FLD_NAME ||          
+      SpX || EqX || SpX || IS_Stack(1).FLD_SELECT;                              
+  PERFORM Stub_Line                                                             
+  COMPUTE Cnt2 = 2;                                                             
+  REPEAT WHILE Cnt2 LE IS_Stack.FocCount                                        
+    IF Data_Type EQ 'A'                                                         
+      THEN COMPUTE Build_Token = SpX || OrX || SpX ||                           
+        SqX || IS_Stack(Cnt2).FLD_SELECT || SqX;                                
+      ELSE COMPUTE Build_Token = SpX || OrX || SpX ||                           
+        IS_Stack(Cnt2).FLD_SELECT;                                              
+    COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);                  
+    COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);               
+    IF Line_Length + Token_Length GT 65 THEN                                    
+    BEGIN                                                                       
+      PERFORM Move_If                                                           
+      COMPUTE If_Cnt = If_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    PERFORM Stub_Line                                                           
+    COMPUTE Cnt2 = Cnt2 + 1;                                                    
+  ENDREPEAT                                                                     
+  PERFORM Move_If                                                               
+  COMPUTE If_Cnt = If_Cnt + 1;                                                  
+endcase                                                                         
+                                                                                
+CASE Select_NE                                                                  
+  REPOSITION ISEL_LST.IFLD_KEY                                                  
+  STACK CLEAR IS_Stack                                                          
+  COMPUTE Cnt2 = 1;                                                             
+  FOR ALL NEXT ISEL_LST.IFLD_KEY INTO IS_Stack                                  
+    WHERE ISEL_LST.IFLD_KEY EQ IF_Work(Cnt1).IFLD_KEY                           
+  PERFORM Check_DataType                                                        
+  IF Data_Type EQ 'A' THEN COMPUTE Build_Token = IfX || SpX ||                  
+    IF_Work(Cnt1).FLD_NAME || SpX || NeX || SpX || SqX ||                       
+      IS_Stack(1).FLD_SELECT || SqX;                                            
+    ELSE COMPUTE Build_Token = IfX || SpX || IF_Work(Cnt1).FLD_NAME ||          
+      SpX || EqX || SpX || IS_Stack(1).FLD_SELECT;                              
+  PERFORM Stub_Line                                                             
+  COMPUTE Cnt2 = 2;                                                             
+  REPEAT WHILE Cnt2 LE IS_Stack.FocCount                                        
+    IF Data_Type EQ 'A'                                                         
+      THEN COMPUTE Build_Token = SpX || AndX || SpX ||                          
+        SqX || IS_Stack(Cnt2).FLD_SELECT || SqX;                                
+      ELSE COMPUTE Build_Token = SpX || AndX || SpX ||                          
+        IS_Stack(Cnt2).FLD_SELECT;                                              
+    COMPUTE Line_Length = ARGLEN(65, Build_Line, Line_Length);                  
+    COMPUTE Token_Length = ARGLEN(65, Build_Token, Token_Length);               
+    IF Line_Length + Token_Length GT 65 THEN                                    
+    BEGIN                                                                       
+      PERFORM Move_If                                                           
+      COMPUTE If_Cnt = If_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    PERFORM Stub_Line                                                           
+    COMPUTE Cnt2 = Cnt2 + 1;                                                    
+  ENDREPEAT                                                                     
+  PERFORM Move_If                                                               
+  COMPUTE If_Cnt = If_Cnt + 1;                                                  
+endcase                                                                         
+                                                                                
+CASE Move_If                                                                    
+  IF If_Cnt EQ 1 THEN COMPUTE RI_Stack(1).IF_LN1 = Build_Line;                  
+-* 10/25/00   IBISTL-RJ  changed the code to allow for wildcard                 
+-*                       character in roll_key                                  
+  IF If_Cnt EQ 2 THEN COMPUTE RI_Stack(1).IF_LN2 = '';                          
+  IF If_Cnt EQ 3 THEN COMPUTE RI_Stack(1).IF_LN3 = Build_Line;                  
+  IF If_Cnt EQ 4 THEN COMPUTE RI_Stack(1).IF_LN4 = Build_Line;                  
+  IF If_Cnt EQ 5 THEN COMPUTE RI_Stack(1).IF_LN5 = Build_Line;                  
+  IF If_Cnt EQ 6 THEN COMPUTE RI_Stack(1).IF_LN6 = Build_Line;                  
+  IF If_Cnt EQ 7 THEN COMPUTE RI_Stack(1).IF_LN7 = Build_Line;                  
+  IF If_Cnt EQ 8 THEN COMPUTE RI_Stack(1).IF_LN8 = Build_Line;                  
+  IF If_Cnt EQ 9 THEN COMPUTE RI_Stack(1).IF_LN9 = Build_Line;                  
+  IF If_Cnt EQ 10 THEN COMPUTE RI_Stack(1).IF_LN10 = Build_Line;                
+  COMPUTE Build_Line = '';                                                      
+endcase                                                                         
+                                                                                
+CASE Strip_On                                                                   
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN1;                                       
+  COMPUTE RI_Stack(1).ON_LN1 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN1);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN2;                                       
+  COMPUTE RI_Stack(1).ON_LN2 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN2);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN3;                                       
+  COMPUTE RI_Stack(1).ON_LN3 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN3);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN4;                                       
+  COMPUTE RI_Stack(1).ON_LN4 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN4);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN5;                                       
+  COMPUTE RI_Stack(1).ON_LN5 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN5);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN6;                                       
+  COMPUTE RI_Stack(1).ON_LN6 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN6);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN7;                                       
+  COMPUTE RI_Stack(1).ON_LN7 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN7);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN8;                                       
+  COMPUTE RI_Stack(1).ON_LN8 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN8);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN9;                                       
+  COMPUTE RI_Stack(1).ON_LN9 =                                                  
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN9);                            
+                                                                                
+  COMPUTE Hold_Line = RI_Stack(1).ON_LN10;                                      
+  COMPUTE RI_Stack(1).ON_LN10 =                                                 
+    CTRAN(65, Hold_Line, 64, 32,RI_Stack(1).ON_LN10);                           
+                                                                                
+endcase                                                                         
+                                                                                
+CASE Bld_On                                                                     
+  PERFORM HLev_IF_Merge                                                         
+  PERFORM SubH_Bld                                                              
+  PERFORM SubF_Bld                                                              
+  PERFORM SubT_Bld                                                              
+  PERFORM PgBrk_Bld                                                             
+  PERFORM SkpLine_Bld                                                           
+endcase                                                                         
+                                                                                
+CASE HLev_IF_Merge                                                              
+  STACK CLEAR IF_Work                                                           
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IH_Stack.FocCount                                        
+    COMPUTE IF_Work(Cnt1).FLD_NAME = IH_Stack(Cnt1).FLD_NAME;                   
+    COMPUTE IF_Work(Cnt1).SORT_SEQ = Cnt1;                                      
+    COMPUTE IF_Work(Cnt1).SORT_SELECT = IH_Stack(Cnt1).SORT_SELECT;             
+    COMPUTE IF_Work(Cnt1).SUBH_SELECT = IH_Stack(Cnt1).SUBH_SELECT;             
+    COMPUTE IF_Work(Cnt1).SUBH_TEXT1 = IH_Stack(Cnt1).SUBH_TEXT1;               
+    COMPUTE IF_Work(Cnt1).SUBH_TEXT2 = IH_Stack(Cnt1).SUBH_TEXT2;               
+    COMPUTE IF_Work(Cnt1).SUBF_SELECT = IH_Stack(Cnt1).SUBF_SELECT;             
+    COMPUTE IF_Work(Cnt1).SUBF_TEXT1 = IH_Stack(Cnt1).SUBF_TEXT1;               
+    COMPUTE IF_Work(Cnt1).SUBF_TEXT2 = IH_Stack(Cnt1).SUBF_TEXT2;               
+    COMPUTE IF_Work(Cnt1).SBTOT_SELECT = IH_Stack(Cnt1).SBTOT_SELECT;           
+    COMPUTE IF_Work(Cnt1).SBTOT_TEXT1 = IH_Stack(Cnt1).SBTOT_TEXT1;             
+    COMPUTE IF_Work(Cnt1).SBTOT_TEXT2 = IH_Stack(Cnt1).SBTOT_TEXT2;             
+    COMPUTE IF_Work(Cnt1).PG_BREAK = IH_Stack(Cnt1).PG_BREAK;                   
+    COMPUTE IF_Work(Cnt1).SKP_LINE = IH_Stack(Cnt1).SKP_LINE;                   
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+  COMPUTE Cnt1 = 1;                                                             
+  COMPUTE Cnt2 = IF_Work.FocCount + 1;                                          
+  STACK SORT IF_Stack BY SORT_SEQ                                               
+  REPEAT WHILE Cnt1 LE IF_Stack.FocCount                                        
+    IF IF_Stack(Cnt1).SORT_SELECT EQ 'Y' THEN BEGIN                             
+      COMPUTE IF_Work(Cnt2).FLD_NAME = IF_Stack(Cnt1).FLD_NAME;                 
+      COMPUTE IF_Work(Cnt2).SORT_SEQ = Cnt2;                                    
+      COMPUTE IF_Work(Cnt2).SORT_SELECT = IF_Stack(Cnt1).SORT_SELECT;           
+      COMPUTE IF_Work(Cnt2).SUBH_SELECT = IF_Stack(Cnt1).SUBH_SELECT;           
+      COMPUTE IF_Work(Cnt2).SUBH_TEXT1 = IF_Stack(Cnt1).SUBH_TEXT1;             
+      COMPUTE IF_Work(Cnt2).SUBH_TEXT2 = IF_Stack(Cnt1).SUBH_TEXT2;             
+      COMPUTE IF_Work(Cnt2).SUBF_SELECT = IF_Stack(Cnt1).SUBF_SELECT;           
+      COMPUTE IF_Work(Cnt2).SUBF_TEXT1 = IF_Stack(Cnt1).SUBF_TEXT1;             
+      COMPUTE IF_Work(Cnt2).SUBF_TEXT2 = IF_Stack(Cnt1).SUBF_TEXT2;             
+      COMPUTE IF_Work(Cnt2).SBTOT_SELECT = IF_Stack(Cnt1).SBTOT_SELECT;         
+      COMPUTE IF_Work(Cnt2).SBTOT_TEXT1 = IF_Stack(Cnt1).SBTOT_TEXT1;           
+      COMPUTE IF_Work(Cnt2).SBTOT_TEXT2 = IF_Stack(Cnt1).SBTOT_TEXT2;           
+      COMPUTE IF_Work(Cnt2).PG_BREAK = IF_Stack(Cnt1).PG_BREAK;                 
+      COMPUTE IF_Work(Cnt2).SKP_LINE = IF_Stack(Cnt1).SKP_LINE;                 
+      COMPUTE Cnt2 = Cnt2 + 1;                                                  
+    ENDBEGIN                                                                    
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+  STACK SORT IF_Work BY SORT_SEQ                                                
+endcase                                                                         
+                                                                                
+CASE SubH_Bld                                                                   
+  STACK CLEAR IF_Work2                                                          
+  STACK COPY FROM IF_Work INTO IF_Work2 WHERE SUBH_SELECT EQ 'Y'                
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IF_Work2.FocCount                                        
+    COMPUTE Build_Token =                                                       
+      OnX || SpX || IF_Work2(Cnt1).FLD_NAME || SpX || 'SUBHEAD'                 
+      || SpX || DqX || IF_Work2(Cnt1).SUBH_TEXT1 || DqX;                        
+    PERFORM Stub_Line                                                           
+    PERFORM Move_On                                                             
+    COMPUTE On_Cnt = On_Cnt + 1;                                                
+    IF IF_Work2(Cnt1).SUBH_TEXT2 GT ' ' THEN                                    
+    BEGIN                                                                       
+      COMPUTE Build_Token = DqX || IF_Work2(Cnt1).SUBH_TEXT2 || DqX;            
+      PERFORM Stub_Line                                                         
+      PERFORM Move_On                                                           
+      COMPUTE On_Cnt = On_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+endcase                                                                         
+                                                                                
+CASE SubF_Bld                                                                   
+  STACK CLEAR IF_Work2                                                          
+  STACK COPY FROM IF_Work INTO IF_Work2 WHERE SUBF_SELECT EQ 'Y'                
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IF_Work2.FocCount                                        
+    COMPUTE Build_Token =                                                       
+      OnX || SpX || IF_Work2(Cnt1).FLD_NAME || SpX || 'SUBFOOT'                 
+      || SpX || DqX || IF_Work2(Cnt1).SUBF_TEXT1 || DqX;                        
+    PERFORM Stub_Line                                                           
+    PERFORM Move_On                                                             
+    COMPUTE On_Cnt = On_Cnt + 1;                                                
+    IF IF_Work2(Cnt1).SUBF_TEXT2 GT ' ' THEN                                    
+    BEGIN                                                                       
+      COMPUTE Build_Token = DqX || IF_Work2(Cnt1).SUBF_TEXT2 || DqX;            
+      PERFORM Stub_Line                                                         
+      PERFORM Move_On                                                           
+      COMPUTE On_Cnt = On_Cnt + 1;                                              
+    ENDBEGIN                                                                    
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+endcase                                                                         
+                                                                                
+CASE SubT_Bld                                                                   
+  STACK CLEAR IF_Work2                                                          
+  STACK COPY FROM IF_Work INTO IF_Work2 WHERE SBTOT_SELECT EQ 'Y'               
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IF_Work2.FocCount                                        
+    COMPUTE Build_Token =                                                       
+      OnX || SpX || IF_Work2(Cnt1).FLD_NAME || SpX || 'SUBTOTAL';               
+    IF IF_Work2(Cnt1).SBTOT_TEXT1 GT ' ' THEN                                   
+    BEGIN                                                                       
+      COMPUTE Build_Token = Build_Token || SpX || AsX || Spx || SqX ||          
+        IF_Work2(Cnt1).SBTOT_TEXT1 || SqX;                                      
+    ENDBEGIN                                                                    
+    PERFORM Stub_Line                                                           
+    PERFORM Move_On                                                             
+    COMPUTE On_Cnt = On_Cnt + 1;                                                
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+endcase                                                                         
+                                                                                
+CASE PgBrk_Bld                                                                  
+  STACK CLEAR IF_Work2                                                          
+  STACK COPY FROM IF_Work INTO IF_Work2 WHERE PG_BREAK EQ 'Y'                   
+  COMPUTE Cnt1 = 1;                                                             
+  REPEAT WHILE Cnt1 LE IF_Work2.FocCount                                        
+    COMPUTE Build_Token =                                                       
+      OnX || SpX || IF_Work2(Cnt1).FLD_NAME || SpX || 'PAGE-BREAK';             
+    PERFORM Stub_Line                                                           
+    PERFORM Move_On                                                             
+    COMPUTE On_Cnt = On_Cnt + 1;                                                
+    COMPUTE Cnt1 = Cnt1 + 1;                                                    
+  ENDREPEAT                                                                     
+endcase                                                                         
+                                                                                
+CASE SkpLine_Bld                                                                
+  STACK CLEAR IF_Work2                                                          
+  STACK COPY FROM IF_Work INTO IF_Work2 WHERE SKP_LINE EQ 'Y'                   
+  STACK SORT IF_Work2 BY HIGHEST SORT_SEQ                                       
+  IF IF_Work2.FocCount GE 1 THEN                                                
+  BEGIN                                                                         
+    COMPUTE Build_Token =                                                       
+      OnX || SpX || IF_Work2(1).FLD_NAME || SpX || 'SKIP-LINE';                 
+    PERFORM Stub_Line                                                           
+    PERFORM Move_On                                                             
+    COMPUTE On_Cnt = On_Cnt + 1;                                                
+  ENDBEGIN                                                                      
+endcase                                                                         
+                                                                                
+CASE Move_On                                                                    
+  IF On_Cnt EQ 1 THEN COMPUTE RI_Stack(1).ON_LN1 = Build_Line;                  
+  IF On_Cnt EQ 2 THEN COMPUTE RI_Stack(1).ON_LN2 = Build_Line;                  
+  IF On_Cnt EQ 3 THEN COMPUTE RI_Stack(1).ON_LN3 = Build_Line;                  
+  IF On_Cnt EQ 4 THEN COMPUTE RI_Stack(1).ON_LN4 = Build_Line;                  
+  IF On_Cnt EQ 5 THEN COMPUTE RI_Stack(1).ON_LN5 = Build_Line;                  
+  IF On_Cnt EQ 6 THEN COMPUTE RI_Stack(1).ON_LN6 = Build_Line;                  
+  IF On_Cnt EQ 7 THEN COMPUTE RI_Stack(1).ON_LN7 = Build_Line;                  
+  IF On_Cnt EQ 8 THEN COMPUTE RI_Stack(1).ON_LN8 = Build_Line;                  
+  IF On_Cnt EQ 9 THEN COMPUTE RI_Stack(1).ON_LN9 = Build_Line;                  
+  IF On_Cnt EQ 10 THEN COMPUTE RI_Stack(1).ON_LN10 = Build_Line;                
+  COMPUTE Build_Line = '';                                                      
+endcase                                                                         
+                                                                                
+CASE Check_DataType                                                             
+  COMPUTE Data_Type =                                                           
+    SUBSTR(3, IF_Work(Cnt1).FLD_FORMAT, 1, 1, 1, Data_Type);                    
+endcase                                                                         
+                                                                                
+CASE Stub_Line                                                                  
+  COMPUTE Hold_Line = Build_Line;                                               
+  COMPUTE Build_Line = Hold_Line || Build_Token;                                
+  COMPUTE Build_Token = '';                                                     
+endcase                                                                         
+                                                                                
+CASE Update_Inst                                                                
+  UPDATE I_CODE.PRT_LN1 I_CODE.PRT_LN2 I_CODE.PRT_LN3 I_CODE.PRT_LN4            
+         I_CODE.PRT_LN5 I_CODE.PRT_LN6 I_CODE.PRT_LN7 I_CODE.PRT_LN8            
+         I_CODE.PRT_LN9 I_CODE.PRT_LN10                                         
+         I_CODE.BY_LN1 I_CODE.BY_LN2 I_CODE.BY_LN3 I_CODE.BY_LN4                
+         I_CODE.BY_LN5 I_CODE.BY_LN6 I_CODE.BY_LN7 I_CODE.BY_LN8                
+         I_CODE.BY_LN9 I_CODE.BY_LN10                                           
+         I_CODE.IF_LN1 I_CODE.IF_LN2 I_CODE.IF_LN3 I_CODE.IF_LN4                
+         I_CODE.IF_LN5 I_CODE.IF_LN6 I_CODE.IF_LN7 I_CODE.IF_LN8                
+         I_CODE.IF_LN9 I_CODE.IF_LN10                                           
+         I_CODE.ON_LN1 I_CODE.ON_LN2 I_CODE.ON_LN3 I_CODE.ON_LN4                
+         I_CODE.ON_LN5 I_CODE.ON_LN6 I_CODE.ON_LN7 I_CODE.ON_LN8                
+         I_CODE.ON_LN9 I_CODE.ON_LN10                                           
+         FROM RI_Stack(1)                                                       
+                                                                                
+-*  UPDATE I_SUMM.SUBJ1_PARM I_SUMM.SUBJ2_PARM I_SUMM.SUBJ3_PARM                
+-*         I_SUMM.SUBJ4_PARM I_SUMM.SUBJ5_PARM I_SUMM.SUBJ6_PARM                
+-*         I_SUMM.SUBJ7_PARM I_SUMM.SUBJ8_PARM I_SUMM.SUBJ9_PARM                
+-*         I_SUMM.SUBJ10_PARM                                                   
+-*         I_SUMM.TARG1_PARM I_SUMM.TARG2_PARM I_SUMM.TARG3_PARM                
+-*         I_SUMM.TARG4_PARM I_SUMM.TARG5_PARM I_SUMM.TARG6_PARM                
+-*         I_SUMM.TARG7_PARM I_SUMM.TARG8_PARM I_SUMM.TARG9_PARM                
+-*         I_SUMM.TARG10_PARM                                                   
+-*         FROM ISM_Stack(1)                                                    
+  COMMIT                                                                        
+endcase                                                                         
+                                                                                
+END                                                                             

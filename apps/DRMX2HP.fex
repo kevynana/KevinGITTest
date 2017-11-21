@@ -1,0 +1,599 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* 7/13/05 - DEB - ADDED REFUSE_CD 'R' OR 'T' TO APP_FLAG DEFINE 
+-*7/18/05    STEVE              Took out REFUSE_CD 'T' TO APP_FLAG DEFINE - per Robin Lewis
+-* 07/12/2017 - RSB - S-29908 - Webfocus Upgrade - Reports that do not run in ER5 Sandbox
+
+-INCLUDE SETECHO
+-*SET TEMPERASE = OFF
+-* File DRMXHR.FEX
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*----           ----                 ---------------------
+-*8/31/00        SAC                   Initial Creation
+-*7/26/04    JOY                Added/Changed Norecords logic
+-*****************************************************************  
+-*************************************************************************
+-DEFAULT &&CPFLAG ='XX';
+-DEFAULT &&FIELD = 'XX';
+-DEFAULT &&SETF = 'XX';
+
+-SET &&DTSTY = 'DT';
+
+-SET &&FIELD = &ROW_LABEL;
+-SET &&CPFLAG = &PARM1; 
+
+-**********************************************************************
+-* EX RPTRESET TO RESET PARAMS
+-**********************************************************************
+-SET &&ROLLUP = &ROLUP;
+-* -SET &&UNAME = &UID;
+-SET &&UNAME = &user;
+-**** the following two lines added 11/03/2003 ****
+-DEFAULT &FPARM = ' ';
+-SET &&FIPARM = &FPARM;
+-SET &&DRILLED_RUN = 'Y';
+
+EX RPTRESET
+-RUN
+-*
+EX RESET
+-RUN
+-**********************************************************************
+-* CHECK FOR PRESENCE OF ORIGINAL SET FILE
+-*********************************************************************
+-*****  USE VALUE PASSED AS &SETFNM TO DETERMINE FILE NAME
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-SET &&LOCPATH = '&&DATASRV.EVAL' || '\TT\ '|| &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&LOCPATH || &SETFNM || '.FTM';
+-GOTO CHKFILE;
+
+-SETWEB
+-SET &&WEBPATH = '&&WEBSRV.EVAL' || '\TTWEB\ ' || &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&WEBPATH || &SETFNM || '.FTM';
+
+-CHKFILE
+STATE &FILEXIST
+-RUN
+-IF &RETCODE NE 0 GOTO NOFILE;
+-GOTO CONT;
+
+-*
+-*
+-**********************************************************************
+-*
+-**********************************************************************
+-CONT
+
+-SET &TMPDRIL = &&WEB_PATH || 'TEMPDRIL.FEX' ;
+COPY &FILEXIST &TMPDRIL
+-SET &&SETF='TEMPDRIL';
+-RUN
+
+EX SETMXTP SETFILE=&&SETF
+-RUN
+EX CNTLUPD
+-RUN
+-INCLUDE OTHPARMS
+
+-SET &&OUTLINE1 = 'ON TABLE SET ONLINE-FMT';
+-SET &&OUTLINE2 = IF &&OUTLINE2 CONTAINS 'PDF' THEN 'PDF' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXCEL' THEN 'EXCEL' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXL2K' THEN 'EXL2K' ELSE 'PDF';   
+
+-****
+-* &&CPFLAG WILL EQUAL ONE OF THE FOLLOWING: 
+-*  CY (CURRENT YEAR), PY (PRIOR YEAR)
+-****
+
+-FIELDS
+-  IF &&FIELD EQ 'NON-PREFERRED' THEN GOTO NON
+-  ELSE GOTO XXIT;
+
+
+-NON
+-SET &&RPT_TTL1 = '                    HOTEL SUMMARY REPORT';
+-SET &&PREFCHK = 'WHERE APP_FLAG EQ ''NON-PREFERRED''';
+-SET &&SUBHEAD = 'NON-PREFFERED';
+-GOTO OUTSIDE
+
+
+-OUTSIDE
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-SET &&RPTTYP = ' ';
+-SET &&SMD = 'S';
+EX TS_JAMM2
+-RUN
+
+-INCLUDE SELCATQT
+-RUN
+
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+
+EX HTLUSE
+-RUN
+
+-TYPE Before Extract
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE &&EXTRACT
+APP_FLAG/A30 = IF REFUSE_CODE EQ 'A' OR 'R' THEN 'PREFERRED'
+               ELSE 'NON-PREFERRED';
+CY/A1 = IF (INVOICE_DATE GE &&FROMDT.EVAL) AND (INVOICE_DATE LE &&TODT.EVAL) 
+            THEN 'Y' ELSE 'N';
+PY/A1 = IF (INVOICE_DATE GE &&FXDATE.EVAL) AND (INVOICE_DATE LE &&TXDATE.EVAL) 
+            THEN 'Y' ELSE 'N';
+FLAG/A10=IF CY EQ 'Y' THEN 'CURRENT' ELSE 'PRIOR';
+CITY_ST/A35 = PROP_CITY||(', '| PROP_STATE);
+IN_DATE/MDYY = CHKIN_DATE;
+INV_DT/YYMD = INVOICE_DATE;
+NBR_DAYS/D12 = NUM_DAYS;
+NBR_ROOMS/D12 = NUM_ROOMS;
+NEW_ROOM_RATE/D12.2C = ROOM_RATE;
+NEW_TOTAL_AMT/D12.2C = TOTAL_AMT;
+
+NNROOMS/D12 = IF (NBR_DAYS LT 0) AND
+                 (NBR_ROOMS LT 0) THEN
+                 (NBR_DAYS * NBR_ROOMS) * (-1) ELSE
+                 (NBR_DAYS * NBR_ROOMS);
+
+OUT_DATE/MDYY = CHKOUT_DATE;
+
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT APP_FLAG
+  CITY_ST  
+  CHAIN_NAME
+  HTL_KEY     
+  IN_DATE 	
+  INV_DT      
+  INVOICE_DATE 	
+  NBR_DAYS    
+  NBR_ROOMS
+  NEW_ROOM_RATE
+  NEW_TOTAL_AMT       
+  NNROOMS	
+  OUT_DATE    
+  PASSNGR_NAME 	
+  PROP_NAME 
+  REFUSE_KEY
+      
+-***************************************************************
+-* Where statements to select data specified in user profile
+-***************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+
+-INCLUDE RPTPARMS
+WHERE (INVOICE_DATE GE &&FROMDT.EVAL AND INVOICE_DATE LE &&TODT.EVAL) OR
+      (INVOICE_DATE GE &&FXDATE.EVAL AND INVOICE_DATE LE &&TXDATE.EVAL)
+WHERE REFUSE_CODE NE 'X' OR 'S' OR 'N' OR 'M'
+ON TABLE HOLD AS RPTHOLD
+END
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-RUN
+
+-IF &&CPFLAG EQ 'CY' THEN GOTO CURRNK ELSE GOTO PRRNK;
+-RUN
+
+-* CREATE CURRENT TOP LIST
+
+-CURRNK
+
+DEFINE FILE RPTHOLD 
+CY/A1 = IF (INVOICE_DATE GE &&FROMDT.EVAL) AND (INVOICE_DATE LE &&TODT.EVAL) THEN
+           'Y' ELSE 'N';
+FLAG/A10 = IF CY EQ 'Y' THEN 'CURRENT' ELSE 'PRIOR';
+END
+
+TABLE FILE RPTHOLD
+SUM NNROOMS NEW_TOTAL_AMT
+BY PASSNGR_NAME
+WHERE FLAG EQ 'CURRENT'
+ON TABLE HOLD AS HTLCUR1
+END
+-RUN
+
+TABLE FILE HTLCUR1
+SUM NNROOMS NEW_TOTAL_AMT
+RANKED BY HIGHEST NNROOMS NOPRINT 
+BY PASSNGR_NAME
+ON TABLE HOLD AS HTLCUR2 
+END
+-RUN
+
+DEFINE FILE HTLCUR2
+  DRANK/D9 = RANK;
+  ARANK/A11 = FTOA(DRANK, '(D9)', ARANK);
+  ARANK1/A9 = EDIT(ARANK, '$$999999999');
+  LIST/D9 = (LAST LIST + 1);
+  CRANKX/A11 = FTOA(LIST, '(D9)', 'A11');
+  CRANK/A9 = EDIT(CRANKX,'$$999999999');
+  RANK_VALUE/A9 = IF LIST GT &&RANK_LIMIT THEN 'OTHER' ELSE CRANK;
+  RANK_LABEL/A33 = IF RANK_VALUE NE 'OTHER' THEN PASSNGR_NAME
+                      ELSE 'ALL OTHER'; 
+END
+
+TABLE FILE HTLCUR2
+SUM NNROOMS NEW_TOTAL_AMT
+BY RANK_VALUE
+BY RANK_LABEL
+ON TABLE HOLD AS HTLCUR3 
+END
+-RUN
+
+TABLE FILE HTLCUR3
+SUM NNROOMS NEW_TOTAL_AMT
+BY RANK_VALUE
+BY RANK_LABEL AS 'PASSNGR_NAME'
+WHERE RANK_LABEL NE 'ALL OTHER'
+ON TABLE COLUMN-TOTAL
+ON TABLE HOLD AS HTLCUR4 
+END
+-RUN
+
+TABLE FILE RPTHOLD
+SUM   NBR_ROOMS
+      NNROOMS
+      NEW_TOTAL_AMT
+BY PASSNGR_NAME
+BY APP_FLAG
+BY CHAIN_NAME
+BY CITY_ST
+BY FLAG
+BY IN_DATE
+BY INVOICE_DATE
+BY OUT_DATE
+BY PROP_NAME
+WHERE FLAG EQ 'CURRENT'
+ON TABLE HOLD AS HTLHOLD1 
+END
+-RUN
+
+MATCH FILE HTLHOLD1
+PRINT APP_FLAG
+      CHAIN_NAME
+      CITY_ST
+      FLAG
+      IN_DATE
+      INVOICE_DATE
+      NBR_ROOMS
+      NNROOMS
+      NEW_TOTAL_AMT
+      OUT_DATE
+      PROP_NAME
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN 
+FILE HTLCUR4
+SUM NNROOMS NEW_TOTAL_AMT
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS CURHTLM1 NEW
+END
+-RUN
+
+-TYPE After Extract
+DEFINE FILE CURHTLM1
+  NOWTOD/A8 WITH NNROOMS = HHMMSS (NOWTOD);
+END
+
+TABLE FILE CURHTLM1
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-*******************************************************************
+-* Sum statement with fields passed from the user profile database
+-*******************************************************************
+-*
+PRINT
+NNROOMS AS 'NUMBER,NIGHTS'
+NBR_ROOMS AS 'NUMBER,ROOMS'
+NEW_TOTAL_AMT AS 'TOTAL,AMOUNT'
+COMPUTE AVGDR/D12.2CS = IF NEW_TOTAL_AMT LT 0 AND NNROOMS LT 0
+ THEN ((NEW_TOTAL_AMT/NNROOMS) * (-1)) 
+ ELSE NEW_TOTAL_AMT/NNROOMS; AS 'AVERAGE,DAILY,RATE'
+
+-*
+-******************************************************************
+-* By statements (one per field)
+-******************************************************************
+-*
+BY PASSNGR_NAME AS 'PASSENGER NAME'
+BY PROP_NAME AS 'HOTEL'
+BY CITY_ST AS 'CITY/STATE'
+BY IN_DATE AS 'CHECKIN,DATE'
+BY OUT_DATE AS 'CHECKOUT,DATE'
+&&PREFCHK
+-*
+-******************************************************************
+-* On Table statements for code appropriate to On Table commands
+-******************************************************************
+-*
+ON PASSNGR_NAME SKIP-LINE
+ON PASSNGR_NAME RECOMPUTE AS 'TOTAL FOR'
+-*
+-******************************************************************
+-* Report specific footer(s)
+-******************************************************************
+-*
+FOOTING BOTTOM
+"THIS REPORT INCLUDES ONLY TOP NUMBER OF SPECIFIED TRAVELERS"
+"&&FOOTER"
+"eTTek Review &DATE AT <NOWTOD <90 &&FOOTR"
+
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+-GOTO ENDIT;
+
+-PRRNK
+
+DEFINE FILE RPTHOLD 
+CY/A1 = IF (INVOICE_DATE GE &&FROMDT.EVAL) AND (INVOICE_DATE LE &&TODT.EVAL) THEN
+           'Y' ELSE 'N';
+FLAG/A10 = IF CY EQ 'Y' THEN 'CURRENT' ELSE 'PRIOR';
+END
+
+TABLE FILE RPTHOLD
+SUM NNROOMS NEW_TOTAL_AMT
+BY PASSNGR_NAME
+WHERE FLAG EQ 'PRIOR'
+ON TABLE HOLD AS HTLPR1
+END
+-RUN
+
+TABLE FILE HTLPR1
+SUM NNROOMS NEW_TOTAL_AMT
+RANKED BY HIGHEST NNROOMS NOPRINT 
+BY PASSNGR_NAME
+ON TABLE HOLD AS HTLPR2 
+END
+-RUN
+
+DEFINE FILE HTLPR2
+  DRANK/D9 = RANK;
+  ARANK/A11 = FTOA(DRANK, '(D9)', ARANK);
+  ARANK1/A9 = EDIT(ARANK, '$$999999999');
+  LIST/D9 = (LAST LIST + 1);
+  CRANKX/A11 = FTOA(LIST, '(D9)', 'A11');
+  CRANK/A9 = EDIT(CRANKX,'$$999999999');
+  RANK_VALUE/A9 = IF LIST GT &&RANK_LIMIT THEN 'OTHER' ELSE CRANK;
+  RANK_LABEL/A33 = IF RANK_VALUE NE 'OTHER' THEN PASSNGR_NAME
+                      ELSE 'ALL OTHER'; 
+END
+
+TABLE FILE HTLPR2
+SUM NNROOMS NEW_TOTAL_AMT
+BY RANK_VALUE
+BY RANK_LABEL
+ON TABLE HOLD AS HTLPR3 
+END
+-RUN
+
+TABLE FILE HTLPR3
+SUM NNROOMS NEW_TOTAL_AMT
+BY RANK_VALUE
+BY RANK_LABEL AS 'PASSNGR_NAME'
+WHERE RANK_LABEL NE 'ALL OTHER'
+ON TABLE COLUMN-TOTAL
+ON TABLE HOLD AS HTLPR4 
+END
+-RUN
+
+TABLE FILE RPTHOLD
+SUM   NBR_ROOMS
+      NNROOMS
+      NEW_TOTAL_AMT
+BY PASSNGR_NAME
+BY APP_FLAG
+BY CHAIN_NAME
+BY CITY_ST
+BY FLAG
+BY IN_DATE
+BY INVOICE_DATE
+BY OUT_DATE
+BY PROP_NAME
+WHERE FLAG EQ 'PRIOR'
+ON TABLE HOLD AS HTLHOLD1 
+END
+-RUN
+
+MATCH FILE HTLHOLD1
+PRINT APP_FLAG
+      CHAIN_NAME
+      CITY_ST
+      FLAG
+      IN_DATE
+      INVOICE_DATE
+      NBR_ROOMS
+      NNROOMS
+      NEW_TOTAL_AMT
+      OUT_DATE
+      PROP_NAME
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN 
+FILE HTLPR4
+SUM NNROOMS NEW_TOTAL_AMT
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS PRHTLM1 NEW
+END
+-RUN
+
+-TYPE After Extract
+DEFINE FILE PRHTLM1
+  NOWTOD/A8 WITH NNROOMS = HHMMSS (NOWTOD);
+END
+
+TABLE FILE PRHTLM1
+-INCLUDE HEADMX
+"&&SUBHEAD"
+"</2"
+-*
+-*******************************************************************
+-* Sum statement with fields passed from the user profile database
+-*******************************************************************
+-*
+PRINT
+NNROOMS AS 'NUMBER,NIGHTS'
+NBR_ROOMS AS 'NUMBER,ROOMS'
+NEW_TOTAL_AMT AS 'TOTAL,AMOUNT'
+COMPUTE AVGDR/D12.2CS = IF NEW_TOTAL_AMT LT 0 AND NNROOMS LT 0
+ THEN ((NEW_TOTAL_AMT/NNROOMS) * (-1)) 
+ ELSE NEW_TOTAL_AMT/NNROOMS; AS 'AVERAGE,DAILY,RATE'
+
+-*
+-******************************************************************
+-* By statements (one per field)
+-******************************************************************
+-*
+BY PASSNGR_NAME AS 'PASSENGER NAME'
+BY PROP_NAME AS 'HOTEL'
+BY CITY_ST AS 'CITY/STATE'
+BY IN_DATE AS 'CHECKIN,DATE'
+BY OUT_DATE AS 'CHECKOUT,DATE'
+&&PREFCHK
+-*
+-******************************************************************
+-* On Table statements for code appropriate to On Table commands
+-******************************************************************
+-*
+ON PASSNGR_NAME SKIP-LINE
+ON PASSNGR_NAME RECOMPUTE AS 'TOTAL FOR'
+-*
+-******************************************************************
+-* Report specific footer(s)
+-******************************************************************
+-*
+FOOTING BOTTOM
+"&&FOOTER"
+"eTTek Review &DATE AT <NOWTOD <90 &&FOOTR"
+
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+-GOTO ENDIT;
+
+-XXIT
+-SKIPTHIS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO ENDIT;
+
+-NOFILE
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THE REPORT IS NO LONGER DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO ENDIT;
+
+
+-NORECORDS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>NO RECORDS FOUND FOR THIS SELECTION!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+
+-ENDIT
+
+

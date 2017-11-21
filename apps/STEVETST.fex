@@ -1,0 +1,56 @@
+-INCLUDE SETECHO
+-*SET TEMPERASE = OFF
+-* Focexec is used to help debug problems with the eTTek Review
+-* reports.  This focexec will simulate the code that is executed
+-* through Report Caster for jobs that are scheduled in a 'Run Now'
+-* state.  Once the variables are supplied this job can be executed
+-* multiple times without having to log back into the User Interface
+-* of the application and reschedule the report(s).
+-*
+-*
+-* Changable variables
+-*
+-SET &pyfm='03/01/2002';
+-SET &ix_pm='ISCO  wb20030307143913';
+-* -SET &ix_pm='MUTM  TT20010417115803';
+-SET &cyfm='03/01/2003';
+-SET &pmto='03/31/2002';
+-SET &outfmt='PDF';
+-SET &cmto='03/31/2003';
+-SET &outto='TC';
+-SET &sk_pm='ISCO-R  ISCO  wb20030307143913';
+-SET &se_pm='TSABCDA';
+-SET &rp_pm='STS';
+-SET &pmfm='03/01/2002';
+-SET &cmfm='03/01/2003';
+-SET &in_pm=
+- 'ISCO-R ISCO wb20030307143913STSMaster ISCO wb20030307143901';
+-* - 'MUTM-R  MUTM  CO20000204093507STSMaster           MUTM  CO20000204095531';
+-SET &st_pm='TRVLSUMA';
+-SET &sn_pm='Monthly travel summaries';
+-SET &pyto='03/31/2002';
+-SET &cyto='03/31/2003';
+-SET &rt_pm='Mutual of Omaha  KP158287  first page';
+
+-INCLUDE WRUNINDV
+
+SET ASNAMES=ON
+
+DEFINE FILE SR_50
+NEW_LOW/D12.2 = SEG_LOWEST - 20;
+END
+
+TABLE FILE SR_50
+PRINT AIR_KEY EMBARK ROUTE TKT_SORT SEG_NBR NEW_LOW AS 'SEG_LOWEST'
+IF REFUSE_CODE EQ 'AS' OR 'SS' OR 'TS'
+IF SEG_AMT GT 0
+ON TABLE HOLD
+END
+
+MODIFY FILE S_ABCD
+FIXFORM FROM HOLD
+MATCH AIR_KEY EMBARK ROUTE TKT_SORT SEG_NBR
+ON MATCH UPDATE SEG_LOWEST
+ON NOMATCH REJECT
+DATA ON HOLD
+END

@@ -1,0 +1,43 @@
+-******************************************************************************
+-*  DATE                       NAME                         DESCRIPTION
+-* 08/30/00                  IBISTL-SB          CONVERTED THE ROLL_KEY 
+-*                                              FROM A VARIABLE
+-*                                              LENGTH TO FIXED LENGTH OF 
+-*                                              50 CHARACTERS
+-*
+-******************************************************************************
+-* File X50COMP.FEX
+-*
+-*****     This routine sets up the USE file assignments for the
+-*****     express purpose of compiling a routine that references a virtual
+-*****     MFD of key length 50
+-*****   AUTHOR:  Dave Kuzanek
+-*****   PRODUCTION DATE: 
+
+
+
+USE 
+  C:\TNT\TTRACKER\DATA\HPABCD50 AS HIER50
+  C:\TNT\TTRACKER\DATA\HXABCD50 AS XHIER50
+  C:\TNT\TTRACKER\DATA\AHABCD50 AS AH_50
+  C:\TNT\TTRACKER\DATA\CHABCD50 AS CH_50
+  C:\TNT\TTRACKER\DATA\HHABCD50 AS HH_50
+  C:\TNT\TTRACKER\DATA\A_ABCD AS AIR_MAIN
+  C:\TNT\TTRACKER\DATA\C_ABCD AS CAR_MAIN
+  C:\TNT\TTRACKER\DATA\H_ABCD AS HTL_MAIN
+  C:\TNT\TTRACKER\DATA\S_ABCD AS CITYPAIR
+  C:\TNT\TTRACKER\SYSTEM\DATA\ROLLUP
+  C:\TNT\TTRACKER\SYSTEM\DATA\CONTROL
+  C:\TNT\TTRACKER\SYSTEM\DATA\IHIER_BK
+  C:\TNT\TTRACKER\SYSTEM\DATA\IHIER_SL
+  C:\TNT\TTRACKER\SYSTEM\DATA\RPT_INST
+  C:\TNT\TTRACKER\SYSTEM\DATA\TMPSEG
+  C:\TNT\TTRACKER\SYSTEM\DATA\TMPCAR
+  C:\TNT\TTRACKER\SYSTEM\DATA\TMPHTL
+  C:\TNT\TTRACKER\SYSTEM\DATA\HIERMAP
+END
+-RUN
+
+
+
+

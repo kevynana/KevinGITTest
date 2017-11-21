@@ -1,0 +1,130 @@
+-*03/01/17-S-31151-JEM-Creation of ROUTINE FOR SB- UDIDS 
+
+SET ASNAMES = ON 
+-RUN
+
+-INCLUDE SETECHO
+
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+
+DEFINE FILE SR_50
+
+  FARE_PAID/P15.2CS   = SEG_AMT + SEG_TAX;   
+  NET_TKT_CNT/P12CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+END
+
+TABLE FILE SR_50
+PRINT AIR_KEY	
+  FARE_PAID	
+  NET_TKT_CNT	
+  TKT_NUM
+  SEG_NBR
+-* -INCLUDE &AIRDATES
+WHERE TRN_DATE GE &&FROMDT.EVAL AND TRN_DATE LE &&TODT.EVAL
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS REPHOLD
+END
+-RUN
+
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+
+TABLE FILE REPHOLD
+SUM FARE_PAID 
+BY AIR_KEY
+ON TABLE HOLD AS TCSBH FORMAT FOCUS INDEX AIR_KEY
+END
+-RUN
+
+-INCLUDE TCUDAUSE
+-RUN
+
+-* SB- UDID
+
+TABLE FILE UDAIR
+SUM NUD_DATA AS 'SB_AMT' 
+BY AIR_KEY
+WHERE UDID EQ 'SB-' 
+ON TABLE HOLD AS TCSBU
+END
+-RUN
+
+JOIN AIR_KEY IN TCSBH TO AIR_KEY IN TCSBU AS JJ
+-RUN
+
+DEFINE FILE TCSBH
+
+SB_AMT1/P12.2 = SB_AMT;
+SB_SAV/P12.2CSM = SB_AMT1 - FARE_PAID ;
+
+ROLLCD/A8 = '&&ROLL';
+
+END
+TABLE FILE TCSBH
+SUM FARE_PAID SB_AMT1 SB_SAV
+BY ROLLCD
+WHERE SB_AMT NE 0
+ON TABLE HOLD AS TCSBH1
+END
+-RUN
+
+
+DEFINE FILE TCSBH1
+ NMB/I5 = NMB + 1;
+END
+TABLE FILE TCSBH1
+SUM SB_SAV
+BY ROLLCD
+BY NMB
+ON TABLE HOLD AS TCSB3
+END
+-RUN
+
+
+MODIFY FILE TC_VSV2
+FIXFORM FROM TCSB3
+MATCH ROLLCD NMB
+ON MATCH UPDATE SB_SAV
+ON NOMATCH INCLUDE
+DATA ON TCSB3
+END
+-RUN
+
+
+
+-NEXTONE
+
+ 
+
+

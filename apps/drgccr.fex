@@ -1,0 +1,1011 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*7/26/04    JOY                Added/Changed Norecords logic
+-* ADDED TRANTYPE INCLUDE - JK 12/18/14 STORY ID S-06492
+-*  05/27/2016  REJ  S-19665 Changes for Available Reports.  Adding code so that the
+-*                           program will run in current Review and in Available Reports.
+-* 02/24/2017 - DLV - S-22486 CHANGED ettek Review to Post-trip Reporting
+-* 05/18/17 JEM S-34624 - Updating heading/stylesheet to standardize
+-* 07/12/2017 - RSB - S-29908 - Webfocus Upgrade - Reports that do not run in ER5 Sandbox
+ 
+-INCLUDE SETECHO
+-*SET TEMPERASE = OFF
+-DEFAULT &&CPFLAG = 'XX';
+-DEFAULT &&ALN = 'XX';
+-DEFAULT &&VALUERANK = 'XXXXX'; 
+-* -DEFAULT &&CURRENCY = 'USD';
+ 
+-SET &&CPFLAG = &FLAGPARM;
+-SET &&ALN = &ROW_LABEL;
+-SET &&VALUERANK = &VALUERANK;
+ 
+-**********************************************************************
+-* EX RPTRESET TO RESET PARAMS
+-**********************************************************************
+-SET &&ROLLUP = &ROLUP;
+-* -SET &&UNAME = &UID;
+-SET &&UNAME = &user;
+-**** the following two lines added 11/03/2003 ****
+-DEFAULT &FPARM = ' ';
+-SET &&FIPARM = &FPARM;
+-SET &&DRILLED_RUN = 'Y';
+ 
+EX RPTRESET
+-RUN
+-*
+EX RESET
+-RUN
+ 
+-**********************************************************************
+-* CHECK FOR PRESENCE OF ORIGINAL SET FILE
+-*********************************************************************
+-*****  USE VALUE PASSED AS &SETFNM TO DETERMINE FILE NAME
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-SET &&LOCPATH = '&&DATASRV.EVAL' || '\TT\ '|| &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&LOCPATH || &SETFNM || '.FTM';
+-GOTO CHKFILE;
+ 
+-SETWEB
+-SET &&WEBPATH = '&&WEBSRV.EVAL' || '\TTWEB\ ' || &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&WEBPATH || &SETFNM || '.FTM';
+ 
+-CHKFILE
+STATE &FILEXIST
+-RUN
+-IF &RETCODE NE 0 GOTO NOFILE;
+-GOTO CONT;
+ 
+-*
+-*
+-**********************************************************************
+-*
+-**********************************************************************
+-CONT
+ 
+ 
+-SET &TMPDRIL = &&WEB_PATH || 'TEMPDRIL.FEX' ;
+COPY &FILEXIST &TMPDRIL
+-SET &&SETF='TEMPDRIL';
+-RUN
+ 
+EX OVSETDB SETFILE=&&SETF
+-RUN
+EX CNTLUPD
+-RUN
+ 
+ 
+-* REJ added for er5 
+-IF &&FROMAVRP NE 'Y' GOTO :AVRP1;
+APP PREPENDPATH REVIEW_50_SHARED REVIEW_50_AVRP ttapps_sql
+-RUN
+-INCLUDE GetForDrillDown
+-RUN
+-:AVRP1
+ 
+ 
+-INCLUDE OTHPARMS
+ 
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-SET &&RPTTYP = ' ';
+-SET &&SMD = 'M';
+EX TS_JAMM2
+-RUN
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :DDTA1;
+-SET &&RPTGRP_OVERRIDE='AIR';
+EX CODEGEN
+-RUN
+-:DDTA1
+ 
+-INCLUDE SELCATQT
+-RUN
+ 
+ 
+-SET &&OUTLINE1 = 'ON TABLE SET ONLINE-FMT';
+-SET &&OUTLINE2 = IF &&OUTLINE2 CONTAINS 'PDF' THEN 'PDF' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXCEL' THEN 'EXCEL' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXL2K' THEN 'EXL2K' ELSE 'PDF';
+ 
+ 
+-****
+-* &&CPFLAG WILL EQUAL ONE OF THE FOLLOWING:
+-* CY (CURRENT YEAR), PY (PRIOR YEAR)
+-****
+-* &&FIELD WILL EQUAL ONE OF THE FIELD NAMES WITHIN THE REPORT
+-****
+-SET &&VOIDCHK = 'WHERE VOID_DATE EQ 0';
+-SET &&SUBHEAD = '<NAMEC';
+ 
+ 
+-IF &&CPFLAG EQ 'CY' THEN GOTO CURYEAR
+-  ELSE IF &&CPFLAG EQ 'PY' THEN GOTO PRRYEAR
+-  ELSE GOTO CURYEAR;
+ 
+-CURYEAR
+-IF &&FROMAVRP NE 'Y' GOTO :EXA1;
+-SET &&DCHK='WHERE TRN_DATE GE ' | &&FROMDT | ' AND TRN_DATE LE ' | &&TODT;
+-GOTO :EXA1_CONT;
+-:EXA1
+-SET &&DCHK='WHERE TRN_DATE GE '&&FROMDT.EVAL' AND TRN_DATE LE '&&TODT.EVAL'';
+-:EXA1_CONT
+-SET &&FROMDT = &&FROMDT;
+-SET &&TODT = &&TODT;
+-GOTO ENDDATE
+ 
+-PRRYEAR
+-IF &&FROMAVRP NE 'Y' GOTO :EXA3;
+-SET &&DCHK='WHERE TRN_DATE GE ' | &&FXDATE | ' AND TRN_DATE LE ' | &&TXDATE;
+-GOTO :EXA3_CONT;
+-:EXA3
+-SET &&DCHK='WHERE TRN_DATE GE '&&FXDATE.EVAL' AND TRN_DATE LE '&&TXDATE.EVAL'';
+-:EXA3_CONT
+-SET &&FROMDT = &&FXDATE;
+-SET &&TODT = &&TXDATE;
+-GOTO ENDDATE
+ 
+-ENDDATE
+ 
+ 
+-SET &&RPT_TTL1 = '                 CARRIER MARKET-PAIR DETAIL';
+ 
+ 
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+ 
+ 
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+ 
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+ 
+EX AIRUSE
+-RUN
+ 
+ 
+-TYPE Before Extract
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+ 
+-***************************************************
+-* All other Drilldown
+-***************************************************
+-IF &&ALN EQ 'All Other' THEN SKIPTHIS ELSE SKIPTHAT;
+ 
+-SKIPTHAT
+ 
+ 
+DEFINE FILE MR_50
+ 
+  FARE_PAID/D15.2  = SEG_AMT + SEG_TAX;
+  MRK_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                     (FARE_PAID GE 0) AND
+                     (SEG_COUNT EQ 1) AND
+                     (CONJ_REL EQ 1) THEN 1 ELSE
+                  IF (TICKET_CODE EQ '1') AND
+                     (EX_FLAG NE ' ') THEN (-1) ELSE
+                  IF (TICKET_CODE EQ '1') AND
+                     (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+TKT_TYPE/A4         = IF (SEG_COUNT LE 0) AND
+                           (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                           (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                           (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                           (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  XDPT_DT/MDYY         = DPT_DATE;
+  XTRAN_DT/MDYY        = TRN_DATE;
+  MONTH/MT = TRN_DATE;
+  AIR/A12 = LCWORD(12, AIRLINE_NAME, AIR);
+-INCLUDE TRANTYPE
+END
+-RUN
+ 
+TABLEF FILE MR_50
+PRINT
+  AIRLINE_NAME
+  AIRLINE
+  CLASS
+  EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'
+  FARE_PAID
+  MRK_CNT
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'
+  TKT_NUM
+  TKT_TYPE
+  TRN_DATE
+  VAL_AIRLINE
+  DPT_TIME
+  XDPT_DT
+  XTRAN_DT
+  MONTH
+  TKT_DATE
+  TKT_SORT
+  SEG_NBR
+-***************************************************************
+-* Where statements to select data specified in user profile
+-***************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+ 
+&&DCHK
+-IF '&&ALN.EVAL' EQ 'Total' THEN GOTO NOWHERE;
+WHERE AIR EQ '&&ALN.EVAL'
+-NOWHERE;
+&&VOIDCHK
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RPTHOLD
+END
+-RUN
+
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF1;
+-INCLUDE OTHPARMS
+-INCLUDE AVRP_SUBFOOT
+-:AVSF1
+ 
+TABLE FILE RPTHOLD
+PRINT AIRLINE_NAME
+  AIRLINE
+  CLASS
+  EMB_APT_NM
+  FARE_PAID
+  MRK_CNT
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT_NM
+  TKT_NUM
+  TKT_TYPE
+  TRN_DATE
+  VAL_AIRLINE
+  DPT_TIME
+  XDPT_DT
+  XTRAN_DT
+  MONTH
+  TKT_SORT
+  SEG_NBR
+BY TKT_DATE
+ON TABLE HOLD AS GCCARIH FORMAT FOCUS INDEX TKT_DATE
+END
+-RUN
+ 
+ 
+-* Global Reporting JOIN
+JOIN GCCARIH.TKT_DATE IN GCCARIH TO GLOBAL.DATE IN GLOBAL AS J1
+ 
+ 
+ 
+DEFINE FILE GCCARIH
+  NAMEC1/A30 = CNAME;
+  NAMEC/A30 = IF COUNTRYCODE EQ 'USD' THEN ' ' ELSE NAMEC1;
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+  CURR1X/D20.6 = 1 / USDPU ;
+ 
+-* DEFINES ON PREVIOUS DEFINES
+  FARE/D20.6 = FARE_PAID * CURR1X;
+ 
+-* DEFINES ON PREVIOUSLY DEFINES DEFINES
+ 
+  FAREX/D15.2CS = FARE;
+  CURR1/P12.2C = CURR1X;
+ 
+END
+-RUN
+ 
+TABLE FILE GCCARIH
+PRINT AIRLINE_NAME
+  AIRLINE
+  CLASS
+  EMB_APT_NM
+  FAREX
+  MRK_CNT
+  NAMEC
+  REFUSE_CODE
+  RTE_APT_NM
+  TKT_NUM
+  TKT_TYPE
+  TRN_DATE
+  VAL_AIRLINE
+  DPT_TIME
+  XDPT_DT
+  XTRAN_DT
+  MONTH
+  TKT_SORT
+  SEG_NBR
+BY TKT_NUM
+BY PASSNGR_NAME
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS GCCARIH1
+END
+-RUN
+ 
+-TYPE After Extract
+ 
+-TYPE Before Report
+TABLE FILE GCCARIH1
+SUM MRK_CNT AS 'TTKT'
+FAREX AS 'TFARE'
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+ 
+TABLE FILE GCCARIH1
+PRINT AIRLINE
+      CLASS
+      EMB_APT_NM
+      FAREX
+      NAMEC
+      REFUSE_CODE
+      RTE_APT_NM
+      TKT_NUM
+      TKT_TYPE
+      DPT_TIME
+      MONTH
+      VAL_AIRLINE
+      XDPT_DT
+      XTRAN_DT
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+ 
+MATCH FILE XTWO
+PRINT AIRLINE
+      CLASS
+      EMB_APT_NM
+      FAREX
+      NAMEC
+      REFUSE_CODE
+      RTE_APT_NM
+      TKT_NUM
+      TKT_TYPE
+      DPT_TIME
+      MONTH
+      VAL_AIRLINE
+      XDPT_DT
+      XTRAN_DT
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT TFARE
+      TTKT
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+ 
+TABLE FILE AIRHOLD2
+PRINT AIRLINE
+      CLASS
+      EMB_APT_NM
+      FAREX
+      NAMEC
+      PASSNGR_NAME
+      REFUSE_CODE
+      RTE_APT_NM
+      TFARE
+      TKT_NUM
+      TKT_TYPE
+      TRN_DATE
+      TTKT
+      XDPT_DT
+      DPT_TIME
+      MONTH
+      VAL_AIRLINE
+      XTRAN_DT
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+ 
+DEFINE FILE AIRHOLD3
+PASNGR_NAME/A33 = IF TKT_NUM NE LAST TKT_NUM THEN PASSNGR_NAME ELSE ' ';
+REASON_CD/A2 =  IF TKT_NUM NE LAST TKT_NUM THEN REFUSE_CODE ELSE ' ';
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+XT_DTE/A8 = EDIT(TRN_DATE);
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;
+ 
+-*added to correct net ticket count on drilldown -SS
+  CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+  PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+ 
+  CCNT/D10CS = IF CURRENT EQ 'Y' THEN TTKT ELSE
+                IF PRIOR EQ 'Y' THEN TTKT ELSE 0;
+ 
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A100 = TKT_SORT||XT_DTE||PASSNGR_NAME;
+FARE_AMT/D15.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+  NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+END
+-RUN
+
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+ 
+TABLE FILE AIRHOLD3
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-*
+-*******************************************************************
+-* Print statement with fields passed from the user profile database
+-*******************************************************************
+-*
+PRINT
+REASON_CD AS 'REASON, CODE'
+XDPT_DT AS 'DPT,DTE'
+DPT_TIME AS 'DPT,TIME'
+CLASS AS 'CLASS'
+EMB_APT_NM AS 'ORG'
+RTE_APT_NM AS 'DST'
+AIRLINE AS 'CR'
+FARE_AMT AS 'FARE,PAID'
+CCNT AS 'MARKET,PAIRS'
+-*
+-******************************************************************
+-* By statements (one per field)
+-******************************************************************
+-*
+BY PASSNGR_NAME AS 'PASSENGER NAME'
+BY XTKT_SRT NOPRINT
+BY TKT_SORT NOPRINT BY TRN_DATE NOPRINT
+BY SEG_NBR NOPRINT
+BY XDPT_DT NOPRINT BY DPT_TIME NOPRINT
+BY TICKET_NMBR AS 'TICKET,NUMBER'
+BY TKT_TYPE AS 'TKT,TYPE'
+ 
+-*
+-******************************************************************
+-* On Table statements for code appropriate to On Table commands
+-******************************************************************
+-*
+ON TABLE COLUMN-TOTAL
+ON XTKT_SRT SKIP-LINE
+-*
+-******************************************************************
+-* Report specific footer(s)
+-******************************************************************
+-*
+FOOTING BOTTOM
+"&&FOOTER"
+"Post-trip Reporting &DATE AT <NOWTOD <90 &&FOOTR"
+-* "&&CRIGHT"
+ 
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+ 
+ 
+END
+-RUN
+-*
+-TYPE After Report
+-GOTO XXIT;
+ 
+-SKIPTHIS
+ 
+-IF &&CPFLAG EQ 'CY' THEN GOTO CURYEARA
+- ELSE IF &&CPFLAG EQ 'PY' THEN GOTO PRRYEARA
+- ELSE GOTO CURYEARA;
+ 
+-CURYEARA
+-SET &&DCHK='WHERE TRN_DATE GE '&&FROMDT.EVAL' AND TRN_DATE LE '&&TODT.EVAL'';
+-GOTO ENDDATEA
+ 
+-PRRYEARA
+-SET &&DCHK='WHERE TRN_DATE GE '&&FXDATE.EVAL' AND TRN_DATE LE '&&TXDATE.EVAL'';
+-GOTO ENDDATEA
+ 
+-ENDDATEA
+ 
+DEFINE FILE MR_50
+ CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                 TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+ PRIOR/A1 = IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+ FARE_PAID/D15.2  = SEG_AMT + SEG_TAX;
+ MRK_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                     (FARE_PAID GE 0) AND
+                     (SEG_COUNT EQ 1) AND
+                     (CONJ_REL EQ 1) THEN 1 ELSE
+                  IF (TICKET_CODE EQ '1') AND
+                     (EX_FLAG NE ' ') THEN (-1) ELSE
+                  IF (TICKET_CODE EQ '1') AND
+                     (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+ CMRK/D8CS = IF CURRENT EQ 'Y' THEN MRK_CNT ELSE 0;
+ TKT_TYPE/A4         = IF (SEG_COUNT LE 0) AND
+                           (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                           (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                           (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND
+                           (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  XDPT_DT/MDYY         = DPT_DATE;
+  XTRAN_DT/MDYY        = TRN_DATE;
+  MONTH/MT = TRN_DATE;
+  AIR/A12 = LCWORD(12, AIRLINE_NAME, AIR);
+END
+-RUN
+ 
+TABLEF FILE MR_50
+PRINT
+  AIRLINE_NAME
+  AIRLINE
+  CLASS
+  CMRK
+  EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'
+  FARE_PAID
+  MRK_CNT
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'
+  TKT_NUM
+  TKT_TYPE
+  TRN_DATE
+  VAL_AIRLINE
+  DPT_TIME
+  XDPT_DT
+  XTRAN_DT
+  MONTH
+  TKT_DATE
+  TKT_SORT
+  SEG_NBR
+-***************************************************************
+-* Where statements to select data specified in user profile
+-***************************************************************
+WHERE TRN_DATE GE &&FROMDT.EVAL AND TRN_DATE LE &&TODT.EVAL OR
+      TRN_DATE GE &&FXDATE.EVAL AND TRN_DATE LE &&TXDATE.EVAL
+&&WHERE1
+&&WHERE2
+&&WHERE3
+ 
+-* &&DCHK
+&&VOIDCHK
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RPTHOLD
+END
+-RUN
+ 
+TABLE FILE RPTHOLD
+SUM CMRK
+BY AIRLINE_NAME
+ON TABLE HOLD AS OVCH1
+END
+-RUN
+ 
+TABLE FILE OVCH1
+PRINT *
+RANKED BY HIGHEST CMRK NOPRINT
+ON TABLE HOLD AS OVCH2
+END
+-RUN
+ 
+DEFINE FILE OVCH2
+LIST/D9 = IF AIRLINE_NAME NE LAST AIRLINE_NAME THEN
+          (LAST LIST + 1) ELSE LAST LIST;
+DRANK/D9 = RANK;
+ARANK/A11 = FTOA(DRANK, '(D9)', ARANK);
+ARANK1/A9 = EDIT(ARANK, '$$999999999');
+RANK_VALUE/A9 = IF LIST GT 3 THEN 'OTHER' ELSE ARANK1;
+RANK_LABEL/A30 = IF RANK_VALUE NE 'OTHER' THEN AIRLINE_NAME
+                 ELSE 'ALL OTHER';
+END
+-RUN
+ 
+TABLE FILE OVCH2
+SUM CMRK
+BY AIRLINE_NAME
+WHERE RANK_VALUE EQ 'OTHER'
+ON TABLE HOLD AS OVCH2
+END
+-RUN
+ 
+TABLE FILE RPTHOLD
+PRINT AIRLINE
+  CLASS
+  EMB_APT_NM
+  FARE_PAID
+  MRK_CNT
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT_NM
+  TKT_DATE
+  TKT_NUM
+  TKT_TYPE
+  TRN_DATE
+  VAL_AIRLINE
+  DPT_TIME
+  XDPT_DT
+  XTRAN_DT
+  MONTH
+  TKT_SORT
+  SEG_NBR
+BY AIRLINE_NAME
+&&DCHK
+ON TABLE HOLD AS RPTHOLD1
+END
+-RUN
+ 
+MATCH FILE RPTHOLD1
+PRINT AIRLINE
+  CLASS
+  EMB_APT_NM
+  FARE_PAID
+  MRK_CNT
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT_NM
+  TKT_NUM
+  TKT_TYPE
+  TRN_DATE
+  VAL_AIRLINE
+  DPT_TIME
+  XDPT_DT
+  XTRAN_DT
+  MONTH
+  TKT_DATE
+  TKT_SORT
+  SEG_NBR
+BY AIRLINE_NAME
+ON TABLE HOLD
+RUN
+FILE OVCH2
+SUM CMRK
+BY AIRLINE_NAME
+AFTER MATCH HOLD AS RPTHOLD2 OLD-AND-NEW
+END
+-RUN
+ 
+ 
+TABLE FILE RPTHOLD2
+PRINT AIRLINE_NAME
+  AIRLINE
+  CLASS
+  EMB_APT_NM
+  FARE_PAID
+  MRK_CNT
+  PASSNGR_NAME
+  REFUSE_CODE
+  RTE_APT_NM
+  TKT_NUM
+  TKT_TYPE
+  TRN_DATE
+  VAL_AIRLINE
+  DPT_TIME
+  XDPT_DT
+  XTRAN_DT
+  MONTH
+  TKT_SORT
+  SEG_NBR
+BY TKT_DATE
+ON TABLE HOLD AS GCCARIH FORMAT FOCUS INDEX TKT_DATE
+END
+-RUN
+ 
+ 
+-* Global Reporting JOIN
+JOIN GCCARIH.TKT_DATE IN GCCARIH TO GLOBAL.DATE IN GLOBAL AS J1
+ 
+ 
+ 
+DEFINE FILE GCCARIH
+  NAMEC1/A30 = CNAME;
+  NAMEC/A30 = IF COUNTRYCODE EQ 'USD' THEN ' ' ELSE NAMEC1;
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+  CURR1X/D20.6 = 1 / USDPU ;
+ 
+-* DEFINES ON PREVIOUS DEFINES
+  FARE/D20.6 = FARE_PAID * CURR1X;
+ 
+-* DEFINES ON PREVIOUSLY DEFINES DEFINES
+ 
+  FAREX/D15.2CS = FARE;
+  CURR1/P12.2C = CURR1X;
+ 
+END
+-RUN
+ 
+TABLE FILE GCCARIH
+PRINT AIRLINE_NAME
+  AIRLINE
+  CLASS
+  EMB_APT_NM
+  FAREX
+  MRK_CNT
+  NAMEC
+  REFUSE_CODE
+  RTE_APT_NM
+  TKT_NUM
+  TKT_TYPE
+  TRN_DATE
+  VAL_AIRLINE
+  DPT_TIME
+  XDPT_DT
+  XTRAN_DT
+  MONTH
+  TKT_SORT
+  SEG_NBR
+BY TKT_NUM
+BY PASSNGR_NAME
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS GCCARIH1
+END
+-RUN
+ 
+-TYPE After Extract
+ 
+-TYPE Before Report
+TABLE FILE GCCARIH1
+SUM MRK_CNT AS 'TTKT'
+FAREX AS 'TFARE'
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+ 
+TABLE FILE GCCARIH1
+PRINT AIRLINE
+      CLASS
+      EMB_APT_NM
+      FAREX
+      NAMEC
+      REFUSE_CODE
+      RTE_APT_NM
+      TKT_NUM
+      TKT_TYPE
+      DPT_TIME
+      MONTH
+      VAL_AIRLINE
+      XDPT_DT
+      XTRAN_DT
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+ 
+MATCH FILE XTWO
+PRINT AIRLINE
+      CLASS
+      EMB_APT_NM
+      FAREX
+      NAMEC
+      REFUSE_CODE
+      RTE_APT_NM
+      TKT_NUM
+      TKT_TYPE
+      DPT_TIME
+      MONTH
+      VAL_AIRLINE
+      XDPT_DT
+      XTRAN_DT
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT TFARE
+      TTKT
+BY PASSNGR_NAME
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+ 
+TABLE FILE AIRHOLD2
+PRINT AIRLINE
+      CLASS
+      EMB_APT_NM
+      FAREX
+      NAMEC
+      PASSNGR_NAME
+      REFUSE_CODE
+      RTE_APT_NM
+      TFARE
+      TKT_NUM
+      TKT_TYPE
+      TRN_DATE
+      TTKT
+      XDPT_DT
+      DPT_TIME
+      MONTH
+      VAL_AIRLINE
+      XTRAN_DT
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+ 
+DEFINE FILE AIRHOLD3
+PASNGR_NAME/A33 = IF TKT_NUM NE LAST TKT_NUM THEN PASSNGR_NAME ELSE ' ';
+REASON_CD/A2 =  IF TKT_NUM NE LAST TKT_NUM THEN REFUSE_CODE ELSE ' ';
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+XT_DTE/A8 = EDIT(TRN_DATE);
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;
+ 
+-*added to correct net ticket count on drilldown -SS
+  CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+  PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+ 
+  CCNT/D10CS = IF CURRENT EQ 'Y' THEN TTKT ELSE
+                IF PRIOR EQ 'Y' THEN TTKT ELSE 0;
+ 
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A100 = TKT_SORT||XT_DTE||PASSNGR_NAME;
+FARE_AMT/D15.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+  NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+END
+-RUN
+ 
+-IF &&CPFLAG EQ 'CY' THEN GOTO CYA ELSE GOTO PYA;
+ 
+-CYA
+-SET &&FROMDT = &&FROMDT;
+-SET &&TODT = &&TODT;
+-RUN
+-GOTO RPTC;
+ 
+-PYA
+-SET &&FROMDT = &&FXDATE;
+-SET &&TODT = &&TXDATE;
+-RUN
+ 
+-RPTC;
+ 
+TABLE FILE AIRHOLD3
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-*******************************************************************
+-* Print statement with fields passed from the user profile database
+-*******************************************************************
+-*
+PRINT
+REASON_CD AS 'REASON, CODE'
+XDPT_DT AS 'DPT,DTE'
+DPT_TIME AS 'DPT,TIME'
+CLASS AS 'CLASS'
+EMB_APT_NM AS 'ORG'
+RTE_APT_NM AS 'DST'
+AIRLINE AS 'CR'
+FARE_AMT AS 'FARE,PAID'
+CCNT AS 'MARKET,PAIRS'
+-*
+-******************************************************************
+-* By statements (one per field)
+-******************************************************************
+-*
+BY PASSNGR_NAME AS 'PASSENGER NAME'
+BY XTKT_SRT NOPRINT
+BY TKT_SORT NOPRINT BY TRN_DATE NOPRINT
+BY SEG_NBR NOPRINT
+BY XDPT_DT NOPRINT BY DPT_TIME NOPRINT
+BY TICKET_NMBR AS 'TICKET,NUMBER'
+BY TKT_TYPE AS 'TKT,TYPE'
+ 
+-*
+-******************************************************************
+-* On Table statements for code appropriate to On Table commands
+-******************************************************************
+-*
+ON TABLE COLUMN-TOTAL
+ON XTKT_SRT SKIP-LINE
+-*
+-******************************************************************
+-* Report specific footer(s)
+-******************************************************************
+-*
+FOOTING BOTTOM
+" "
+"&&FOOTER"
+"eTTek Review &DATE AT <NOWTOD <90 &&FOOTR"
+-* "&&CRIGHT"
+ 
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+ 
+-GOTO XXIT;
+ 
+-NOFILE
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THE REPORT IS NO LONGER DRILLABLE!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+ 
+-XXIT
+ 

@@ -1,0 +1,140 @@
+-**************************************************************************************************
+-* This program is written to create multiple PDF's per hierarchy level
+-* This is used for the Online vs Traditional Report
+-* Created by JK
+-*1/7/14    UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+
+-**************************************************************************************************
+
+-INCLUDE SETECHO
+
+SET ASNAMES = ON
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+DEFINE FILE &&EXTRACT
+  FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+  IBOOK/A42 = DOD_DESC;
+
+  LEVEL_DESC/A60 = &&LDESC;
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NEW_SEG_DISC/D12.2CS = SEG_DISC;
+  NEW_SEG_MILES/D9= SEG_MILES;
+  NRFLAG/A15 = IF NONREF_FLAG EQ 'N' THEN 'NON-REFUNDABLE' ELSE
+               IF NONREF_FLAG EQ 'R' OR ' '  THEN 'REFUNDABLE' ELSE ' ';
+  OTFLAG/A33 = ONLINE_TRADITIONAL;
+
+  SAVINGS/D12.2CS     = SEG_STANDARD - FARE_PAID;                     
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';  
+  XARR_DT/MDYY         = ARR_DATE;
+  XDPT_DT/MDYY         = DPT_DATE;
+  XPSNGR_NM/A15        = 
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XTRAN_DT/MDYY        = TRN_DATE;
+
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+
+  ABOOK_CNT/D8CS = IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' THEN NET_TKT_CNT ELSE 0;
+  ABOOK_FARE/D12.2CS = IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' THEN FARE_PAID ELSE 0;
+  AIRLINE_FEE/D8.2CS = IF EMBARK EQ 'FP2' OR 'FP3' 
+     THEN FARE_PAID ELSE 0;
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  IBOOK_CNT/D8CS = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN NET_TKT_CNT ELSE 0;
+  IBOOK_FARE/D12.2CS = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN FARE_PAID ELSE 0;
+    
+-INCLUDE TRANTYPE  
+               
+END
+
+TABLE FILE &&EXTRACT
+PRINT ABOOK_CNT
+      ABOOK_FARE
+  AIR_MAIN.INTL_DOM AS 'INTL_DOM'
+  AIRLINE   
+  AIRLINE_FEE   
+  ARR_TIME
+  AROLL_DSC1
+  AROLL_DSC2
+  AROLL_DSC3
+  AROLL_DSC4
+  AROLL_DSC5
+  AROLL_DSC6
+  AROLL_DSC7
+  AROLL_LEV1
+  AROLL_LEV2
+  AROLL_LEV3
+  AROLL_LEV4
+  AROLL_LEV5
+  AROLL_LEV6
+  AROLL_LEV7
+  DISSAVINGS    
+  DPT_TIME  
+  EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'  
+  FARE_BAS
+  FARE_PAID 
+  FLIGHT
+  IBOOK_CNT
+  IBOOK_FARE
+  LEVEL_DESC    
+  NET_TKT_CNT   
+  NEW_SEG_DISC  
+  NEW_SEG_MILES
+  OTFLAG
+  REFUSAL_DESC  
+  REFUSE_CODE   
+  RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'
+  SAVINGS   
+  SEG_COUNT 
+  SEG_NBR   
+  TKT_NUM   
+  TKT_SORT  
+  TKT_TYPE  
+  TRN_DATE
+  XARR_DT   
+  XDPT_DT   
+  XPSNGR_NM
+  XTRAN_DT  
+  
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS RPTHOLD
+END
+-RUN
+
+
+
+
+

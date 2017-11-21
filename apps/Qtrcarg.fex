@@ -1,0 +1,328 @@
+
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*2/5/14 Updated the bookings define to use num_days instead of daily_rate - JK
+
+-********************************************************************
+-* MODIFICAIONS:
+-*SET &ECHO=ALL;
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE &&EXTRACT
+BOOKINGS/D12 = IF NUM_DAYS GT 0 THEN 1 ELSE IF NUM_DAYS LT 0 THEN (-1) ELSE 0;
+  FLAG/A1 = 'A';
+  NBR_DAYS/D12 = NUM_DAYS;
+  RENTAL_DAYS/D12 = IF (NUM_DAYS LT 0) AND (NUM_CARS LT 0) THEN
+                   ((NUM_DAYS * NUM_CARS) * (-1)) ELSE NUM_DAYS * NUM_CARS;
+ 
+-* ****DEFINES ON PREVIOUS DEFINES****
+  MIDBOOK/P12 = IF (DAILY_RATE GE 0) AND 
+                  (CAR_CAT EQ 'INTERMEDIATE' OR 'ECONOMY' OR 'COMPACT') THEN 1 
+                  ELSE IF (DAILY_RATE LT 0) AND 
+                  (CAR_CAT EQ 'INTERMEDIATE' OR 'ECONOMY' OR 
+                  'COMPACT') THEN (-1) ELSE 0;
+    
+  MID_DAYS/P12 = IF (CAR_CAT EQ 'INTERMEDIATE' OR 'ECONOMY' 
+                   OR 'COMPACT') THEN RENTAL_DAYS ELSE 0;
+    
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT BOOKINGS
+  CAR_CAT	
+  CAR_DESC	
+  CAR_KEY	
+  CAR_RATE 	
+  CAR_TYPE 	
+  DAILY_RATE  
+  FLAG
+  INVOICE_DATE 	
+  MIDBOOK	
+  MID_DAYS
+  NBR_DAYS 
+  RENTAL_AMT
+  RENTAL_DAYS
+  VENDOR_NAME
+WHERE (INVOICE_DATE GE &&FROMDT.EVAL) AND (INVOICE_DATE LE &&TODT.EVAL) OR
+      (INVOICE_DATE GE &&FXDATE.EVAL AND INVOICE_DATE LE &&TXDATE.EVAL)
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS CARHOLD
+END
+-RUN
+
+DEFINE FILE CARHOLD
+CURRENT/A1 = IF INVOICE_DATE GE &&FROMDT.EVAL AND
+                INVOICE_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF INVOICE_DATE GE &&FXDATE.EVAL AND
+               INVOICE_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+PERIOD/A10 = IF CURRENT EQ 'Y' THEN 'Period1' ELSE
+             IF PRIOR EQ 'Y' THEN 'Period2' ELSE ' ';
+END
+
+TABLE FILE CARHOLD
+PRINT BOOKINGS
+  CAR_DESC	
+  CAR_KEY	
+  CAR_RATE 	
+  CAR_TYPE 
+  CURRENT
+  DAILY_RATE
+  MIDBOOK	
+  MID_DAYS
+  NBR_DAYS 
+  PRIOR
+  PERIOD
+  RENTAL_AMT
+  RENTAL_DAYS
+  VENDOR_NAME
+BY FLAG
+ON TABLE HOLD AS CARTWO
+END
+-RUN
+
+-* Car Spend by Period Graph Creation
+
+
+GRAPH FILE CARTWO
+SUM RENTAL_AMT AS ' '
+ACROSS PERIOD AS ' '
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS CARAMT FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(6); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),12);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(6);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Car Rental Amounts");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setAutoshading(false);
+setFillColor(getSeries(1),new Color(255,255,0));
+setFillColor(getSeries(0),new Color(0,64,128));
+ENDSTYLE 
+END
+-RUN
+
+-SET &&G_GIF15=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+-* Number of Car Days by Period Graph Creation
+
+GRAPH FILE CARTWO
+SUM RENTAL_DAYS AS ' '
+ACROSS PERIOD AS ' '
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS CARDAY FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(1); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),12);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Number of Car Rental Days");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setAutoshading(false);
+setFillColor(getSeries(1),new Color(255,255,0));
+setFillColor(getSeries(0),new Color(0,64,128));
+ENDSTYLE 
+END
+-RUN
+
+-SET &&G_GIF16=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+
+-* Number of Car Bookings by Period Graph Creation
+
+GRAPH FILE CARTWO
+SUM BOOKINGS AS ' '
+ACROSS PERIOD AS ' '
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS CARBK FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(1); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),12);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Number of Car Bookings");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setAutoshading(false);
+setFillColor(getSeries(1),new Color(255,255,0));
+setFillColor(getSeries(0),new Color(0,64,128));
+ENDSTYLE 
+END
+-RUN
+
+-SET &&G_GIF17=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+
+
+-* Average Daily Car Rate Per Period Graph Creation
+GRAPH FILE CARTWO
+SUM 
+    COMPUTE AVG/D12.2CS = IF ((RENTAL_DAYS LT 1) AND (RENTAL_DAYS GT (-1))) 
+                          THEN 0 ELSE (RENTAL_AMT/RENTAL_DAYS); AS ' '
+ACROSS PERIOD AS ' '
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS CARAVG FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(6); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),12);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(6);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Average Car Daily Rate");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setAutoshading(false);
+setFillColor(getSeries(1),new Color(255,255,0));
+setFillColor(getSeries(0),new Color(0,64,128));
+ENDSTYLE 
+END
+-RUN
+
+-SET &&G_GIF18=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+
+-EXIT
+
+
+
+
+
+
+
+
+
+
+
+

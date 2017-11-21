@@ -1,0 +1,2 @@
+-SET &ECHO=OFF;
+-SET &HTMLPATH = 'D:\tnt\Ttracker\System\Asp\';

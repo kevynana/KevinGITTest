@@ -1,0 +1,2060 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File RPT_MSTR.FEX
+-*
+-*****   This routine allows the entry and editing of Report Masters
+-*****     and their associated fields and properties, eventually
+-*****     used in generating Report Instances.
+-*****   AUTHOR:  Dave Kuzanek
+-*****   PRODUCTION DATE: 
+
+MAINTAIN FILE msel_lst AND mstr_fld AND mstr_frq AND rpt_mstr AND tpl_fld
+ AND tpl_mstr AND control
+
+COMPUTE LastRow/I4 =;
+COMPUTE CurrRow/I4 =;
+COMPUTE Hold_MF/I4 =;
+COMPUTE SStack_Hold/I4 = ;
+COMPUTE Sel_Head/A20 =;
+COMPUTE Kancel/A1 = ;
+COMPUTE Cnt1/I4 = ;
+COMPUTE Cnt2/I4 = ;
+COMPUTE PCnt/I4 = ;
+COMPUTE SelTyp/A1 =;
+COMPUTE Summ_Limit/I4 = ;
+COMPUTE Type_Stack.List_Type/A5 = ;
+COMPUTE Prt_YN.Rad/A8 = ;
+COMPUTE Srt_YN.Rad/A8 = ;
+COMPUTE Sel_YN.Rad/A8 = ;
+COMPUTE Sum_YN.Rad/A8 = ;
+COMPUTE Rnk_YN.Rad/A8 = ;
+COMPUTE Sum_TS.Rad/A8 = ;
+COMPUTE SOrd_HL.Rad/A7 = ;
+COMPUTE PBk_YN.Rad/A7 = ;
+COMPUTE SkpL_YN.Rad/A7 = ;
+COMPUTE rmeth_cs.Rad/A7 = ;
+COMPUTE rkord_hl.Rad/A7 = ;
+COMPUTE smord_hl.Rad/A8 = ;
+COMPUTE smpnp_pn.Rad/A8 = ;
+COMPUTE Sum_Num.Rad/A10 = ;
+COMPUTE Confirm_Code/A1 = ;
+COMPUTE Pair_Stack.Pair_DB/A7 = ;
+COMPUTE Pair_Hold/A7 = ;
+
+INFER TPL_FLD INTO TF_Temp
+INFER TPL_MSTR INTO RT_Temp
+INFER RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 INTO RM_Temp
+INFER RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 INTO RM_Stack
+INFER MSTR_FLD INTO MF_Temp
+INFER MSTR_FLD INTO MF_Temp2
+INFER MSTR_FLD INTO P_Stack
+INFER MSTR_FLD INTO NP_Stack
+INFER MSTR_FLD INTO FSel_Stack
+INFER MSTR_FLD INTO DSel_Stack
+INFER MSTR_FLD INTO Sel_Stack
+INFER MSTR_FLD INTO S_Stack
+INFER MSTR_FLD INTO Sm_Stack
+INFER MSTR_FLD INTO SmTgt_Stack
+INFER MSTR_FLD INTO SmSbj_Stack
+INFER MSTR_FLD INTO NS_Stack
+INFER MSEL_LST INTO ML_Temp
+INFER MSEL_LST INTO MSel_Stack
+INFER MSTR_FRQ INTO MR_Temp
+
+COMPUTE Pair_Stack(1).Pair_DB = 'SEGMENT';
+COMPUTE Pair_Stack(2).Pair_DB = 'MARKET';
+COMPUTE Pair_Stack(3).Pair_DB = 'DESTIN';
+COMPUTE Sum_Num(1).Rad = 'Summary 1';
+COMPUTE Sum_Num(2).Rad = 'Summary 2';
+COMPUTE Sum_Num(3).Rad = 'Summary 3';
+COMPUTE Sum_Num(4).Rad = 'Summary 4';
+COMPUTE Sum_Num(5).Rad = 'Summary 5';
+COMPUTE Sum_Num(6).Rad = 'Summary 6';
+COMPUTE Sum_Num(7).Rad = 'Summary 7';
+COMPUTE Sum_Num(8).Rad = 'Summary 8';
+
+REPOSITION CONTROL
+FOR ALL NEXT CONTROL.CONTROL_ID INTO Cntl_Stack
+
+perform Winform_RptMstrMain
+
+case Pop_Mstr_List
+COMPUTE Type_Stack(1).List_Type = 'ALL';
+COMPUTE Type_Stack(2).List_Type = 'AIR';
+COMPUTE Type_Stack(3).List_Type = 'CAR';
+COMPUTE Type_Stack(4).List_Type = 'HOTEL';
+COMPUTE Type_Stack(5).List_Type = 'C/P';
+COMPUTE Type_Stack(6).List_Type = 'EXEC';
+COMPUTE Type_Stack(7).List_Type = 'COMB';
+COMPUTE Type_Stack(8).List_Type = 'OTHER';
+Reposition RPT_MSTR.RPT_ID
+Stack Clear rm_stack
+For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 INTO rm_stack
+endcase
+
+case Revise_Select
+Reposition RPT_MSTR.RPT_ID
+Stack Clear rm_stack
+IF Type_Stack.FocIndex = 1 THEN
+  For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 Into rm_stack;
+IF Type_Stack.FocIndex = 2 THEN
+  For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 Into rm_stack 
+    Where RPT_MSTR.RPT_GROUP EQ 'AIR';
+IF Type_Stack.FocIndex = 3 THEN
+  For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 Into rm_stack 
+    Where RPT_MSTR.RPT_GROUP EQ 'CAR';
+IF Type_Stack.FocIndex = 4 THEN
+  For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 Into rm_stack 
+    Where RPT_MSTR.RPT_GROUP EQ 'HTL';
+IF Type_Stack.FocIndex = 5 THEN
+  For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 Into rm_stack 
+    Where RPT_MSTR.RPT_GROUP EQ 'C/P';
+IF Type_Stack.FocIndex = 6 THEN
+  For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 Into rm_stack 
+    Where RPT_MSTR.RPT_GROUP EQ 'EXC';
+IF Type_Stack.FocIndex = 7 THEN
+  For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 Into rm_stack 
+    Where RPT_MSTR.RPT_GROUP EQ 'COM';
+IF Type_Stack.FocIndex = 8 THEN
+  For ALL Next RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 Into rm_stack 
+    Where RPT_MSTR.RPT_GROUP EQ 'OTH';
+endcase
+
+case Pop_Templ
+Reposition TPL_MSTR.TPL_ID
+Stack Clear rt_stack
+For ALL Next TPL_MSTR.TPL_ID Into rt_stack
+endcase
+
+case Sel_Template
+COMPUTE Kancel = 'N';
+Winform SHOW TempSel
+IF Kancel EQ 'Y' THEN GOTO ENDCASE
+PERFORM Xfer_Tmpl_Mstr
+PERFORM Revise_Select
+endcase
+
+case Templ_Selected
+  COMPUTE RT_Temp.TPL_ID = RT_Stack(RT_Stack.FocIndex).TPL_ID;
+endcase
+
+case Xfer_Tmpl_Mstr
+STACK CLEAR RM_Temp
+COMPUTE Kancel = 'N';
+PERFORM Winform_GetRptID
+IF (RM_Temp.RPT_ID EQ ' ') OR (RM_Temp.RPT_ID EQ '') THEN 
+BEGIN
+  TYPE "You must enter a Master ID"
+  GOTO ENDCASE
+ENDBEGIN
+IF Kancel EQ 'Y' THEN GOTO ENDCASE
+
+IF (RT_Stack.FocIndex EQ 0) OR (RT_Stack.FocIndex EQ 1) THEN 
+  COMPUTE RT_Temp.TPL_ID = RT_Stack(1).TPL_ID;
+
+Reposition TPL_MSTR.TPL_ID
+Stack Clear rt_stack
+For 1 Next TPL_MSTR.TPL_ID Into rt_stack Where TPL_MSTR.TPL_ID EQ 
+rt_temp(1).TPL_MSTR.TPL_ID; 
+
+COMPUTE RM_Temp(1).RPT_GROUP = RT_Stack(1).RPT_GROUP;
+COMPUTE RM_Temp(1).RPT_TYPE = RT_Stack(1).RPT_TYPE;
+COMPUTE RM_Temp(1).RPT_STREAM = RT_Stack(1).RPT_STREAM;
+COMPUTE RM_Temp(1).TNT_BITMAP = RT_Stack(1).TNT_BITMAP;
+COMPUTE RM_Temp(1).RPT_TITLE1 = RT_Stack(1).RPT_TITLE1;
+COMPUTE RM_Temp(1).RPT_TITLE2 = RT_Stack(1).RPT_TITLE2;
+COMPUTE RM_Temp(1).TITLE_ESC = RT_Stack(1).TITLE_ESC;
+COMPUTE RM_Temp(1).BODY_ESC = RT_Stack(1).BODY_ESC;
+COMPUTE RM_Temp(1).RPT_STYLE = RT_Stack(1).RPT_STYLE;
+COMPUTE RM_Temp(1).RPT_LOOK = RT_Stack(1).RPT_LOOK;
+COMPUTE RM_Temp(1).FRQ_JOBFILE = RT_Stack(1).FRQ_JOBFILE;
+COMPUTE RM_Temp(1).GLOBAL_PARM = RT_Stack(1).GLOBAL_PARM;
+COMPUTE RM_Temp(1).USE_PARM = RT_Stack(1).USE_PARM;
+COMPUTE RM_Temp(1).CONTROL_ID = Cntl_Stack(1).CONTROL_ID;
+COMPUTE RM_Temp(1).SUMM_SUBJ1 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_TARG1 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_T1PNP = 'P';
+COMPUTE RM_Temp(1).SUMM_ORD1 = 'L';
+COMPUTE RM_Temp(1).SUMM_SUBJ2 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_TARG2 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_T2PNP = 'P';
+COMPUTE RM_Temp(1).SUMM_ORD2 = 'L';
+COMPUTE RM_Temp(1).SUMM_SUBJ3 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_TARG3 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_T3PNP = 'P';
+COMPUTE RM_Temp(1).SUMM_ORD3 = 'L';
+COMPUTE RM_Temp(1).SUMM_SUBJ4 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_TARG4 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_T4PNP = 'P';
+COMPUTE RM_Temp(1).SUMM_ORD4 = 'L';
+COMPUTE RM_Temp(1).SUMM_SUBJ5 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_TARG5 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_T5PNP = 'P';
+COMPUTE RM_Temp(1).SUMM_ORD5 = 'L';
+COMPUTE RM_Temp(1).SUMM_SUBJ6 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_TARG6 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_T6PNP = 'P';
+COMPUTE RM_Temp(1).SUMM_ORD6 = 'L';
+COMPUTE RM_Temp(1).SUMM_SUBJ7 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_TARG7 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_T7PNP = 'P';
+COMPUTE RM_Temp(1).SUMM_ORD7 = 'L';
+COMPUTE RM_Temp(1).SUMM_SUBJ8 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_TARG8 = 'NONE';
+COMPUTE RM_Temp(1).SUMM_T8PNP = 'P';
+COMPUTE RM_Temp(1).SUMM_ORD8 = 'L';
+For 1 Include RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 From rm_temp(1)
+
+STACK CLEAR TF_Temp
+FOR ALL NEXT TPL_FLD.TFLD_KEY INTO TF_Temp
+  WHERE TPL_FLD.TPL_ID EQ RT_Temp(1).TPL_MSTR.TPL_ID
+COMPUTE Cnt1 = 1;
+STACK CLEAR MF_Temp
+REPEAT WHILE Cnt1 LE TF_Temp.FocCount
+  COMPUTE MF_Temp(Cnt1).MFLD_KEY = RM_Temp(1).RPT_ID | TF_Temp(Cnt1).FLD_NAME;
+  COMPUTE MF_Temp(Cnt1).RPT_ID = RM_Temp(1).RPT_ID;
+  COMPUTE MF_Temp(Cnt1).FLD_NAME = TF_Temp(Cnt1).FLD_NAME;
+  COMPUTE MF_Temp(Cnt1).FLD_DESC = TF_Temp(Cnt1).FLD_DESC;
+  COMPUTE MF_Temp(Cnt1).DEF_NAME = TF_Temp(Cnt1).DEF_NAME;
+  COMPUTE MF_Temp(Cnt1).FLD_FORMAT = TF_Temp(Cnt1).FLD_FORMAT;
+  COMPUTE MF_Temp(Cnt1).PRT_OPTION = TF_Temp(Cnt1).PRT_OPTION;
+  COMPUTE MF_Temp(Cnt1).PRT_SELECT = 
+    IF MF_Temp(Cnt1).PRT_OPTION EQ 'N' THEN 'Y' ELSE 'N';
+  COMPUTE MF_Temp(Cnt1).PRT_SEQ = TF_Temp(Cnt1).PRT_SEQ;
+  COMPUTE MF_Temp(Cnt1).PRT_AS = TF_Temp(Cnt1).PRT_AS;
+  COMPUTE MF_Temp(Cnt1).SORT_OPTION = TF_Temp(Cnt1).SORT_OPTION;
+  COMPUTE MF_Temp(Cnt1).SELECT_OPTION = TF_Temp(Cnt1).SELECT_OPTION;
+  COMPUTE MF_Temp(Cnt1).RANK_OPTION = TF_Temp(Cnt1).RANK_OPTION;
+  COMPUTE MF_Temp(Cnt1).SUMM_OPTION = TF_Temp(Cnt1).SUMM_OPTION;
+  COMPUTE MF_Temp(Cnt1).TARG_SUBJ = TF_Temp(Cnt1).TARG_SUBJ;
+  COMPUTE MF_Temp(Cnt1).DECODE_FLD = TF_Temp(Cnt1).DECODE_FLD;
+  COMPUTE MF_Temp(Cnt1).SORT_SELECT = 'N';
+  COMPUTE MF_Temp(Cnt1).SUBH_SELECT = 'N';
+  COMPUTE MF_Temp(Cnt1).SUBF_SELECT = 'N';
+  COMPUTE MF_Temp(Cnt1).PG_BREAK = 'N';
+  COMPUTE MF_Temp(Cnt1).SKP_LINE = 'N';
+  COMPUTE MF_Temp(Cnt1).SBTOT_SELECT = 'N';
+  COMPUTE MF_Temp(Cnt1).SELECT_FLAG = ' ';
+  COMPUTE MF_Temp(Cnt1).SELECT_NOT = 'N';
+  COMPUTE MF_Temp(Cnt1).RANK_SELECT = 'N';
+  COMPUTE MF_Temp(Cnt1).SUMM_SELECT = 'N';
+  COMPUTE Cnt1 = Cnt1 + 1;
+ENDREPEAT
+FOR ALL INCLUDE MSTR_FLD.MFLD_KEY FROM MF_Temp
+COMMIT
+PERFORM POP_RMstr
+PERFORM Parm_Upd
+endcase
+
+case POP_RMstr
+PERFORM Revise_Select
+COMPUTE Cnt1 = 1;
+COMPUTE RM_Stack.FocIndex = 1;
+REPEAT WHILE Cnt1 LE RM_Stack.FocCount
+  IF RM_Stack(Cnt1).RPT_ID EQ RM_Temp(1).RPT_ID
+  THEN BEGIN
+    COMPUTE RM_Stack.FocIndex = Cnt1;
+    GOTO EXITREPEAT
+  ENDBEGIN
+  ELSE COMPUTE Cnt1 = Cnt1 + 1;
+ENDREPEAT
+endcase
+
+case Upd_MstPrm
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+For ALL Update RPT_MSTR.RPT_NAME RPT_MSTR.RPT_STREAM RPT_MSTR.RPT_HEAD1 
+RPT_MSTR.RPT_HEAD2 RPT_MSTR.RPT_FOOT1 RPT_MSTR.RPT_FOOT2 RPT_MSTR.TNT_BITMAP
+RPT_MSTR.ROLL_BITMAP RPT_MSTR.RPT_TITLE1 RPT_MSTR.RPT_TITLE2 
+RPT_MSTR.TITLE_ESC RPT_MSTR.BODY_ESC RPT_MSTR.RPT_STYLE RPT_MSTR.RPT_LOOK 
+RPT_MSTR.FRQ_JOBFILE RPT_MSTR.RPT_SERVER RPT_MSTR.GLOBAL_PARM 
+RPT_MSTR.USE_PARM RPT_MSTR.PAIR_DB RPT_MSTR.PRINTER_TYP 
+RPT_MSTR.SUMM_SUBJ1 RPT_MSTR.SUMM_TARG1 RPT_MSTR.SUMM_T1PNP 
+RPT_MSTR.SUMM_ORD1 RPT_MSTR.SUMM_SUBJ2 RPT_MSTR.SUMM_TARG2 
+RPT_MSTR.SUMM_T2PNP RPT_MSTR.SUMM_ORD2 RPT_MSTR.SUMM_SUBJ3 
+RPT_MSTR.SUMM_TARG3 RPT_MSTR.SUMM_T3PNP RPT_MSTR.SUMM_ORD3 
+RPT_MSTR.SUMM_SUBJ4 RPT_MSTR.SUMM_TARG4 RPT_MSTR.SUMM_T4PNP 
+RPT_MSTR.SUMM_ORD4 RPT_MSTR.SUMM_SUBJ5 RPT_MSTR.SUMM_TARG5 
+RPT_MSTR.SUMM_T5PNP RPT_MSTR.SUMM_ORD5 RPT_MSTR.SUMM_SUBJ6 
+RPT_MSTR.SUMM_TARG6 RPT_MSTR.SUMM_T6PNP RPT_MSTR.SUMM_ORD6 
+RPT_MSTR.SUMM_SUBJ7 RPT_MSTR.SUMM_TARG7 RPT_MSTR.SUMM_T7PNP 
+RPT_MSTR.SUMM_ORD7 RPT_MSTR.SUMM_SUBJ8 RPT_MSTR.SUMM_TARG8 
+RPT_MSTR.SUMM_T8PNP RPT_MSTR.SUMM_ORD8 
+From rm_stack 
+COMMIT
+endcase
+
+case Copy_Mstr
+STACK CLEAR RM_Temp
+PERFORM Winform_GetRptID
+
+COMPUTE RM_Temp(1).RPT_NAME = RM_Stack(RM_Stack.FocIndex).RPT_NAME;
+COMPUTE RM_Temp(1).RPT_GROUP = RM_Stack(RM_Stack.FocIndex).RPT_GROUP;
+COMPUTE RM_Temp(1).RPT_TYPE = RM_Stack(RM_Stack.FocIndex).RPT_TYPE;
+COMPUTE RM_Temp(1).RPT_STREAM = RM_Stack(RM_Stack.FocIndex).RPT_STREAM;
+COMPUTE RM_Temp(1).TNT_BITMAP = RM_Stack(RM_Stack.FocIndex).TNT_BITMAP;
+COMPUTE RM_Temp(1).RPT_TITLE1 = RM_Stack(RM_Stack.FocIndex).RPT_TITLE1;
+COMPUTE RM_Temp(1).RPT_TITLE2 = RM_Stack(RM_Stack.FocIndex).RPT_TITLE2;
+COMPUTE RM_Temp(1).TITLE_ESC = RM_Stack(RM_Stack.FocIndex).TITLE_ESC;
+COMPUTE RM_Temp(1).BODY_ESC = RM_Stack(RM_Stack.FocIndex).BODY_ESC;
+COMPUTE RM_Temp(1).RPT_STYLE = RM_Stack(RM_Stack.FocIndex).RPT_STYLE;
+COMPUTE RM_Temp(1).RPT_LOOK = RM_Stack(RM_Stack.FocIndex).RPT_LOOK;
+COMPUTE RM_Temp(1).FRQ_JOBFILE = RM_Stack(RM_Stack.FocIndex).FRQ_JOBFILE;
+COMPUTE RM_Temp(1).GLOBAL_PARM = RM_Stack(RM_Stack.FocIndex).GLOBAL_PARM;
+COMPUTE RM_Temp(1).USE_PARM = RM_Stack(RM_Stack.FocIndex).USE_PARM;
+COMPUTE RM_Temp(1).PAIR_DB = RM_Stack(RM_Stack.FocIndex).PAIR_DB;
+COMPUTE RM_Temp(1).PRINTER_TYP = RM_Stack(RM_Stack.FocIndex).PRINTER_TYP;
+COMPUTE RM_Temp(1).CONTROL_ID = Cntl_Stack(1).CONTROL_ID;
+COMPUTE RM_Temp(1).SUMM_SUBJ1 = RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1;
+COMPUTE RM_Temp(1).SUMM_TARG1 = RM_Stack(RM_Stack.FocIndex).SUMM_TARG1;
+COMPUTE RM_Temp(1).SUMM_T1PNP = RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP;
+COMPUTE RM_Temp(1).SUMM_ORD1 = RM_Stack(RM_Stack.FocIndex).SUMM_ORD1;
+COMPUTE RM_Temp(1).SUMM_SUBJ2 = RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1;
+COMPUTE RM_Temp(1).SUMM_TARG2 = RM_Stack(RM_Stack.FocIndex).SUMM_TARG1;
+COMPUTE RM_Temp(1).SUMM_T2PNP = RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP;
+COMPUTE RM_Temp(1).SUMM_ORD2 = RM_Stack(RM_Stack.FocIndex).SUMM_ORD1;
+COMPUTE RM_Temp(1).SUMM_SUBJ3 = RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1;
+COMPUTE RM_Temp(1).SUMM_TARG3 = RM_Stack(RM_Stack.FocIndex).SUMM_TARG1;
+COMPUTE RM_Temp(1).SUMM_T3PNP = RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP;
+COMPUTE RM_Temp(1).SUMM_ORD3 = RM_Stack(RM_Stack.FocIndex).SUMM_ORD1;
+COMPUTE RM_Temp(1).SUMM_SUBJ4 = RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1;
+COMPUTE RM_Temp(1).SUMM_TARG4 = RM_Stack(RM_Stack.FocIndex).SUMM_TARG1;
+COMPUTE RM_Temp(1).SUMM_T4PNP = RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP;
+COMPUTE RM_Temp(1).SUMM_ORD4 = RM_Stack(RM_Stack.FocIndex).SUMM_ORD1;
+COMPUTE RM_Temp(1).SUMM_SUBJ5 = RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1;
+COMPUTE RM_Temp(1).SUMM_TARG5 = RM_Stack(RM_Stack.FocIndex).SUMM_TARG1;
+COMPUTE RM_Temp(1).SUMM_T5PNP = RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP;
+COMPUTE RM_Temp(1).SUMM_ORD5 = RM_Stack(RM_Stack.FocIndex).SUMM_ORD1;
+COMPUTE RM_Temp(1).SUMM_SUBJ6 = RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1;
+COMPUTE RM_Temp(1).SUMM_TARG6 = RM_Stack(RM_Stack.FocIndex).SUMM_TARG1;
+COMPUTE RM_Temp(1).SUMM_T6PNP = RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP;
+COMPUTE RM_Temp(1).SUMM_ORD6 = RM_Stack(RM_Stack.FocIndex).SUMM_ORD1;
+COMPUTE RM_Temp(1).SUMM_SUBJ7 = RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1;
+COMPUTE RM_Temp(1).SUMM_TARG7 = RM_Stack(RM_Stack.FocIndex).SUMM_TARG1;
+COMPUTE RM_Temp(1).SUMM_T7PNP = RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP;
+COMPUTE RM_Temp(1).SUMM_ORD7 = RM_Stack(RM_Stack.FocIndex).SUMM_ORD1;
+COMPUTE RM_Temp(1).SUMM_SUBJ8 = RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1;
+COMPUTE RM_Temp(1).SUMM_TARG8 = RM_Stack(RM_Stack.FocIndex).SUMM_TARG1;
+COMPUTE RM_Temp(1).SUMM_T8PNP = RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP;
+COMPUTE RM_Temp(1).SUMM_ORD8 = RM_Stack(RM_Stack.FocIndex).SUMM_ORD1;
+For 1 Include RPT_MSTR.RPT_ID M_SUMM.SUMM_SUBJ1 From rm_temp(1)
+COMMIT
+
+STACK CLEAR MF_Temp2
+REPOSITION MSTR_FLD.MFLD_KEY
+FOR ALL NEXT MSTR_FLD.MFLD_KEY INTO MF_Temp2
+  WHERE MSTR_FLD.RPT_ID EQ RM_Stack(RM_Stack.FocIndex).RPT_ID
+COMPUTE Cnt1 = 1;
+STACK CLEAR MF_Temp
+REPEAT WHILE Cnt1 LE MF_Temp2.FocCount
+  COMPUTE MF_Temp(Cnt1).MFLD_KEY = RM_Temp(1).RPT_ID | MF_Temp2(Cnt1).FLD_NAME;
+  COMPUTE MF_Temp(Cnt1).RPT_ID = RM_Temp(1).RPT_ID;
+  COMPUTE MF_Temp(Cnt1).FLD_NAME = MF_Temp2(Cnt1).FLD_NAME;
+  COMPUTE MF_Temp(Cnt1).FLD_DESC = MF_Temp2(Cnt1).FLD_DESC;
+  COMPUTE MF_Temp(Cnt1).DEF_NAME = MF_Temp2(Cnt1).DEF_NAME;
+  COMPUTE MF_Temp(Cnt1).FLD_FORMAT = MF_Temp2(Cnt1).FLD_FORMAT;
+  COMPUTE MF_Temp(Cnt1).PRT_OPTION = MF_Temp2(Cnt1).PRT_OPTION;
+  COMPUTE MF_Temp(Cnt1).PRT_SELECT = MF_Temp2(Cnt1).PRT_SELECT;
+  COMPUTE MF_Temp(Cnt1).PRT_SEQ = MF_Temp2(Cnt1).PRT_SEQ;
+  COMPUTE MF_Temp(Cnt1).PRT_AS = MF_Temp2(Cnt1).PRT_AS;
+  COMPUTE MF_Temp(Cnt1).SORT_OPTION = MF_Temp2(Cnt1).SORT_OPTION;
+  COMPUTE MF_Temp(Cnt1).SELECT_OPTION = MF_Temp2(Cnt1).SELECT_OPTION;
+  COMPUTE MF_Temp(Cnt1).SUMM_OPTION = MF_Temp2(Cnt1).SUMM_OPTION;
+  COMPUTE MF_Temp(Cnt1).RANK_OPTION = MF_Temp2(Cnt1).RANK_OPTION;
+  COMPUTE MF_Temp(Cnt1).TARG_SUBJ = MF_Temp2(Cnt1).TARG_SUBJ;
+  COMPUTE MF_Temp(Cnt1).DECODE_FLD = MF_Temp2(Cnt1).DECODE_FLD;
+  COMPUTE MF_Temp(Cnt1).SORT_SELECT = MF_Temp2(Cnt1).SORT_SELECT;
+  COMPUTE MF_Temp(Cnt1).SORT_SEQ = MF_Temp2(Cnt1).SORT_SEQ;
+  COMPUTE MF_Temp(Cnt1).SORT_ORDER = MF_Temp2(Cnt1).SORT_ORDER;
+  COMPUTE MF_Temp(Cnt1).SUBH_SELECT = MF_Temp2(Cnt1).SUBH_SELECT;
+  COMPUTE MF_Temp(Cnt1).SUBH_TEXT1 = MF_Temp2(Cnt1).SUBH_TEXT1;
+  COMPUTE MF_Temp(Cnt1).SUBH_TEXT2 = MF_Temp2(Cnt1).SUBH_TEXT2;
+  COMPUTE MF_Temp(Cnt1).SUBF_SELECT = MF_Temp2(Cnt1).SUBF_SELECT;
+  COMPUTE MF_Temp(Cnt1).SUBF_TEXT1 = MF_Temp2(Cnt1).SUBF_TEXT1;
+  COMPUTE MF_Temp(Cnt1).SUBF_TEXT2 = MF_Temp2(Cnt1).SUBF_TEXT2;
+  COMPUTE MF_Temp(Cnt1).PG_BREAK = MF_Temp2(Cnt1).PG_BREAK;
+  COMPUTE MF_Temp(Cnt1).SKP_LINE = MF_Temp2(Cnt1).SKP_LINE;
+  COMPUTE MF_Temp(Cnt1).SBTOT_SELECT = MF_Temp2(Cnt1).SBTOT_SELECT;
+  COMPUTE MF_Temp(Cnt1).SBTOT_TEXT1 = MF_Temp2(Cnt1).SBTOT_TEXT1;
+  COMPUTE MF_Temp(Cnt1).SBTOT_TEXT2 = MF_Temp2(Cnt1).SBTOT_TEXT2;
+  COMPUTE MF_Temp(Cnt1).SELECT_FLAG = MF_Temp2(Cnt1).SELECT_FLAG;
+  COMPUTE MF_Temp(Cnt1).SELECT_FROM = MF_Temp2(Cnt1).SELECT_FROM;
+  COMPUTE MF_Temp(Cnt1).SELECT_TO = MF_Temp2(Cnt1).SELECT_TO;
+  COMPUTE MF_Temp(Cnt1).SEL_FRM_DT = MF_Temp2(Cnt1).SEL_FRM_DT;
+  COMPUTE MF_Temp(Cnt1).SEL_TO_DT = MF_Temp2(Cnt1).SEL_TO_DT;
+  COMPUTE MF_Temp(Cnt1).SELECT_NOT = MF_Temp2(Cnt1).SELECT_NOT;
+  COMPUTE MF_Temp(Cnt1).SUMM_SELECT = MF_Temp2(Cnt1).SUMM_SELECT;
+  COMPUTE MF_Temp(Cnt1).RANK_SELECT = MF_Temp2(Cnt1).RANK_SELECT;
+  COMPUTE MF_Temp(Cnt1).RANK_LIMIT = MF_Temp2(Cnt1).RANK_LIMIT;
+  COMPUTE MF_Temp(Cnt1).RANK_METHOD = MF_Temp2(Cnt1).RANK_METHOD;
+  COMPUTE MF_Temp(Cnt1).RANK_ORDER = MF_Temp2(Cnt1).RANK_ORDER;
+  COMPUTE MF_Temp(Cnt1).RANK_SUBJECT = MF_Temp2(Cnt1).RANK_SUBJECT;
+
+  STACK CLEAR MSel_Stack
+  REPOSITION MSEL_LST.MFLD_KEY
+  FOR ALL NEXT MSEL_LST.MFLD_KEY INTO MSel_Stack
+    WHERE MSEL_LST.MFLD_KEY EQ MF_Temp2(Cnt1).MFLD_KEY
+  COMPUTE Cnt2 = 1;
+  STACK CLEAR ML_Temp
+  REPEAT WHILE Cnt2 LE MSel_Stack.FocCount
+    COMPUTE ML_Temp(Cnt2).MFLD_KEY = 
+      RM_Temp(1).RPT_ID | MF_Temp2(Cnt1).FLD_NAME;
+    COMPUTE ML_Temp(Cnt2).FLD_SELECT = MSel_Stack(Cnt2).FLD_SELECT;
+    COMPUTE Cnt2 = Cnt2 + 1;
+  ENDREPEAT
+  FOR ALL INCLUDE MSEL_LST.MFLD_KEY FROM ML_Temp
+  COMMIT
+
+  COMPUTE Cnt1 = Cnt1 + 1;
+ENDREPEAT
+FOR ALL INCLUDE MSTR_FLD.MFLD_KEY FROM MF_Temp
+COMMIT
+PERFORM POP_RMstr
+endcase
+
+case Parm_Upd
+COMPUTE Cnt2 = 1;
+  COMPUTE Pair_Stack.FocIndex = 1;
+  COMPUTE Pair_Hold = 
+    IF  RM_Stack(RM_Stack.FocIndex).PAIR_DB EQ 'S' THEN 'SEGMENT'
+      ELSE IF  RM_Stack(RM_Stack.FocIndex).PAIR_DB EQ 'D' THEN 'DESTIN'
+      ELSE IF  RM_Stack(RM_Stack.FocIndex).PAIR_DB EQ 'M' THEN 'MARKET';
+  REPEAT WHILE Cnt2 LE Pair_Stack.FocCount
+    IF Pair_Stack(Cnt2).Pair_DB EQ Pair_Hold 
+      THEN BEGIN
+        COMPUTE Pair_Stack.FocIndex = Cnt2;
+        GOTO EXITREPEAT
+      ENDBEGIN
+    COMPUTE Cnt2 = Cnt2 + 1;
+  ENDREPEAT
+  Winform SHOW RMstPrm
+endcase
+
+case Pair_Select
+  COMPUTE RM_Stack(RM_Stack.FocIndex).PAIR_DB = 
+    SUBSTR(7, Pair_Hold, 1, 1, 1, RM_Stack(RM_Stack.FocIndex).PAIR_DB);
+endcase
+
+case Del_Mstr
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to delete this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+
+WINFORM SHOW DelConfirm
+IF Confirm_Code EQ 'N' THEN GOTO ENDCASE
+
+REPOSITION MSTR_FLD.MFLD_KEY
+STACK CLEAR MF_Temp
+
+FOR ALL NEXT MSTR_FLD.MFLD_KEY INTO MF_Temp
+  WHERE MSTR_FLD.RPT_ID EQ RM_Stack(RM_STACK.FocIndex).RPT_ID
+COMPUTE Cnt1 = 1;
+
+REPEAT WHILE Cnt1 LE MF_Temp.FOCCOUNT
+  REPOSITION MSEL_LST.MFLD_KEY
+  STACK CLEAR ML_Temp
+  FOR ALL NEXT MSEL_LST.MFLD_KEY INTO ML_Temp
+    WHERE MSEL_LST.MFLD_KEY EQ MF_Temp(Cnt1).MFLD_KEY
+  FOR ALL DELETE MSEL_LST.MFLD_KEY FROM ML_Temp
+  COMPUTE Cnt1 = Cnt1 + 1;
+ENDREPEAT
+
+FOR ALL DELETE MSTR_FLD.MFLD_KEY FROM MF_Temp
+
+REPOSITION MSTR_FRQ.RPT_ID
+STACK CLEAR MR_Temp
+
+FOR ALL NEXT MSTR_FRQ.RPT_ID INTO MR_Temp
+  WHERE MSTR_FRQ.RPT_ID EQ RM_Stack(RM_STACK.FocIndex).RPT_ID
+FOR ALL DELETE MSTR_FRQ.RPT_ID FROM MR_Temp
+
+For 1 Delete RPT_MSTR.RPT_ID From rm_stack(RM_STACK.FocIndex)
+COMMIT
+
+PERFORM Revise_Select
+endcase
+
+case Refresh_Stack
+-* This case refreshes the Master Field grid object following an Update or
+-*   Delete action within the grid
+  REPOSITION MSTR_FLD.MFLD_KEY
+  STACK CLEAR MF_Temp
+  FOR ALL NEXT MSTR_FLD.MFLD_KEY INTO MF_Temp 
+    WHERE MSTR_FLD.RPT_ID EQ RM_Stack(RM_Stack.FocIndex).RPT_ID; 
+  STACK SORT MF_Temp BY PRT_SEQ
+  COMPUTE Prt_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).PRT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Srt_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SORT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sel_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SELECT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sum_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SUMM_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Rnk_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).RANK_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sum_TS.FocIndex = IF MF_Temp(MF_Temp.FocIndex).TARG_SUBJ EQ 'T' 
+    THEN 1 ELSE 2;
+endcase
+
+case Pop_Fields
+-* This case populates and initializes the Radio buttons used in conjunction
+-*   with the Master Field grid object
+
+  COMPUTE Prt_YN(1).Rad = 'OPTIONAL';
+  COMPUTE Prt_YN(2).Rad = 'ALWAYS';
+  COMPUTE Srt_YN(1).Rad = 'OPTIONAL';
+  COMPUTE Srt_YN(2).Rad = 'NEVER';
+  COMPUTE Sel_YN(1).Rad = 'OPTIONAL';
+  COMPUTE Sel_YN(2).Rad = 'NEVER';
+  COMPUTE Sum_YN(1).Rad = 'ON';
+  COMPUTE Sum_YN(2).Rad = 'OFF';
+  COMPUTE Rnk_YN(1).Rad = 'ON';
+  COMPUTE Rnk_YN(2).Rad = 'OFF';
+  COMPUTE Sum_TS(1).Rad = 'TARGET';
+  COMPUTE Sum_TS(2).Rad = 'SUM';
+  COMPUTE Prt_YN.FocIndex = 1;
+  COMPUTE Srt_YN.FocIndex = 1;
+  COMPUTE Sel_YN.FocIndex = 1;
+  COMPUTE Sum_YN.FocIndex = 1;
+  COMPUTE Rnk_YN.FocIndex = 1;
+  COMPUTE Sum_TS.FocIndex = 1;
+  PERFORM Refresh_Stack
+  COMPUTE Hold_MF = MF_Temp.FocCount;
+-* Set the Radio buttons according to the
+-*   flag value within the corresponding Master Field stack row
+  COMPUTE Prt_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).PRT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Srt_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SORT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sel_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SELECT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sum_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SUMM_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Rnk_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).RANK_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sum_TS.FocIndex = IF MF_Temp(MF_Temp.FocIndex).TARG_SUBJ EQ 'T' 
+      THEN 1 ELSE 2;
+endcase
+
+case Chg_Radio
+  COMPUTE MF_Temp(MF_Temp.FocIndex).PRT_OPTION = 
+    IF Prt_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';
+  COMPUTE MF_Temp(MF_Temp.FocIndex).SORT_OPTION = 
+    IF Srt_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';
+  COMPUTE MF_Temp(MF_Temp.FocIndex).SELECT_OPTION = 
+    IF Sel_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';
+  COMPUTE MF_Temp(MF_Temp.FocIndex).SUMM_OPTION = 
+    IF Sum_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';
+  COMPUTE MF_Temp(MF_Temp.FocIndex).RANK_OPTION = 
+    IF Rnk_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';
+  IF (MF_Temp(MF_Temp.FocIndex).SUMM_OPTION EQ 'Y') OR 
+     (MF_Temp(MF_Temp.FocIndex).RANK_OPTION EQ 'Y')
+  THEN
+    COMPUTE MF_Temp(MF_Temp.FocIndex).TARG_SUBJ = 
+      IF Sum_TS.FocIndex EQ 1 THEN 'T' ELSE 'S';
+  ELSE
+    COMPUTE MF_Temp(MF_Temp.FocIndex).TARG_SUBJ = ' ';
+  IF (MF_Temp(MF_Temp.FocIndex).SUMM_OPTION EQ 'Y') OR 
+     (MF_Temp(MF_Temp.FocIndex).RANK_OPTION EQ 'Y') 
+  THEN
+    BEGIN
+      COMPUTE MF_Temp(MF_Temp.FocIndex).TARG_SUBJ = 
+        IF Sum_TS.FocIndex EQ 1 THEN 'T' ELSE 'S';
+      WINFORM SET MasterFields.SumTypTxt.VISIBLE TO YES
+      WINFORM SET MasterFields.SumTypRad.VISIBLE TO YES
+    ENDBEGIN
+  ELSE
+    BEGIN
+      COMPUTE MF_Temp(MF_Temp.FocIndex).TARG_SUBJ = ' ';
+      WINFORM SET MasterFields.SumTypTxt.VISIBLE TO NO
+      WINFORM SET MasterFields.SumTypRad.VISIBLE TO NO
+    ENDBEGIN
+endcase
+
+case Grid_Sel_Chg
+  COMPUTE Prt_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).PRT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Srt_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SORT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sel_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SELECT_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sum_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).SUMM_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Rnk_YN.FocIndex = 
+    IF MF_Temp(MF_Temp.FocIndex).RANK_OPTION EQ 'Y' THEN 1 ELSE 2;
+  COMPUTE Sum_TS.FocIndex = IF MF_Temp(MF_Temp.FocIndex).TARG_SUBJ EQ 'T' 
+    THEN 1 ELSE 2;
+  IF (MF_Temp(MF_Temp.FocIndex).SUMM_OPTION EQ 'Y') OR 
+     (MF_Temp(MF_Temp.FocIndex).RANK_OPTION EQ 'Y') 
+  THEN
+    BEGIN
+      COMPUTE MF_Temp(MF_Temp.FocIndex).TARG_SUBJ = 
+        IF Sum_TS.FocIndex EQ 1 THEN 'T' ELSE 'S';
+      WINFORM SET MasterFields.SumTypTxt.VISIBLE TO YES
+      WINFORM SET MasterFields.SumTypRad.VISIBLE TO YES
+    ENDBEGIN
+  ELSE
+    BEGIN
+      COMPUTE MF_Temp(MF_Temp.FocIndex).TARG_SUBJ = ' ';
+      WINFORM SET MasterFields.SumTypTxt.VISIBLE TO NO
+      WINFORM SET MasterFields.SumTypRad.VISIBLE TO NO
+    ENDBEGIN
+endcase
+
+case Fld_Update
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update in this Master ! "
+    PERFORM Refresh_Stack
+    GOTO ENDCASE
+  ENDBEGIN
+
+-* This case updates the entire grid stack to the DB, then refreshes the
+-*   grid object
+FOR ALL UPDATE MSTR_FLD.RPT_ID MSTR_FLD.FLD_NAME MSTR_FLD.FLD_DESC 
+MSTR_FLD.DEF_NAME MSTR_FLD.FLD_FORMAT MSTR_FLD.PRT_OPTION MSTR_FLD.PRT_SEQ 
+MSTR_FLD.PRT_AS MSTR_FLD.SORT_OPTION MSTR_FLD.SELECT_OPTION 
+MSTR_FLD.SUMM_OPTION MSTR_FLD.TARG_SUBJ MSTR_FLD.DECODE_FLD 
+MSTR_FLD.RANK_OPTION From MF_Temp 
+COMMIT
+PERFORM Refresh_Stack
+endcase
+
+case Del_Field
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to delete in this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+
+WINFORM SHOW DelConfirm
+IF Confirm_Code EQ 'N' THEN GOTO ENDCASE
+
+-* This case deletes the current selected grid row from the DB, then
+-*   refreshes the grid object
+REPOSITION MSEL_LST.MFLD_KEY
+STACK CLEAR ML_Temp
+FOR ALL NEXT MSEL_LST.MFLD_KEY INTO ML_Temp
+  WHERE MSEL_LST.MFLD_KEY EQ 
+    MF_Temp(MF_TEMP.FOCINDEX).MFLD_KEY
+FOR ALL DELETE MSEL_LST.MFLD_KEY FROM ML_Temp
+
+FOR 1 DELETE MSTR_FLD.MFLD_KEY FROM
+  MF_Temp(MF_TEMP.FOCINDEX)
+COMMIT
+PERFORM Refresh_Stack
+endcase
+
+
+case Field_Main
+Winform SHOW MasterFields
+endcase
+
+
+case Refresh_Prt_Sel
+PERFORM Pop_Print
+PERFORM Pop_NoPrint
+endcase
+
+case PrtSel_Main
+Winform SHOW PrtSel
+endcase
+
+case Pop_Print
+STACK CLEAR P_Stack
+
+COMPUTE Cnt1 = 1;
+REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+   IF ((MF_Temp(Cnt1).PRT_OPTION EQ 'N') OR
+    ((MF_Temp(Cnt1).PRT_OPTION EQ 'Y') AND (MF_Temp(Cnt1).PRT_SELECT EQ 'Y')))
+     THEN BEGIN
+       COMPUTE PCnt = P_Stack.FocCount + 1;
+       COPY FROM MF_Temp(Cnt1) INTO P_Stack(PCnt)
+-*       COMPUTE P_Stack(PCnt).FLD_NAME = MF_Temp(Cnt1).FLD_NAME;
+-*       COMPUTE P_Stack(PCnt).FLD_DESC = MF_Temp(Cnt1).FLD_DESC;
+      ENDBEGIN
+  COMPUTE Cnt1 = Cnt1 + 1;
+ENDREPEAT
+STACK SORT P_Stack BY PRT_SEQ
+endcase
+
+case Pop_NoPrint
+STACK CLEAR NP_Stack
+
+COMPUTE Cnt1 = 1;
+REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+   IF  ((MF_Temp(Cnt1).PRT_OPTION EQ 'Y') AND 
+          (MF_Temp(Cnt1).PRT_SELECT EQ 'N'))
+     THEN BEGIN
+       COMPUTE PCnt = NP_Stack.FocCount + 1;
+       COPY FROM MF_Temp(Cnt1) INTO NP_Stack(PCnt)
+-*       COMPUTE NP_Stack(PCnt).FLD_NAME = MF_Temp(Cnt1).FLD_NAME;
+-*       COMPUTE NP_Stack(PCnt).FLD_DESC = MF_Temp(Cnt1).FLD_DESC;
+      ENDBEGIN
+  COMPUTE Cnt1 = Cnt1 + 1;
+ENDREPEAT
+endcase
+
+case Pop_Sel
+STACK CLEAR Sel_Stack
+COMPUTE Cnt1 = 1;
+REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+   IF MF_Temp(Cnt1).SELECT_OPTION EQ 'Y'
+     THEN BEGIN
+       COMPUTE PCnt = Sel_Stack.FocCount + 1;
+       COPY FROM MF_Temp(Cnt1) INTO Sel_Stack(PCnt)
+      ENDBEGIN
+  COMPUTE Cnt1 = Cnt1 + 1;
+ENDREPEAT
+endcase
+
+case Move_Print
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF MF_Temp(Cnt1).FLD_NAME EQ NP_Stack(NP_Stack.FocIndex).FLD_NAME THEN
+      BEGIN
+        COMPUTE MF_Temp(Cnt1).PRT_SELECT = 'Y';
+        GOTO EXITREPEAT
+      ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+PERFORM Pop_Print
+PERFORM Pop_NoPrint
+endcase
+
+case Move_NoPrint
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF MF_Temp(Cnt1).FLD_NAME EQ P_Stack(P_Stack.FocIndex).FLD_NAME THEN
+      BEGIN
+        IF MF_Temp(Cnt1).PRT_OPTION = 'N' THEN
+        BEGIN
+          TYPE "This field must be printed!"
+          GOTO ENDCASE
+        ENDBEGIN
+        ELSE BEGIN
+          COMPUTE MF_Temp(Cnt1).PRT_SELECT = 'N';
+          GOTO EXITREPEAT
+        ENDBEGIN
+      ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+PERFORM Pop_Print
+PERFORM Pop_NoPrint
+endcase
+
+
+case Upd_FldSel
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update in this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+
+For ALL Update MSTR_FLD.PRT_SELECT From MF_TEMP
+COMMIT
+endcase
+
+case Sel_Main
+  Winform SHOW SelectMain
+endcase
+
+case Select_List
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE SelTyp = 
+    SUBSTR(10,Sel_Stack(Sel_Stack.FocIndex).FLD_FORMAT,1,1,1,SelTyp);
+  IF SelTyp EQ 'Y' THEN
+  BEGIN
+    TYPE "Can't do a List on Date Fields"
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG = 'L';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_FROM = ' ';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_TO = ' ';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SEL_FRM_DT = ' ';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SEL_TO_DT = ' ';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_NOT = 'N';
+  PERFORM Select_Type
+  COMPUTE Kancel = 'N';
+  WINFORM SHOW SelDetail
+  IF Kancel EQ 'Y' THEN GOTO ENDCASE
+  PERFORM Upd_Select
+  PERFORM Pop_MSelLst
+  PERFORM Select_Type
+endcase
+
+case Select_FM_TO
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE SelTyp = 
+    SUBSTR(10,Sel_Stack(Sel_Stack.FocIndex).FLD_FORMAT,1,1,1,SelTyp);
+  IF SelTyp EQ 'Y' THEN
+  BEGIN
+    IF Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG EQ 'L'
+      THEN PERFORM Backout_MSel
+    COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG = 'D';
+    COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_FROM = ' ';
+    COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_TO = ' ';
+    COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_NOT = 'N';
+    PERFORM Select_Type
+  ENDBEGIN
+  ELSE
+  BEGIN
+    IF Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG EQ 'L'
+      THEN PERFORM Backout_MSel
+    COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG = 'R';
+    COMPUTE Sel_Stack(Sel_Stack.FocIndex).SEL_FRM_DT = ' ';
+    COMPUTE Sel_Stack(Sel_Stack.FocIndex).SEL_TO_DT = ' ';
+    COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_NOT = 'N';
+    PERFORM Select_Type
+  ENDBEGIN
+endcase
+
+case Select_NOT
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE SelTyp = 
+    SUBSTR(10,Sel_Stack(Sel_Stack.FocIndex).FLD_FORMAT,1,1,1,SelTyp);
+  IF SelTyp EQ 'Y' THEN
+  BEGIN
+    TYPE "Can't do a List on Date Fields"
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG = 'L';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_FROM = ' ';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_TO = ' ';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SEL_FRM_DT = ' ';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SEL_TO_DT = ' ';
+  COMPUTE Sel_Stack(Sel_Stack.FocIndex).SELECT_NOT = 'Y';
+  PERFORM Select_Type
+  WINFORM SHOW SelDetail
+  PERFORM Upd_Select
+  PERFORM Pop_MSelLst
+  PERFORM Select_Type
+endcase
+
+case Add_SelDetail
+  COMPUTE PCnt = ML_Temp.FocCount + 1;
+  COMPUTE ML_Temp(PCnt).MFLD_KEY = Sel_Stack(Sel_Stack.FocIndex).MFLD_KEY;
+  COMPUTE ML_Temp(PCnt).FLD_SELECT = MSel_Stack.FLD_SELECT;
+  FOR 1 INCLUDE MSEL_LST.MFLD_KEY FROM ML_Temp(PCnt) 
+  COMMIT
+  WINFORM CLOSE
+endcase
+
+case Del_SelDetail
+WINFORM SHOW DelConfirm
+IF Confirm_Code EQ 'N' THEN GOTO ENDCASE 
+
+ FOR 1 DELETE MSEL_LST.MFLD_KEY FROM ML_Temp(ML_Temp.FocIndex)
+  COMMIT
+  PERFORM Pop_MSelLst
+endcase
+
+case Select_Type
+-* Detect what type of selection criteria is being used for the field, and
+-*   hide the other criteria objects
+  IF Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG EQ ' ' THEN
+  BEGIN
+    COMPUTE Sel_Head = ' ';
+    WINFORM SET SelectMain.MSelLst.VISIBLE TO NO
+    WINFORM SET SelectMain.SelDt1.VISIBLE TO NO
+    WINFORM SET SelectMain.SelDt2.VISIBLE TO NO
+    WINFORM SET SelectMain.SelRange1.VISIBLE TO NO
+    WINFORM SET SelectMain.SelRange2.VISIBLE TO NO
+    GOTO ENDCASE
+  ENDBEGIN
+  IF Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG EQ 'L' THEN
+  BEGIN
+    PERFORM Pop_MSelLst
+    COMPUTE Sel_Head = IF Sel_Stack(Sel_Stack.FocIndex).SELECT_NOT EQ 'N'
+      THEN 'Select Criteria' ELSE 'NOT Select Criteria';
+    WINFORM SET SelectMain.MSelLst.VISIBLE TO YES
+    WINFORM SET SelectMain.SelDt1.VISIBLE TO NO
+    WINFORM SET SelectMain.SelDt2.VISIBLE TO NO
+    WINFORM SET SelectMain.SelRange1.VISIBLE TO NO
+    WINFORM SET SelectMain.SelRange2.VISIBLE TO NO
+    GOTO ENDCASE
+  ENDBEGIN
+  IF Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG EQ 'D' THEN
+  BEGIN
+    COMPUTE Sel_Head = ' ';
+    WINFORM SET SelectMain.MSelLst.VISIBLE TO NO
+    WINFORM SET SelectMain.SelDt1.VISIBLE TO YES
+    WINFORM SET SelectMain.SelDt2.VISIBLE TO YES
+    WINFORM SET SelectMain.SelRange1.VISIBLE TO NO
+    WINFORM SET SelectMain.SelRange2.VISIBLE TO NO
+    GOTO ENDCASE
+  ENDBEGIN
+  IF Sel_Stack(Sel_Stack.FocIndex).SELECT_FLAG EQ 'R' THEN
+  BEGIN
+    COMPUTE Sel_Head = ' ';
+    WINFORM SET SelectMain.MSelLst.VISIBLE TO NO
+    WINFORM SET SelectMain.SelDt1.VISIBLE TO NO
+    WINFORM SET SelectMain.SelDt2.VISIBLE TO NO
+    WINFORM SET SelectMain.SelRange1.VISIBLE TO YES
+    WINFORM SET SelectMain.SelRange2.VISIBLE TO YES
+    GOTO ENDCASE
+  ENDBEGIN
+endcase
+
+case Pop_MSelLst
+  STACK CLEAR ML_Temp
+  REPOSITION MSEL_LST
+  FOR ALL NEXT MSEL_LST.MFLD_KEY INTO ML_Temp WHERE 
+    MSEL_LST.MFLD_KEY EQ Sel_Stack(Sel_Stack.FocIndex).MFLD_KEY
+endcase
+
+CASE Backout_MSel
+  STACK CLEAR ML_Temp
+  REPOSITION MSEL_LST
+  FOR ALL NEXT MSEL_LST.MFLD_KEY INTO ML_Temp WHERE 
+    MSEL_LST.MFLD_KEY EQ Sel_Stack(Sel_Stack.FocIndex).MFLD_KEY
+  FOR ALL DELETE MSEL_LST.MFLD_KEY FROM ML_Temp
+  COMMIT
+ENDCASE
+
+case Upd_Select
+For ALL Update MSTR_FLD.SELECT_FLAG MSTR_FLD.SELECT_FROM 
+               MSTR_FLD.SELECT_TO MSTR_FLD.SEL_FRM_DT MSTR_FLD.SEL_TO_DT 
+               MSTR_FLD.SELECT_NOT From Sel_Stack
+COMMIT
+endcase
+
+case Upd_Range
+For 1 Update MSTR_FLD.SELECT_FLAG MSTR_FLD.SELECT_FROM 
+               MSTR_FLD.SELECT_TO MSTR_FLD.SEL_FRM_DT MSTR_FLD.SEL_TO_DT 
+               MSTR_FLD.SELECT_NOT From Sel_Stack(Sel_Stack.FocIndex)
+COMMIT
+endcase
+
+case Leave_SelMain
+  WINFORM SET SelectMain.MSelLst.VISIBLE TO YES
+  WINFORM SET SelectMain.SelDt1.VISIBLE TO YES
+  WINFORM SET SelectMain.SelDt2.VISIBLE TO YES
+  WINFORM SET SelectMain.SelRange1.VISIBLE TO YES
+  WINFORM SET SelectMain.SelRange2.VISIBLE TO YES
+  WINFORM CLOSE
+endcase
+
+
+case Add_Selection
+  COMPUTE MSel_Stack.FLD_SELECT = '';
+  Winform SHOW SelDet
+endcase
+
+case Sort_Main
+  PERFORM Pop_Sorts
+  Winform SHOW Sort_Main
+endcase
+
+case Pop_Sorts
+-* This case populates and initializes the Radio buttons used in conjunction
+-*   with the Sort Field selection form
+
+  COMPUTE SOrd_HL(1).Rad = 'HIGH';
+  COMPUTE SOrd_HL(2).Rad = 'LOW';
+  COMPUTE PBk_YN(1).Rad = 'YES';
+  COMPUTE PBk_YN(2).Rad = 'NO';
+  COMPUTE SkpL_YN(1).Rad = 'YES';
+  COMPUTE SkpL_YN(2).Rad = 'NO';
+  COMPUTE SOrd_HL.FocIndex = 1;
+  COMPUTE PBk_YN.FocIndex = 1;
+  COMPUTE SkpL_YN.FocIndex = 1;
+  PERFORM Refresh_MFTemp
+  PERFORM Refresh_Sorts
+  PERFORM Refresh_NoSorts
+  PERFORM SetSort_Buttons
+endcase
+
+case Move_Sorts
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF MF_Temp(Cnt1).FLD_NAME EQ NS_Stack(NS_Stack.FocIndex).FLD_NAME THEN
+    BEGIN
+      COMPUTE MF_Temp(Cnt1).SORT_SELECT = 'Y';
+      COMPUTE MF_Temp(Cnt1).SORT_SEQ = S_Stack.FocCount + 1;
+      GOTO EXITREPEAT
+    ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+PERFORM Upd_Sorts
+PERFORM Refresh_MFTemp
+PERFORM Refresh_Sorts
+PERFORM Refresh_NoSorts
+PERFORM SetSort_Buttons
+endcase
+
+case Move_NoSorts
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF MF_Temp(Cnt1).FLD_NAME EQ S_Stack(S_Stack.FocIndex).FLD_NAME THEN
+    BEGIN
+      COMPUTE MF_Temp(Cnt1).SORT_SELECT = 'N';
+      GOTO EXITREPEAT
+    ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+PERFORM Upd_Sorts
+PERFORM Refresh_MFTemp
+PERFORM Refresh_Sorts
+PERFORM Refresh_NoSorts
+PERFORM SetSort_Buttons
+endcase
+
+CASE Upd_Sorts
+  FOR ALL UPDATE MSTR_FLD.SORT_SELECT MSTR_FLD.SORT_SEQ MSTR_FLD.SORT_ORDER 
+    MSTR_FLD.SUBH_SELECT MSTR_FLD.SUBH_TEXT1 MSTR_FLD.SUBH_TEXT2 
+    MSTR_FLD.SUBF_SELECT MSTR_FLD.SUBF_TEXT1 MSTR_FLD.SUBF_TEXT2 
+    MSTR_FLD.PG_BREAK MSTR_FLD.SKP_LINE MSTR_FLD.SBTOT_SELECT 
+    MSTR_FLD.SBTOT_TEXT1 MSTR_FLD.SBTOT_TEXT2 FROM MF_Temp
+  COMMIT
+ENDCASE
+
+CASE Update_Sort
+  FOR 1 UPDATE MSTR_FLD.SORT_SELECT MSTR_FLD.SORT_SEQ MSTR_FLD.SORT_ORDER 
+    MSTR_FLD.SUBH_SELECT MSTR_FLD.SUBH_TEXT1 MSTR_FLD.SUBH_TEXT2 
+    MSTR_FLD.SUBF_SELECT MSTR_FLD.SUBF_TEXT1 MSTR_FLD.SUBF_TEXT2 
+    MSTR_FLD.PG_BREAK MSTR_FLD.SKP_LINE MSTR_FLD.SBTOT_SELECT 
+    MSTR_FLD.SBTOT_TEXT1 MSTR_FLD.SBTOT_TEXT2 FROM S_Stack(S_Stack.FocIndex)
+  COMMIT
+ENDCASE
+
+case ChgSort_Button
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE S_Stack(S_Stack.FocIndex).SORT_ORDER = 
+    IF SOrd_HL.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  COMPUTE S_Stack(S_Stack.FocIndex).PG_BREAK = 
+    IF PBk_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';
+  COMPUTE S_Stack(S_Stack.FocIndex).SKP_LINE = 
+    IF SkpL_YN.FocIndex EQ 1 THEN 'Y' ELSE 'N';
+  PERFORM Update_Sort
+endcase
+
+CASE Refresh_MFTemp
+  REPOSITION MSTR_FLD.MFLD_KEY
+  STACK CLEAR MF_Temp
+  FOR ALL NEXT MSTR_FLD.MFLD_KEY INTO MF_Temp
+    WHERE MSTR_FLD.RPT_ID EQ RM_Stack(RM_STACK.FocIndex).RPT_ID
+  STACK SORT MF_Temp BY PRT_SEQ
+ENDCASE
+
+case Refresh_Sorts
+  STACK CLEAR S_Stack
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF (((MF_Temp(Cnt1).PRT_OPTION EQ 'N') AND 
+       (MF_Temp(Cnt1).SORT_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).SORT_SELECT EQ 'Y')) OR
+       ((MF_Temp(Cnt1).PRT_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).PRT_SELECT EQ 'Y') AND 
+       (MF_Temp(Cnt1).SORT_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).SORT_SELECT EQ 'Y')))
+      THEN BEGIN
+        COMPUTE PCnt = S_Stack.FocCount + 1;
+        COPY FROM MF_Temp(Cnt1) INTO S_Stack(PCnt)
+        IF S_Stack(PCnt).SORT_SEQ EQ 0 THEN
+        BEGIN
+          COMPUTE S_Stack(Pcnt).SORT_SEQ = PCnt;
+          COMPUTE MF_Temp(Cnt1).SORT_SEQ = PCnt;
+          FOR 1 UPDATE MSTR_FLD.SORT_SEQ FROM MF_Temp(Cnt1)
+          COMMIT
+        ENDBEGIN
+      ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+  STACK SORT S_Stack BY SORT_SEQ
+endcase
+
+case Refresh_NoSorts
+  STACK CLEAR NS_Stack
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF (((MF_Temp(Cnt1).PRT_OPTION EQ 'N') AND 
+       (MF_Temp(Cnt1).SORT_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).SORT_SELECT EQ 'N')) OR
+       ((MF_Temp(Cnt1).PRT_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).PRT_SELECT EQ 'Y') AND 
+       (MF_Temp(Cnt1).SORT_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).SORT_SELECT EQ 'N')))
+      THEN BEGIN
+        COMPUTE PCnt = NS_Stack.FocCount + 1;
+        COPY FROM MF_Temp(Cnt1) INTO NS_Stack(PCnt)
+        COMPUTE MF_Temp(Cnt1).SORT_SEQ = 0;
+        FOR 1 UPDATE MSTR_FLD.SORT_SEQ FROM MF_Temp(Cnt1)
+        COMMIT
+      ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+endcase
+
+case Up_Sort
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  IF S_Stack.FocIndex EQ 1 THEN
+  BEGIN
+    TYPE "Can't move the top item up!"
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE SStack_Hold = S_Stack.FocIndex;
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE S_Stack.FOCCOUNT
+    IF Cnt1 + 1 EQ SStack_Hold THEN 
+      COMPUTE S_Stack(Cnt1).SORT_SEQ = S_Stack(Cnt1).SORT_SEQ + 1;
+    IF Cnt1 EQ SStack_Hold THEN 
+      COMPUTE S_Stack(Cnt1).SORT_SEQ = S_Stack(Cnt1).SORT_SEQ - 1;
+    COMPUTE S_Stack.FocIndex = Cnt1;
+    PERFORM Update_Sort
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+  PERFORM Refresh_MFTemp
+  PERFORM Refresh_Sorts
+  PERFORM Refresh_NoSorts
+  PERFORM SetSort_Buttons
+endcase
+
+case Down_Sort
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  IF S_Stack.FocIndex EQ S_Stack.FocCount THEN
+  BEGIN
+    TYPE "Can't move the bottom item down!"
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE SStack_Hold = S_Stack.FocIndex;
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE S_Stack.FOCCOUNT
+    IF Cnt1 - 1 EQ SStack_Hold THEN 
+      COMPUTE S_Stack(Cnt1).SORT_SEQ = S_Stack(Cnt1).SORT_SEQ - 1;
+    IF Cnt1 EQ SStack_Hold THEN 
+      COMPUTE S_Stack(Cnt1).SORT_SEQ = S_Stack(Cnt1).SORT_SEQ + 1;
+    COMPUTE S_Stack.FocIndex = Cnt1;
+    PERFORM Update_Sort
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+  PERFORM Refresh_MFTemp
+  PERFORM Refresh_Sorts
+  PERFORM Refresh_NoSorts
+  PERFORM SetSort_Buttons
+endcase
+
+case SetSort_Buttons
+  IF S_Stack.FocCount EQ 0 THEN
+-* If the sort stack is empty, default the Radio buttons to Yes
+  BEGIN
+    COMPUTE SOrd_HL.FocIndex = 1;
+    COMPUTE PBk_YN.FocIndex = 1;
+    COMPUTE SkpL_YN.FocIndex = 1;
+  ENDBEGIN
+  ELSE
+  BEGIN
+-* If the sort stack is not empty, set the Radio buttons according to the
+-*   flag value within the corresponding Report Field stack row
+    COMPUTE SOrd_HL.FocIndex = 
+      IF S_Stack(S_Stack.FocIndex).SORT_ORDER EQ 'H' THEN 1 ELSE 2;
+    COMPUTE PBk_YN.FocIndex = 
+      IF S_Stack(S_Stack.FocIndex).PG_BREAK EQ 'Y' THEN 1 ELSE 2;
+    COMPUTE SkpL_YN.FocIndex = 
+      IF S_Stack(S_Stack.FocIndex).SKP_LINE EQ 'Y' THEN 1 ELSE 2;
+  ENDBEGIN
+endcase
+
+case Upd_SubH
+  COMPUTE S_Stack(S_Stack.FocIndex).SUBH_SELECT = 
+    IF ((S_Stack(S_Stack.FocIndex).SUBH_TEXT1 NE ' ') OR 
+       (S_Stack(S_Stack.FocIndex).SUBH_TEXT2 NE ' ')) THEN 'Y' ELSE 'N';
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+-*    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+
+  PERFORM Update_Sort
+endcase
+
+case Upd_SubF
+  COMPUTE S_Stack(S_Stack.FocIndex).SUBF_SELECT = 
+    IF ((S_Stack(S_Stack.FocIndex).SUBF_TEXT1 NE ' ') OR 
+       (S_Stack(S_Stack.FocIndex).SUBF_TEXT2 NE ' ')) THEN 'Y' ELSE 'N';
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+-*    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+
+  PERFORM Update_Sort
+endcase
+
+case Upd_SubT
+  COMPUTE S_Stack(S_Stack.FocIndex).SBTOT_SELECT = 
+    IF ((S_Stack(S_Stack.FocIndex).SBTOT_TEXT1 NE ' ') OR 
+       (S_Stack(S_Stack.FocIndex).SBTOT_TEXT2 NE ' ')) THEN 'Y' ELSE 'N';
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+-*    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+
+  PERFORM Update_Sort
+endcase
+
+case Clr_SubH
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE S_Stack(S_Stack.FocIndex).SUBH_SELECT = 'N';
+  COMPUTE S_Stack(S_Stack.FocIndex).SUBH_TEXT1 = ' ';
+  COMPUTE S_Stack(S_Stack.FocIndex).SUBH_TEXT2 = ' ';
+  PERFORM Update_Sort
+  WINFORM CLOSE
+endcase
+
+case Clr_SubF
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE S_Stack(S_Stack.FocIndex).SUBF_SELECT = 'N';
+  COMPUTE S_Stack(S_Stack.FocIndex).SUBF_TEXT1 = ' ';
+  COMPUTE S_Stack(S_Stack.FocIndex).SUBF_TEXT2 = ' ';
+  PERFORM Update_Sort
+  WINFORM CLOSE
+endcase
+
+case Clr_SubT
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE S_Stack(S_Stack.FocIndex).SBTOT_SELECT = 'N';
+  COMPUTE S_Stack(S_Stack.FocIndex).SBTOT_TEXT1 = ' ';
+  COMPUTE S_Stack(S_Stack.FocIndex).SBTOT_TEXT2 = ' ';
+  PERFORM Update_Sort
+  WINFORM CLOSE
+endcase
+
+
+case Disp_SrtSH
+  Winform SHOW SrtSH
+endcase
+
+case Disp_SrtSF
+  Winform SHOW SrtSF
+endcase
+
+case Disp_SrtST
+  Winform SHOW SrtST
+endcase
+
+case Pop_Summs
+-* This case populates and initializes the Radio buttons used in conjunction
+-*   with the Sort Field selection form
+
+  COMPUTE smord_hl(1).Rad = 'HIGH';
+  COMPUTE smord_hl(2).Rad = 'LOW';
+  COMPUTE rkord_hl.FocIndex = 1;
+  COMPUTE smpnp_pn(1).Rad = 'PRINT';
+  COMPUTE smpnp_pn(2).Rad = 'NO PRINT';
+  COMPUTE smpnp_pn.FocIndex = 1;
+  PERFORM Refresh_MFTemp
+  PERFORM Refresh_Summs
+  COMPUTE Sum_Num.FocIndex = 9;
+endcase
+
+case Refresh_Summs
+  STACK CLEAR SmTgt_Stack SmSbj_Stack
+  COMPUTE Cnt1 = 1;
+  COMPUTE SmTgt_Stack(1).FLD_DESC = 'NONE';
+  COMPUTE SmTgt_Stack(1).FLD_NAME = 'NONE';
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF (MF_Temp(Cnt1).SUMM_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).TARG_SUBJ EQ 'T')
+    THEN BEGIN
+      COMPUTE PCnt = SmTgt_Stack.FocCount + 1;
+      COPY FROM MF_Temp(Cnt1) INTO SmTgt_Stack(PCnt)
+    ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+  COMPUTE Cnt1 = 1;
+  COMPUTE SmSbj_Stack(1).FLD_DESC = 'NONE';
+  COMPUTE SmSbj_Stack(1).FLD_NAME = 'NONE';
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF (MF_Temp(Cnt1).SUMM_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).TARG_SUBJ EQ 'S')
+    THEN BEGIN
+      COMPUTE PCnt = SmSbj_Stack.FocCount + 1;
+      COPY FROM MF_Temp(Cnt1) INTO SmSbj_Stack(PCnt)
+    ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+endcase
+
+case SmSubj_Select
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+COMPUTE SmSbj_Stack(SmSbj_Stack.FocIndex).SUMM_SELECT = 'Y';
+IF Sum_Num.FocIndex EQ 1 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1 =
+    SmSbj_Stack(SmSbj_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 2 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ2 =
+    SmSbj_Stack(SmSbj_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 3 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ3 =
+    SmSbj_Stack(SmSbj_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 4 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ4 =
+    SmSbj_Stack(SmSbj_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 5 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ5 =
+    SmSbj_Stack(SmSbj_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 6 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ6 =
+    SmSbj_Stack(SmSbj_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 7 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ7 =
+    SmSbj_Stack(SmSbj_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 8 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ8 =
+    SmSbj_Stack(SmSbj_Stack.FocIndex).FLD_NAME;
+PERFORM Update_Summ
+endcase
+
+case SmTarg_Select
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+COMPUTE SmTgt_Stack(SmTgt_Stack.FocIndex).SUMM_SELECT = 'Y';
+IF Sum_Num.FocIndex EQ 1 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_TARG1 =
+    SmTgt_Stack(SmTgt_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 2 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_TARG2 =
+    SmTgt_Stack(SmTgt_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 3 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_TARG3 =
+    SmTgt_Stack(SmTgt_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 4 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_TARG4 =
+    SmTgt_Stack(SmTgt_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 5 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_TARG5 =
+    SmTgt_Stack(SmTgt_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 6 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_TARG6 =
+    SmTgt_Stack(SmTgt_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 7 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_TARG7 =
+    SmTgt_Stack(SmTgt_Stack.FocIndex).FLD_NAME;
+IF Sum_Num.FocIndex EQ 8 THEN
+  COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_TARG8 =
+    SmTgt_Stack(SmTgt_Stack.FocIndex).FLD_NAME;
+PERFORM Update_Summ
+endcase
+
+case SetTarg_Buttons
+  IF Sum_Num.FocIndex EQ 1 THEN
+  BEGIN
+    COMPUTE smpnp_pn.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP EQ 'P' THEN 1 ELSE 2;
+    COMPUTE smord_hl.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_ORD1 EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 2 THEN
+  BEGIN
+    COMPUTE smpnp_pn.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_T2PNP EQ 'P' THEN 1 ELSE 2;
+    COMPUTE smord_hl.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_ORD2 EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 3 THEN
+  BEGIN
+    COMPUTE smpnp_pn.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_T3PNP EQ 'P' THEN 1 ELSE 2;
+    COMPUTE smord_hl.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_ORD3 EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 4 THEN
+  BEGIN
+    COMPUTE smpnp_pn.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_T4PNP EQ 'P' THEN 1 ELSE 2;
+    COMPUTE smord_hl.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_ORD4 EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 5 THEN
+  BEGIN
+    COMPUTE smpnp_pn.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_T5PNP EQ 'P' THEN 1 ELSE 2;
+    COMPUTE smord_hl.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_ORD5 EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 6 THEN
+  BEGIN
+    COMPUTE smpnp_pn.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_T6PNP EQ 'P' THEN 1 ELSE 2;
+    COMPUTE smord_hl.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_ORD6 EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 7 THEN
+  BEGIN
+    COMPUTE smpnp_pn.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_T7PNP EQ 'P' THEN 1 ELSE 2;
+    COMPUTE smord_hl.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_ORD7 EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 8 THEN
+  BEGIN
+    COMPUTE smpnp_pn.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_T8PNP EQ 'P' THEN 1 ELSE 2;
+    COMPUTE smord_hl.FocIndex = 
+      IF RM_Stack(RM_Stack.FocIndex).SUMM_ORD8 EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+endcase
+
+case SetSubj_Buttons
+
+endcase
+
+case ChgTarg_Button
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 1 THEN
+  BEGIN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_T1PNP = 
+      IF smpnp_pn.FocIndex EQ 1 THEN 'P' ELSE 'N';
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_ORD1 = 
+      IF smord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 2 THEN
+  BEGIN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_T2PNP = 
+      IF smpnp_pn.FocIndex EQ 1 THEN 'P' ELSE 'N';
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_ORD2 = 
+      IF smord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 3 THEN
+  BEGIN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_T3PNP = 
+      IF smpnp_pn.FocIndex EQ 1 THEN 'P' ELSE 'N';
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_ORD3 = 
+      IF smord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 4 THEN
+  BEGIN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_T4PNP = 
+      IF smpnp_pn.FocIndex EQ 1 THEN 'P' ELSE 'N';
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_ORD4 = 
+      IF smord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 5 THEN
+  BEGIN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_T5PNP = 
+      IF smpnp_pn.FocIndex EQ 1 THEN 'P' ELSE 'N';
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_ORD5 = 
+      IF smord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 6 THEN
+  BEGIN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_T6PNP = 
+      IF smpnp_pn.FocIndex EQ 1 THEN 'P' ELSE 'N';
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_ORD6 = 
+      IF smord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 7 THEN
+  BEGIN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_T7PNP = 
+      IF smpnp_pn.FocIndex EQ 1 THEN 'P' ELSE 'N';
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_ORD7 = 
+      IF smord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 8 THEN
+  BEGIN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_T8PNP = 
+      IF smpnp_pn.FocIndex EQ 1 THEN 'P' ELSE 'N';
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_ORD8 = 
+      IF smord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  ENDBEGIN
+  PERFORM Update_Rank
+endcase
+
+case Select_Summ
+  WINFORM SET SummaryMain.TargList.VISIBLE TO YES
+  WINFORM SET SummaryMain.SubjList.VISIBLE TO YES
+  IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+    Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+    BEGIN
+      TYPE " You do not have authority to update this Master ! "
+      GOTO ENDCASE
+    ENDBEGIN
+  IF Sum_Num.FocIndex EQ 1 THEN
+  BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmTgt_Stack.FocCount
+      IF SmTgt_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_TARG1 THEN 
+           COMPUTE SmTgt_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmSbj_Stack.FocCount
+      IF SmSbj_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ1 THEN 
+           COMPUTE SmSbj_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 2 THEN
+  BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmTgt_Stack.FocCount
+      IF SmTgt_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_TARG2 THEN 
+           COMPUTE SmTgt_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmSbj_Stack.FocCount
+      IF SmSbj_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ2 THEN 
+           COMPUTE SmSbj_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 3 THEN
+  BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmTgt_Stack.FocCount
+      IF SmTgt_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_TARG3 THEN 
+           COMPUTE SmTgt_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmSbj_Stack.FocCount
+      IF SmSbj_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ3 THEN 
+           COMPUTE SmSbj_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 4 THEN
+  BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmTgt_Stack.FocCount
+      IF SmTgt_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_TARG4 THEN 
+           COMPUTE SmTgt_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmSbj_Stack.FocCount
+      IF SmSbj_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ4 THEN 
+           COMPUTE SmSbj_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 5 THEN
+  BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmTgt_Stack.FocCount
+      IF SmTgt_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_TARG5 THEN 
+           COMPUTE SmTgt_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmSbj_Stack.FocCount
+      IF SmSbj_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ5 THEN 
+           COMPUTE SmSbj_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 6 THEN
+  BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmTgt_Stack.FocCount
+      IF SmTgt_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_TARG6 THEN 
+           COMPUTE SmTgt_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmSbj_Stack.FocCount
+      IF SmSbj_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ6 THEN 
+           COMPUTE SmSbj_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 7 THEN
+  BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmTgt_Stack.FocCount
+      IF SmTgt_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_TARG7 THEN 
+           COMPUTE SmTgt_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmSbj_Stack.FocCount
+      IF SmSbj_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ7 THEN 
+           COMPUTE SmSbj_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+  ENDBEGIN
+  IF Sum_Num.FocIndex EQ 8 THEN
+  BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmTgt_Stack.FocCount
+      IF SmTgt_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_TARG8 THEN 
+           COMPUTE SmTgt_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE SmSbj_Stack.FocCount
+      IF SmSbj_Stack(Cnt1).FLD_NAME EQ 
+        RM_Stack(RM_Stack.FocIndex).SUMM_SUBJ8 THEN 
+           COMPUTE SmSbj_Stack.FocIndex = Cnt1;
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+  ENDBEGIN
+  PERFORM SetTarg_Buttons
+  PERFORM Disp_Limit
+endcase
+
+CASE Disp_Limit
+  IF Sum_Num.FocIndex EQ 1 THEN
+    COMPUTE Summ_Limit = RM_Stack(RM_Stack.FocIndex).SUMM_LIM1;
+  IF Sum_Num.FocIndex EQ 2 THEN
+    COMPUTE Summ_Limit = RM_Stack(RM_Stack.FocIndex).SUMM_LIM2;
+  IF Sum_Num.FocIndex EQ 3 THEN
+    COMPUTE Summ_Limit = RM_Stack(RM_Stack.FocIndex).SUMM_LIM3;
+  IF Sum_Num.FocIndex EQ 4 THEN
+    COMPUTE Summ_Limit = RM_Stack(RM_Stack.FocIndex).SUMM_LIM4;
+  IF Sum_Num.FocIndex EQ 5 THEN
+    COMPUTE Summ_Limit = RM_Stack(RM_Stack.FocIndex).SUMM_LIM5;
+  IF Sum_Num.FocIndex EQ 6 THEN
+    COMPUTE Summ_Limit = RM_Stack(RM_Stack.FocIndex).SUMM_LIM6;
+  IF Sum_Num.FocIndex EQ 7 THEN
+    COMPUTE Summ_Limit = RM_Stack(RM_Stack.FocIndex).SUMM_LIM7;
+  IF Sum_Num.FocIndex EQ 8 THEN
+    COMPUTE Summ_Limit = RM_Stack(RM_Stack.FocIndex).SUMM_LIM8;
+ENDCASE
+
+case Upd_Limit
+  IF Sum_Num.FocIndex EQ 1 THEN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_LIM1 = Summ_Limit;
+  IF Sum_Num.FocIndex EQ 2 THEN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_LIM2 = Summ_Limit;
+  IF Sum_Num.FocIndex EQ 3 THEN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_LIM3 = Summ_Limit;
+  IF Sum_Num.FocIndex EQ 4 THEN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_LIM4 = Summ_Limit;
+  IF Sum_Num.FocIndex EQ 5 THEN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_LIM5 = Summ_Limit;
+  IF Sum_Num.FocIndex EQ 6 THEN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_LIM6 = Summ_Limit;
+  IF Sum_Num.FocIndex EQ 7 THEN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_LIM7 = Summ_Limit;
+  IF Sum_Num.FocIndex EQ 8 THEN
+    COMPUTE RM_Stack(RM_Stack.FocIndex).SUMM_LIM8 = Summ_Limit;
+  PERFORM Update_Summ
+endcase
+
+CASE Update_Summ
+  FOR 1 UPDATE MSTR_FLD.SUMM_SELECT FROM SmSbj_Stack(SmSbj_Stack.FocIndex)
+  FOR 1 UPDATE 
+    RPT_MSTR.SUMM_SUBJ1 RPT_MSTR.SUMM_TARG1 RPT_MSTR.SUMM_T1PNP
+    RPT_MSTR.SUMM_LIM1 RPT_MSTR.SUMM_ORD1 
+    RPT_MSTR.SUMM_SUBJ2 RPT_MSTR.SUMM_TARG2 RPT_MSTR.SUMM_T2PNP
+    RPT_MSTR.SUMM_LIM2 RPT_MSTR.SUMM_ORD2 
+    RPT_MSTR.SUMM_SUBJ3 RPT_MSTR.SUMM_TARG3 RPT_MSTR.SUMM_T3PNP
+    RPT_MSTR.SUMM_LIM3 RPT_MSTR.SUMM_ORD3 
+    RPT_MSTR.SUMM_SUBJ4 RPT_MSTR.SUMM_TARG4 RPT_MSTR.SUMM_T4PNP
+    RPT_MSTR.SUMM_LIM4 RPT_MSTR.SUMM_ORD4 
+    RPT_MSTR.SUMM_SUBJ5 RPT_MSTR.SUMM_TARG5 RPT_MSTR.SUMM_T5PNP
+    RPT_MSTR.SUMM_LIM5 RPT_MSTR.SUMM_ORD5 
+    RPT_MSTR.SUMM_SUBJ6 RPT_MSTR.SUMM_TARG6 RPT_MSTR.SUMM_T6PNP
+    RPT_MSTR.SUMM_LIM6 RPT_MSTR.SUMM_ORD6 
+    RPT_MSTR.SUMM_SUBJ7 RPT_MSTR.SUMM_TARG7 RPT_MSTR.SUMM_T7PNP
+    RPT_MSTR.SUMM_LIM7 RPT_MSTR.SUMM_ORD7 
+    RPT_MSTR.SUMM_SUBJ8 RPT_MSTR.SUMM_TARG8 RPT_MSTR.SUMM_T8PNP
+    RPT_MSTR.SUMM_LIM8 RPT_MSTR.SUMM_ORD8
+    FROM RM_Stack(RM_Stack.FocIndex)
+  COMMIT
+ENDCASE
+
+case Disp_Summary
+  Winform SHOW SummaryMain
+endcase
+
+case Disp_Ranking
+  Winform SHOW RankingMain
+endcase
+
+case Pop_Rank
+  STACK CLEAR SmTgt_Stack SmSbj_Stack
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF (MF_Temp(Cnt1).SUMM_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).TARG_SUBJ EQ 'T')
+    THEN BEGIN
+      COMPUTE PCnt = SmTgt_Stack.FocCount + 1;
+      COPY FROM MF_Temp(Cnt1) INTO SmTgt_Stack(PCnt)
+    ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF (MF_Temp(Cnt1).SUMM_OPTION EQ 'Y') AND 
+       (MF_Temp(Cnt1).TARG_SUBJ EQ 'S')
+    THEN BEGIN
+      COMPUTE PCnt = SmSbj_Stack.FocCount + 1;
+      COPY FROM MF_Temp(Cnt1) INTO SmSbj_Stack(PCnt)
+    ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+endcase
+
+case Pop_Ranks
+-* This case populates and initializes the Radio buttons used in conjunction
+-*   with the Sort Field selection form
+
+  COMPUTE rmeth_cs(1).Rad = 'COUNT';
+  COMPUTE rmeth_cs(2).Rad = 'SUM';
+  COMPUTE rkord_hl(1).Rad = 'HIGH';
+  COMPUTE rkord_hl(2).Rad = 'LOW';
+  COMPUTE rmeth_cs.FocIndex = 1;
+  COMPUTE rkord_hl.FocIndex = 1;
+  PERFORM Refresh_MFTemp
+  PERFORM Refresh_Ranks
+  PERFORM SetRank_Buttons
+endcase
+
+case Refresh_Ranks
+STACK CLEAR Sm_Stack
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF (MF_Temp(Cnt1).RANK_OPTION EQ 'Y') AND 
+      (MF_Temp(Cnt1).TARG_SUBJ EQ 'T')
+    THEN BEGIN
+      COMPUTE PCnt = Sm_Stack.FocCount + 1;
+      COPY FROM MF_Temp(Cnt1) INTO Sm_Stack(PCnt)
+      IF Sm_Stack(PCnt).RANK_SELECT EQ 'Y' THEN
+        COMPUTE Sm_Stack.FocIndex = PCnt;
+    ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+  PERFORM Get_DSel
+endcase
+
+CASE Get_DSel
+  STACK CLEAR Dsel_Stack
+  COMPUTE Cnt1 = 1;
+  COMPUTE DSel_Stack.FocIndex = 0;
+  REPEAT WHILE Cnt1 LE MF_Temp.FocCount
+    IF (MF_Temp(Cnt1).RANK_OPTION EQ 'Y') AND 
+      (MF_Temp(Cnt1).TARG_SUBJ EQ 'S')
+      THEN BEGIN
+        COMPUTE PCnt = Dsel_Stack.FocCount + 1;
+        COPY FROM MF_Temp(Cnt1) INTO DSel_Stack(PCnt)
+      ENDBEGIN
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+ENDCASE
+
+case Subj_Select
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE Sm_Stack(Sm_Stack.FocIndex).RANK_SUBJECT =
+    Dsel_Stack(DSel_Stack.FocIndex).FLD_NAME;
+  PERFORM Update_Rank
+endcase
+
+case SetRank_Buttons
+  IF Sm_Stack.FocCount EQ 0 THEN
+-* If the sort stack is empty, default the Radio buttons to Yes
+  BEGIN
+    COMPUTE rmeth_cs.FocIndex = 1;
+    COMPUTE rkord_hl.FocIndex = 1;
+  ENDBEGIN
+  ELSE
+  BEGIN
+-* If the sort stack is not empty, set the Radio buttons according to the
+-*   flag value within the corresponding Report Field stack row
+    COMPUTE rmeth_cs.FocIndex = 
+      IF Sm_Stack(Sm_Stack.FocIndex).RANK_METHOD EQ 'C' THEN 1 ELSE 2;
+    COMPUTE rkord_hl.FocIndex = 
+      IF Sm_Stack(Sm_Stack.FocIndex).RANK_ORDER EQ 'H' THEN 1 ELSE 2;
+  ENDBEGIN
+endcase
+
+case SetRank_Screen
+IF Sm_Stack(Sm_Stack.FocIndex).RANK_SELECT EQ 'Y' THEN
+  BEGIN
+    WINFORM SET RankingMain.RankMethRadio.VISIBLE TO YES
+    IF Sm_Stack(Sm_Stack.FocIndex).RANK_METHOD EQ 'S' THEN
+    BEGIN
+      WINFORM SET RankingMain.RankCombo.VISIBLE TO YES
+      COMPUTE Cnt1 = 1;
+      COMPUTE Dsel_Stack.FocIndex = 1;
+      REPEAT WHILE Cnt1 LE Dsel_Stack.FocCount
+        IF Sm_Stack(Sm_Stack.FocIndex).RANK_SUBJECT EQ 
+          Dsel_Stack(Cnt1).FLD_NAME THEN 
+          COMPUTE DSel_Stack.FocIndex = Cnt1;
+        COMPUTE Cnt1 = Cnt1 + 1;
+      ENDREPEAT
+    ENDBEGIN
+      ELSE WINFORM SET RankingMain.RankCombo.VISIBLE TO NO
+    WINFORM SET RankingMain.RankOrdRadio.VISIBLE TO YES
+    WINFORM SET RankingMain.RankLim.VISIBLE TO YES
+  ENDBEGIN
+endcase
+
+case ChgRank_Button
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  COMPUTE Sm_Stack(Sm_Stack.FocIndex).RANK_METHOD = 
+    IF rmeth_cs.FocIndex EQ 1 THEN 'C' ELSE 'S';
+  COMPUTE Sm_Stack(Sm_Stack.FocIndex).RANK_ORDER = 
+    IF rkord_hl.FocIndex EQ 1 THEN 'H' ELSE 'L';
+  PERFORM Update_Rank
+  PERFORM SetRank_Screen
+endcase
+
+case Pick_Target
+  IF Sm_Stack(Sm_Stack.FocIndex).RANK_SELECT EQ 'Y' 
+  THEN BEGIN
+    PERFORM SetRank_Buttons
+    PERFORM SetRank_Screen
+  ENDBEGIN
+  ELSE BEGIN
+    WINFORM SET RankingMain.RankMethRadio.VISIBLE TO NO
+    WINFORM SET RankingMain.RankOrdRadio.VISIBLE TO NO
+    WINFORM SET RankingMain.RankLim.VISIBLE TO NO
+    WINFORM SET RankingMain.RankCombo.VISIBLE TO NO
+  ENDBEGIN
+endcase
+
+case Select_Rank
+IF RM_Stack(RM_Stack.FocIndex).CONTROL_ID EQ 'PGM' AND
+  Cntl_Stack(1).CONTROL_ID NE 'PGM' THEN
+  BEGIN
+    TYPE " You do not have authority to update this Master ! "
+    GOTO ENDCASE
+  ENDBEGIN
+  IF Sm_Stack(Sm_Stack.FocIndex).RANK_SELECT EQ 'Y' 
+  THEN BEGIN
+    PERFORM Update_Rank
+    PERFORM SetRank_Screen
+  ENDBEGIN
+  ELSE BEGIN
+    COMPUTE Cnt1 = 1;
+    REPEAT WHILE Cnt1 LE Sm_Stack.FocCount
+      IF Sm_Stack(Cnt1).RANK_SELECT EQ 'Y'
+        THEN COMPUTE Sm_Stack(Cnt1).RANK_SELECT = 'N';
+      COMPUTE Cnt1 = Cnt1 + 1;
+    ENDREPEAT
+    COMPUTE Sm_Stack(Sm_Stack.FocIndex).RANK_SELECT = 'Y';
+    PERFORM Update_Ranks
+    PERFORM Refresh_MFTemp
+    PERFORM Refresh_Ranks
+    PERFORM SetRank_Buttons
+    PERFORM SetRank_Screen
+  ENDBEGIN
+endcase
+
+CASE Update_Rank
+  FOR 1 UPDATE MSTR_FLD.RANK_METHOD MSTR_FLD.RANK_ORDER 
+    MSTR_FLD.RANK_SELECT MSTR_FLD.RANK_SUBJECT MSTR_FLD.RANK_LIMIT
+    FROM Sm_Stack(Sm_Stack.FocIndex)
+  COMMIT
+ENDCASE
+
+CASE Update_Ranks
+  FOR ALL UPDATE MSTR_FLD.RANK_METHOD MSTR_FLD.RANK_ORDER 
+    MSTR_FLD.RANK_SELECT MSTR_FLD.RANK_SUBJECT MSTR_FLD.RANK_LIMIT
+    FROM Sm_Stack
+  COMMIT
+ENDCASE
+
+
+
+
+
+case Conf_Yes
+COMPUTE Confirm_Code = 'Y';
+WINFORM CLOSE DelConfirm
+endcase
+
+case Conf_No
+COMPUTE Confirm_Code = 'N';
+WINFORM CLOSE DelConfirm
+endcase
+
+
+case Push_Kancel
+  COMPUTE Kancel = 'Y';
+  WINFORM CLOSE
+endcase
+
+-* >> Generated Code Section. Do not edit/add/delete this or following lines
+
+case Winform_RptMstrMain
+   Winform show RptMstrMain
+endcase
+
+case Winform_RMstPrm
+   Winform show RMstPrm
+endcase
+
+case Winform_TempSel
+   Winform show TempSel
+endcase
+
+case Winform_GetRptID
+   Winform show GetRptID
+endcase
+
+case Winform_MasterFields
+   Winform show MasterFields
+endcase
+
+case Winform_PrtSel
+   Winform show PrtSel
+endcase
+
+case Winform_SelectMain
+   Winform show SelectMain
+endcase
+
+case Winform_SelDetail
+   Winform show SelDetail
+endcase
+
+case Winform_SelDet
+   Winform show SelDet
+endcase
+
+case Winform_Sort_Main
+   Winform show Sort_Main
+endcase
+
+case Winform_SrtSH
+   Winform show SrtSH
+endcase
+
+case Winform_SrtSF
+   Winform show SrtSF
+endcase
+
+case Winform_SrtST
+   Winform show SrtST
+endcase
+
+case Winform_RankingMain
+   Winform show RankingMain
+endcase
+
+case Winform_DelConfirm
+   Winform show DelConfirm
+endcase
+
+case Winform_SummaryMain
+   Winform show SummaryMain
+endcase
+
+END

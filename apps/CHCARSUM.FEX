@@ -1,0 +1,191 @@
+
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*8/29/17-JEM-S-34936 Replaced COMPANY_NAME WITH LEVEL_DESC
+
+-INCLUDE SETECHO
+
+
+-RUN
+
+-SET &&RPTSUF = 'DTL';
+-INCLUDE FDEFRPTS
+-RUN
+
+
+
+DEFINE FILE CARTRN ADD
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+
+TABLE FILE CARTRN
+
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+COMPUTE AVGDR/D12.2CS=IF (RENTAL_AMT LT 0) AND (NBR_DAYS LT 0)
+  THEN ((RENTAL_AMT/NBR_DAYS) * (-1)) 
+    ELSE RENTAL_AMT/NBR_DAYS; AS 'AVG,DAILY,RATE'
+  
+-INCLUDE CARRATE
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+-*&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+-GOTO NEWSTYLE
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-NEWSTYLE
+
+
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.250000, 
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=ARIAL, SIZE=8, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=REPORT, COLUMN=N2, JUSTIFY=LEFT, WRAP=1.95,$
+
+TYPE=REPORT, COLUMN=N3, JUSTIFY=LEFT, WRAP=1.95,$
+TYPE=REPORT, COLUMN=N4, JUSTIFY=LEFT, WRAP=1.0,$
+
+TYPE=REPORT, COLUMN=N5, JUSTIFY=LEFT, WRAP=.50,$
+TYPE=REPORT, COLUMN=N6, JUSTIFY=LEFT, WRAP=.75,$
+TYPE=REPORT, COLUMN=N7, JUSTIFY=LEFT, WRAP=1.0,$
+TYPE=REPORT, COLUMN=N8, JUSTIFY=LEFT, WRAP=.50,$
+TYPE=REPORT, COLUMN=N9, JUSTIFY=LEFT, WRAP=.75,$
+TYPE=REPORT, COLUMN=N10, JUSTIFY=LEFT, WRAP=1.0,$
+TYPE=REPORT, COLUMN=N11, JUSTIFY=LEFT, WRAP=.75,$
+TYPE=REPORT, COLUMN=N12, JUSTIFY=RIGHT, WRAP=1.0,$
+TYPE=REPORT, COLUMN=N13, JUSTIFY=RIGHT, WRAP=.50,$
+TYPE=REPORT, COLUMN=N14, JUSTIFY=RIGHT, WRAP=.60,$
+TYPE=REPORT, COLUMN=N15, JUSTIFY=RIGHT, WRAP=1.0,$
+TYPE=REPORT, COLUMN=N16, JUSTIFY=RIGHT, WRAP=1.0,$
+TYPE=REPORT, COLUMN=N17, JUSTIFY=RIGHT, WRAP=1.0,$
+
+ 
+TYPE=HEADING, SIZE=8, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(31 114 164), BACKCOLOR=NONE, $
+TYPE=HEADING, HEADALIGN=BODY, $
+TYPE=HEADING, LINE=1, COLSPAN=3, JUSTIFY=LEFT, $
+TYPE=HEADING, LINE=2, COLSPAN=3, JUSTIFY=LEFT, $
+TYPE=HEADING, LINE=3, COLSPAN=15, SIZE=9, JUSTIFY=CENTER, $
+TYPE=HEADING, LINE=4, COLSPAN=15, SIZE=9,JUSTIFY=CENTER, $
+TYPE=HEADING, LINE=5, COLSPAN=3, JUSTIFY=LEFT, $
+
+TYPE=FOOTING, SIZE=7, STYLE=BOLD, COLOR=GREY, $
+TYPE=TITLE,
+     BORDER-TOP=LIGHT,
+     BORDER-BOTTOM=LIGHT,
+     BORDER-LEFT=LIGHT,
+     BORDER-RIGHT=LIGHT,
+     BORDER-TOP-STYLE=RIDGE,
+     BORDER-BOTTOM-STYLE=RIDGE,
+     BORDER-LEFT-STYLE=RIDGE,
+     BORDER-RIGHT-STYLE=RIDGE,
+     BORDER-TOP-COLOR='SILVER',
+     BORDER-BOTTOM-COLOR='SILVER',
+     BORDER-LEFT-COLOR='SILVER',
+     BORDER-RIGHT-COLOR='SILVER',
+     SIZE=8,
+     COLOR='WHITE',
+     BACKCOLOR=RGB(31 114 164),
+     STYLE=BOLD,$
+TYPE=TABFOOTING, FONT=ARIAL, COLOR=GRAY,$
+     
+TYPE=FOOTING, FONT=ARIAL, COLOR=GRAY,$
+
+TYPE=SUBTOTAL, SIZE=8, STYLE=BOLD, $
+TYPE=GRANDTOTAL, SIZE=8, STYLE=BOLD, $
+
+ENDSTYLE
+ 
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN

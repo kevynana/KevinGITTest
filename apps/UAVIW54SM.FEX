@@ -1,0 +1,186 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*======================================================================
+-*  DATE        PROGRAMMER  CHANGE
+-*  ----        ----------  ---------------------------------
+-*  07/20/2015  GSE         S-06556 Initial version
+-*======================================================================
+
+-INCLUDE SETECHO
+-* File SMRYRPT.FEX
+-**********************************************************************
+
+
+-**********************************************************************
+
+SET ASNAMES = ON
+-RUN
+
+-INCLUDE RETUDID
+-RUN
+
+JOIN AIR_KEY IN &&RPT_HOLD TO UNIQUE AIR_KEY IN UDIDHOLD AS J0
+
+DEFINE FILE &&RPT_HOLD
+&&RANK_LABEL1/A64 = IF &&RANK_LABEL1 EQ ' ' THEN 'NONE GIVEN' ELSE &&RANK_LABEL1 ;
+END
+
+TABLE FILE &&RPT_HOLD
+SUM NET_TKT_CNT 
+    FARE_PAID 
+    NEW_SEG_MILES
+    AIRLINE_FEE
+    AIRFEE_CNT
+-* BY LEVEL_DESC
+BY &&RANK_LABEL1   
+ON TABLE HOLD AS RNKHLD1
+END
+-RUN
+
+
+TABLE FILE RNKHLD1
+SUM NET_TKT_CNT
+    FARE_PAID
+    NEW_SEG_MILES
+    AIRLINE_FEE
+    AIRFEE_CNT
+-* RANKED BY HIGHEST NET_TKT_CNT NOPRINT
+RANKED BY &&RANK_ORDER &&RANK_METH NOPRINT
+BY &&RANK_LABEL1
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+
+-* -SET &&RANK_LIMIT = '200';
+
+DEFINE FILE RNKHLD2
+  DRANK/D9 = RANK;
+  ARANKX/A11 = FTOA(DRANK, '(D9)', 'A11');
+  ARANK/A9 = EDIT(ARANKX,'$$999999999');
+  LIST/D9 = (LAST LIST + 1);
+  CRANKX/A11 = FTOA(LIST, '(D9)', 'A11');
+  CRANK/A9 = EDIT(CRANKX,'$$999999999');
+  RANK_VALUE/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE 
+                  IF LIST GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE 
+                  CRANK;
+  RANK_VAL/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE
+                IF RANK GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE
+                ARANK;
+  RANK_LAB1/A64 = IF RANK_VAL NE 'ALL OTHER' THEN &&RANK_LABEL1
+                  ELSE 'ALL OTHER';
+  RANK_LABEL1/A64 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL1
+                      ELSE ' ';
+  RANK_LABEL2/A64 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL2
+                      ELSE ' ';
+  RANK_LABEL3/A64 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL3
+                      ELSE ' ';
+-* NET_TKT_CNT/D9S = IF (SEG_NBR EQ '01') THEN TTKT ELSE 0;
+NOWTOD/A8 WITH RANK = HHMMSS (NOWTOD);
+END
+-RUN
+
+TABLE FILE RNKHLD2
+PRINT NET_TKT_CNT
+      FARE_PAID
+      NEW_SEG_MILES
+      EMAIL_ADR
+      AIRLINE_FEE
+      AIRFEE_CNT   
+BY RANK_VALUE
+ON TABLE HOLD AS JOYTEST FORMAT ALPHA
+END
+
+-RUN
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+
+TABLE FILE RNKHLD2
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYS
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+-QUIT
+-EXIT
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3
+-*-*-EXIT
+-GOTO XXIT;
+
+
+-XXIT;

@@ -1,0 +1,133 @@
+-INCLUDE SETECHO
+SET MSG = OFF
+TABLE FILE CONTROL
+PRINT *
+ON TABLE SAVE AS ONE
+END
+-RUN
+-IF &RECORDS EQ 0 GOTO NOACTION;
+-*-IF &RECORDS EQ 0 GOTO CHECKERR ;
+ 
+TABLE FILE ROLLUP
+PRINT *
+IF RECORDLIMIT EQ 1
+ON TABLE SAVE AS TWO
+END
+-RUN
+-IF &RECORDS GT 0 GOTO START;
+ 
+-CHECKERR
+-SET &DT=&YYMD;
+-SET &HR = EDIT(&TOD,'99');
+-SET &MIN= EDIT(&TOD,'$$$99');
+ 
+FILEDEF BOOTIME DISK D:\TNT\TTRACKER\SYSTEM\ASP\BOOTIME.TXT
+-RUN
+-DOS STATE D:\TNT\TTRACKER\SYSTEM\ASP\BOOTIME.TXT
+-IF &RETCODE NE 0 GOTO NOCOMP;
+-READ BOOTIME &DT2.A8. &HR2.2. &MIN2.2.
+-CLOSE BOOTIME
+-WRITE BOOTIME &DT&HR&MIN
+-CLOSE BOOTIME
+ 
+-IF &DT GT &DT2 THEN GOTO NOACTION;
+-SET &TOTMIN = &HR * 60 + &MIN;
+-SET &TOTMIN2 = &HR2 * 60 + &MIN2;
+-SET &MINSPASS = &TOTMIN - &TOTMIN2;
+-IF &MINSPASS GT 30  THEN GOTO NOACTION;
+ 
+-TYPE ************************************************************
+-TYPE Please wait, the services will be up in a few minutes.......
+-TYPE ************************************************************
+-GOTO NOACTION;
+ 
+-NOCOMP
+-TYPE &DT
+-TYPE &HR
+-TYPE &MIN
+-WRITE BOOTIME &DT&HR&MIN
+-CLOSE BOOTIME
+ 
+-*========================================================================
+-*  USE THIS CODE, WHEN CONTROL FILE IS NOT AVAILABLE
+-*========================================================================
+-REBOOT
+ 
+-HTMLFORM BEGIN
+ 
+<html>
+ 
+<head><script language="JavaScript">
+<!--
+function popwin(){
+thisheight =screen.height - 58;
+thiswidth1 =screen.width;
+thiswidth =thiswidth1-10;
+strFeatures="top=0, left=0, width="+thiswidth+", height="+thisheight+", toolbar=no, status=yes, scrollbars=yes, location=yes,  resizable=1";
+popup = window.open('https://demo.ettekreview.com/asp/tntdown.asp', "MyWin", strFeatures);
+}
+-->
+</script>
+ 
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 3.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<meta content="Microsoft FrontPage 4.0" name="GENERATOR">
+<title>eTTek Review Reporting System</title>
+</head>
+ 
+<body text="#000000" vLink="#000000" aLink="#0000FF" bgColor="#FFFFFF" topmargin="1"
+OnLoad="DesignerWizWin=window.open('https://demo.ettekreview.com/asp/tntdown.asp', 'WizWin', 'toolbar=0, location=0, status=1, directories=0, menuBar=0, scrollbars=1, resizable=1, width=800, height=542, left=0, top=0');">
+<form method="POST" name="form">
+  <input type="hidden" name="action" value="CUSTOMLOGIN"><table height="100%"
+  cellSpacing="0" cellPadding="0" width="100%" border="0">
+<TBODY>
+    <tr>
+      <td align="middle">
+      </td>
+    </tr>
+</TBODY>
+  </table>
+</form>
+</body>
+</html>
+ 
+-HTMLFORM END
+-GOTO NOACTION;
+ 
+-START
+-HTMLFORM BEGIN
+ 
+<!--DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"-->
+<html>
+ 
+<head>
+<title>eTTek Review System Launch </title>
+</head>
+ 
+<body onload="SubmitForm()" bgcolor="#EEEEEE">
+<script language="JavaScript"><!--
+ 
+function SubmitForm() {
+  document.starter.submit();
+}
+ 
+ 
+// -->
+</script>
+<p align="center"><b><font color="#7092BF" face="Arial" size="4">
+<BR><BR><BR>Establishing your session on the eTTek Review Server,<br>
+Please Wait....</font></b></p>
+<form action="/ibi_apps/WFServlet" method="POST" name="starter">
+  <input type="hidden" name="IBIS_connect" value="on">
+  <input type="hidden" name="IBIS_outbound" value="off">
+  <input type="hidden" name="IBIF_cmd" value="MNTCON RUN RPT_SET">
+  <input type="hidden" name="IBIS_passthru" value="on">
+</form>
+</body>
+</html>
+ 
+ 
+-HTMLFORM END
+-NOACTION

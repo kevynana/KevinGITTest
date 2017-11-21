@@ -1,0 +1,125 @@
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-* Story ID S-10086 Added &&overdrill flag logic for use in 5.0 to choose to for the report to be drillable or non-drillable - 9/15/15 - JM
+-*4/25/2017-JEM-S-33318-updated logic for no records report
+
+-DEFAULT &&OVERDRILL='N';
+
+-SET &&DRILLABLE = IF &&DEPLOY EQ 'L' AND EDIT(&&OUTTO,'$9') NE 'B' 
+- THEN 'N' ELSE 'Y'; 
+
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+
+-INCLUDE SetParmtime
+-RUN
+-**********************************************************************
+-* DETERMINE IF WE HAVE WEB DEPLOYMENT OR LOCAL STAND ALONE
+-* SET PATH FOR SAVING THE SETFILE
+-**********************************************************************
+-******LOCAL DEPLOYMENT
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-*-SET &&LOCPATH = &&TNTDRV || '\TT\ ' ||&&ROLLUP || '\ '||&&UNAME.EVAL|| '\';
+-SET &&SETFNM= &&LOCPATH || &&DTTMSTRM ||'.FTM';
+COPY &&SETF &&SETFNM
+-RUN
+-GOTO SETFILDEF;
+
+-******WEB DEPLOYMENT
+-SETWEB
+-SET &&WEBPATH = '&&WEBSRV.EVAL' || '\TTWEB\ ' || &&ROLLUP || '\ '||&&UNAME.EVAL|| '\';
+-SET &&SETFNM = &&WEBPATH || &&DTTMSTRM ||'.FTM';
+COPY &&VARFWEB &&SETFNM
+-*-INCLUDE SETFPARM
+-INCLUDE SetBDBsForDrill
+-RUN
+-GOTO SETFILDEF;
+
+-SETFILDEF
+-INCLUDE APNDSETF
+-RUN
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+
+-INCLUDE SELCATQT
+-RUN
+
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+
+-SET &&SMD = 'S';
+-RUN
+
+EX AIRUSE
+-RUN
+
+-SET &&RPTGRP = 'AIR';
+EX UDIDGEN
+-RUN
+
+EX KWNONAIR
+-RUN
+
+EX HTLUSE
+-RUN
+
+-SET &&RPTGRP = 'HTL';
+EX UDIDGEN
+-RUN
+
+EX KWNONHTL
+-RUN
+
+EX CARUSE
+-RUN
+
+-SET &&RPTGRP = 'CAR';
+EX UDIDGEN
+-RUN
+
+EX KWNONCAR
+-RUN
+
+EX KWNONSUM
+-RUN
+
+
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW=&&EXPARM;
+-INCLUDE ERRORCHK
+-IF &&RET GT 1 GOTO XXIT;
+-* REJ ADDED TO TRAP ERRORS
+
+-IF &RECORDS GT 0 THEN GOTO DOIT;
+
+-NORECORDS
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF2;
+-INCLUDE OTHPARMS
+-INCLUDE AVRP_SUBFOOT
+-:AVSF2
+
+-INCLUDE NORECRPT
+-RUN
+
+-DOIT
+
+-XXIT
+

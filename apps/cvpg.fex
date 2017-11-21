@@ -1,0 +1,26 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+
+
+-IF &&DRILLABLE EQ 'Y' GOTO DRILL;
+-RUN
+
+EX REPORT_2
+-RUN
+
+-DRILL
+
+-*-EXIT
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,101 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+-* File HEADAIR.FEX
+-********************************************************************
+-* MODIFICATIONS:
+-* 5/22/1998 ADDED THE FOLLOWING SET FILES - LP
+-* 8/28/1998 CHANGED BRANCH INFO TO ROLLUP INFO - LP
+-*  02/05/2015  REJ  S-05681 Changes for Available Reports.  Adding code so that the
+-*                           program will run in current Review and in Available Reports.
+-*  06/26/2015  REJ  S-08389 Latest changes for ER5 Available Reports.
+-* 06/30/2015 LSI S-05704 added orientation to adhoc 
+-*2/07/17-JEM-S-29460-Adding code for ER5 to use &&ROLLEMAIL in heading when GT ' '
+-* 02/24/17 DLV S-22486 - Changed EMLHDR to "</5" from "</6"
+-* 05/15/2017 JEM S-3216 - updating to make styling/heading/positioning more consistent
+-* 08/17/2017 DLV - S-38329 - Changed IF &&RCSL LE 21 THEN 80 ELSE
+-*                            to IF &&RCSL LE 21 THEN 70 ELSE 
+-*                            due to company information running off edge of page
+-********************************************************************
+-DEFAULT &&TitlePos1 = 30;
+-DEFAULT &&TitlePos2 = 28;
+ 
+
+-DEFAULT &&FROMER5 = 'N';
+-DEFAULT &&ORIENTATION = 'L';
+
+-*-IF &&FROMAVRP EQ 'Y' GOTO :HDA1;
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99'); 
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+ 
+-GOTO :HDA1_CONT;
+-:HDA1
+-SET &FMM=EDIT(&&FROMDT,'$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'9999');
+ 
+ 
+-:HDA1_CONT
+-SET &&SP = '|';
+-SET &&SP1A = IF &&ROLLNME EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP1 = IF &&ROLLCS EQ ' ' THEN ' ' ELSE &&SP1A;
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&REL = &&ROLLEMAIL.LENGTH;
+
+-SET &&RCSL = &&RCNCT.EVAL + &&CSL.EVAL;
+
+-SET &&CSLPA = IF '&&ROLLUP.EVAL' EQ 'ABCD-R' THEN 80 ELSE 
+-              IF '&&ROLLEMAIL.EVAL' NE ' ' AND &&REL GT 20 THEN 68 ELSE
+-              IF &&RCSL LE 21 THEN 70 ELSE 
+-              IF &&RCSL LE 31 THEN 75 ELSE 68;
+
+-* -SET &&CSLPA = IF &&RCNCT.EVAL GE 15 OR &&CSL.EVAL GE 10 THEN 68 ELSE 75;
+-*-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN 88 ELSE &&CSLPA;
+
+-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' AND &&ORIENTATION LIKE 'L%' THEN 88 
+- ELSE IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' AND &&ORIENTATION LIKE 'P%' THEN 68 
+- ELSE IF '&&ROLLUP.EVAL' EQ 'HDRR-R' AND &&ORIENTATION LIKE 'L%' THEN 80
+- ELSE IF &&ORIENTATION LIKE 'P%' THEN &&CSLPA-15 ELSE &&CSLPA;
+
+ 
+ 
+
+-IF '&&ROLLEMAIL.EVAL' GT ' ' THEN GOTO EMLHDR;
+
+ 
+"</2"
+"&&DTDESC &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  <&&CSLP &&ROLLNME <+0> &&SP1 <+0> &&ROLLCS <+0> &&SP3 <+0> &&ROLLCNCT <+0> &&SP4 <+0> &&ROLLPHN"
+-* <75 &&ROLLNME <+0> &&SP1 <+0> &&ROLLCS <+0> &&SP <+0> &&ROLLCNCT <+0> &&SP <+0> &&ROLLPHN"
+"Page:<TABPAGENO"
+" "
+"<&&TitlePos1.EVAL &&RPT_TTL1"
+"<&&TitlePos1.EVAL &&RPT_TTL2"
+ 
+-GOTO HDRXXIT; 
+
+-EMLHDR;
+
+"</2"
+"&&DTDESC &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  <&&CSLP &&ROLLNME <+0> &&SP1 <+0> &&ROLLCS <+0> &&SP3 <+0> &&ROLLCNCT <+0> &&SP4 <+0> &&ROLLEMAIL"
+-* <75 &&ROLLNME <+0> &&SP1 <+0> &&ROLLCS <+0> &&SP <+0> &&ROLLCNCT <+0> &&SP <+0> &&ROLLPHN"
+"Page:<TABPAGENO"
+" "
+"<&&TitlePos1.EVAL &&RPT_TTL1"
+"<&&TitlePos1.EVAL &&RPT_TTL2"
+ 
+-GOTO HDRXXIT;
+
+
+
+
+
+-HDRXXIT;

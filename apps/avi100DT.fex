@@ -1,0 +1,284 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* 5/10/05  - DEB - CHANGED CODE TO SORT BY TNT_COMPANY
+-* 10/10/13 - Joy - Corrected drilldown error on field KEY
+-*8/20/15   JOY STORY ID - S-07278 - Updating to use Level_desc and removing company code
+-*11/25/15  Joy    S-07987  Corrected for running Currency Enabled Version
+-*12/17/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-* 05/17/17 JEM S-34624 - Updating heading/stylesheet to standardize
+-* 06/27/2017 - RSB - S-35418 Report view to be updated with standard footer (part 1)
+-*8/28/17-JEM-S-34936 Removed TNT_COMPANY
+-* 09/12/2017 - RSB - S-39791 Footer changes to be backed out of story S-35418
+-* 
+SET ASNAMES=ON
+-RUN
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+-SET &FAREP_CUR = 'FARE PAID, (' | &&CURRENCY || ')';
+-SET &&PRINT3='FARE_AMT/D16.2C AS ' | '''&FAREP_CUR.EVAL''';
+
+-NEXT
+
+TABLE FILE &&RPT_HOLD
+SUM EXCHGS AS 'TEXCH'
+-*     PAID_FARE1 AS 'TFARE'
+    PAID_FAREX AS 'TFARE'
+    MCOS AS 'TMCO'
+    EXMCOS AS 'TEXMCO'
+    NET_TKT_CNT1 AS 'TNET'
+    REFUND AS 'TREF'
+    VOIDS AS 'TVOID'
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY NAMEC
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+
+
+
+TABLE FILE &&RPT_HOLD
+PRINT AIRLINE
+      DOC_TYPE
+      DPT_TIME
+      EMB_APT_CD	
+      EXCHGS
+      EXMCOS
+      MCOS
+      NAMEC
+      NET_TKT_CNT1
+-*      PAID_FARE1
+      PAID_FAREX
+      RTE_APT_CD	
+      SEG_COUNT	
+      TICKET_BRANCH
+      TKT_NUM	
+      XDPT_DT	
+      XTRAN_DT	
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+
+MATCH FILE XTWO
+PRINT AIRLINE
+      DOC_TYPE
+      DPT_TIME
+      EMB_APT_CD	
+      EXCHGS
+      EXMCOS
+      MCOS
+      NAMEC
+      NET_TKT_CNT1
+-*       PAID_FARE1
+      PAID_FAREX
+      RTE_APT_CD	
+      SEG_COUNT	
+      TICKET_BRANCH
+      TKT_NUM	
+      XDPT_DT	
+      XTRAN_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+BY NAMEC
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT TEXCH
+      TEXMCO
+      TFARE
+      TMCO
+      TNET
+      TREF
+      TVOID
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY NAMEC
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT AIRLINE 
+      DOC_TYPE
+      DPT_TIME
+      EMB_APT_CD	
+      EXCHGS
+      EXMCOS
+      LEVEL_DESC
+      MCOS
+      NAMEC
+      NET_TKT_CNT1
+-*       PAID_FARE1
+      PAID_FAREX
+      RTE_APT_CD	
+      SEG_COUNT	
+      TICKET_BRANCH
+      TEXCH
+      TEXMCO
+      TFARE
+      TMCO
+      TNET
+      TREF
+      TVOID
+      TKT_NUM	
+      TRN_DATE
+      XDPT_DT
+      XPSNGR_NM	
+      XTRAN_DT
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+
+
+
+DEFINE FILE AIRHOLD3
+PASNGR_NAME/A15 = IF TKT_NUM NE LAST TKT_NUM THEN XPSNGR_NM ELSE ' ';	
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+XT_DTE/A8 = EDIT(TRN_DATE);	
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');	
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;	
+REFUNDS/D9CS = IF TKT_SORT NE LAST TKT_SORT THEN TREF ELSE 0;
+-******************************************************************
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A120 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+FARE_AMT/D16.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+-* EXCH_CNT/D9CS = IF (SEG_NBR EQ '01') THEN TEXCH ELSE 0;
+EXCH_CNT/D9CS = IF SRT_DT NE LAST SRT_DT THEN TEXCH ELSE 0;
+MCO_CNT/D9CS = IF SRT_DT NE LAST SRT_DT THEN TMCO ELSE 0;
+EMCO_CNT/D9CS = IF SRT_DT NE LAST SRT_DT THEN TEXMCO ELSE 0;
+VOID_CNT/D9CS = IF (SEG_NBR EQ '01') THEN TVOID ELSE 
+                IF (DOC_TYPE EQ '1') THEN TVOID ELSE 0;
+-* *** DEFINES ON PREVIOUSLY DEFINED DEFINES**********
+TOTAL_TRAN/D9CS = NET_TKT_CNT1 + EXCH_CNT + EMCO_CNT + MCO_CNT + REFUNDS + VOID_CNT;
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD3';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE 'GCTRDT';
+-RUN
+
+
+TABLE FILE AIRHOLD3
+-INCLUDE &&PAHDR
+
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-* -INCLUDE FOOTERTR
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+

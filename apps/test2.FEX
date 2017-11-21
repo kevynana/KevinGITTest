@@ -1,0 +1,92 @@
+-INCLUDE SETECHO
+-TYPE STARTING PUSH_DBRM_REPORTS
+ 
+SET BASEURL='&&SRVR.EVAL'
+SET EMPTYREPORT=OFF
+SET BYDISPLAY=ON
+SET LINES=99999
+ 
+ 
+USE CLEAR *
+ 
+USE 
+D:\DailyBackUps\TUE\10\ROLLUP.FOC AS ROLLUP
+END
+ 
+-INCLUDE CLASSPATH
+ 
+-SET &&WPATH1=TEMPPATH(50,'A50');
+-SET &&JPATH=STRREP(50,'&&WPATH1.EVAL',1,'\',2,'\\',150,'A150');
+-SET &&PushTeck = 'Y';
+-SET &&RunYTD = 'Y';
+ 
+-DEFAULTS &LEVEL = ' ', &DEPT = ' ', &BREAKBY='' ;
+-DEFAULTS &FROMDT = ' ', &TODT = ' ';
+-DEFAULTS &DODTYPE = ' ', &DOMINTL = ' ', &FMT=' ', &PCNTSHIFT=' ';
+ 
+-* Indicator to tell if reports are generated
+-SET &&DBRM='N';
+ 
+-SET &&WEB_PATH=TEMPPATH(50,'A50');
+-*SET EDAPATH=+&&WEB_PATH;
+APP MAP WEBTEMP &&WEB_PATH
+APP APPENDPATH WEBTEMP
+ 
+-*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-DEFAULT &THRU=20120909;
+-SET &TDATE=IF &THRU EQ 0 THEN &YYMD ELSE &THRU;
+-*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+-* Determine the rollup codes to run
+-*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+JOIN ROLLUP_CODE IN ROLLUP TO ALL ROLLUP_CODE IN PTREPORTTEMP
+ 
+DEFINE FILE ROLLUP
+  TDate/YYMD WITH ROLLUP = &TDATE;
+  TheDay/MDYY = TDate;
+  ThisMY/MYY = TheDay;
+  FirstDay/MDYY = ThisMY;
+  LastDayOfLM/MDYY = DATEADD(FirstDay,'D',-1);
+-*calculate if need to run Quarterly/Annually  No Months/3 remainder eq 0 then Yes.
+  LastMY/MYY=LastDayOfLM;
+  LastM/M=LastMY;
+  CurrM/M=ThisMY;
+  FromQMDYY/MDYY = DATEADD(LastDayOfLM,'M',-2);
+  FromQMYY/MYY = FromQMDYY;
+  IREMINDER/I2 = IMOD((CurrM - EDIT(ROLL_FY)),3,IREMINDER);
+  RUNQ/A1 = IF (CurrM EQ EDIT(ROLL_FY) OR ABS(IREMINDER) EQ 0) AND (QUARTERLY EQ 1 OR QYTD EQ 1)  THEN 'Y' ELSE 'N';
+  RUNY/A1 = IF (CurrM EQ EDIT(ROLL_FY)) AND ANNUAL EQ 1 THEN 'Y' ELSE 'N';
+  FromQYY/YY = FromQMYY;
+  aFirstQMYY/A6MYY=ROLL_FY || EDIT(FromQYY);
+  iFromQ/I6MYY = EDIT(aFirstQMYY);
+  FirstQMYY/MYY = iFromQ;
+  aaFirstQMYY/A6MYY=FromQMDYY;
+  IsFirstQ/A1=IF aFirstQMYY IS aaFirstQMYY THEN 'Y' ELSE 'N' ;
+  IsFirstM/A1 = IF (CurrM - EDIT(ROLL_FY)) EQ 1 THEN 'Y' ELSE 'N' ;
+END
+TABLE FILE ROLLUP
+PRINT SECURITY
+LastDayOfLM
+ 
+BY ROLLUP_CODE
+BY COMP
+BY ROLL_FY
+BY RUNQ
+BY RUNY
+BY FromQMYY
+BY IsFirstQ
+BY IsFirstM
+-*WHERE MONTHLY EQ 1 OR MTD EQ 1 OR QUARTERLY EQ 1 OR QYTD EQ 1 OR ANNUAL EQ 1
+WHERE MONTHLY EQ 1 OR MTD EQ 1 OR (QUARTERLY EQ 1 AND RUNQ EQ 'Y') OR
+  (QYTD EQ 1 AND RUNQ EQ 'Y') OR (ANNUAL EQ 1 AND RUNY EQ 'Y')
+ 
+WHERE ROLLUP.ROLLUP.END_DATE GT LAST_PROCESS_DATE
+  AND ROLLUP.ROLLUP.END_DATE GE LastDayOfLM AND LastDayOfLM GT LAST_PROCESS_DATE
+ 
+ON TABLE HOLD AS ALLROLLS FORMAT FOCUS INDEX ROLLUP_CODE
+END
+-RUN
+ 
+-IF &LINES EQ 0 THEN GOTO ENDDBRMPUSH;
+ 
+-ENDDBRMPUSH
+ 

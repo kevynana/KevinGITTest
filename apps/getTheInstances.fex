@@ -1,0 +1,50 @@
+-***********************************************************************************
+-* getTheInstances.fex
+-*
+-* Remove WHERE statements in setfiles, and put in RPT_FLDS
+
+-* SET &SETFILE and &WHERE1 before calling this routine.
+-* LS - 07/10/2014
+-***********************************************************************************
+
+-*retrive all the instances from rpt_inst for the setfile
+TABLE FILE RPT_INST
+BY INST_KEY
+&WHATSETFILES
+-*WHERE GLOBAL_PARM EQ '&SETFILE.EVAL'
+ON TABLE HOLD AS ALLKEYS
+END
+-RUN
+
+TABLE FILE ALLKEYS
+BY INST_KEY
+ON TABLE SAVE AS INSTKEY
+END
+-RUN
+
+-*retrieve the records which has the instance saved in that segment, so don't update those
+TABLE FILE RPT_FLDS
+BY INST_KEY
+&WHERE1
+WHERE INST_KEY IN FILE INSTKEY
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+-* do match to get all the records to be updated
+MATCH FILE ALLKEYS
+BY INST_KEY
+RUN
+FILE HOLD1
+BY INST_KEY 
+AFTER MATCH HOLD OLD-NOT-NEW
+END
+-RUN
+
+-*This is the set of records to be updated
+
+TABLE FILE HOLD
+BY E01 
+ON TABLE SAVE AS INSTKEY
+END
+-RUN

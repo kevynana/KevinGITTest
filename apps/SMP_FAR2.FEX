@@ -1,0 +1,133 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File MS_MON.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/13/01      TANDT-SS             NEW PROGRAM USED TO RUN A MARKET
+-*                                  SHARE BY MONTH FOR A SPECIFIED
+-*                                  AIRLINE
+-*6/7/04       DEB                  ADDED CODE FOR MULTIPLE AIRLINE SELECTION
+-*1/07/05      DEB                  ADDED CODE FOR GLOBAL CURRENCY
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*  08/23/2016  REJ  S-17914 Changes for ER5.
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+-*4/25/2017-JEM-S-33318-updated logic for no records report
+
+-**********************************************************************
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+-RUN
+ 
+-INCLUDE SetParmtime
+-RUN
+ 
+-TYPE &&OUTPUTDEST
+-IF &&OUTLINE2 EQ 'OFFLINE' THEN GOTO XOFFLINE ELSE GOTO XONLINE;
+ 
+-XONLINE
+-TYPE Before ONLINE
+ONLINE
+-TYPE After ONLINE
+-RUN
+-GOTO CONT
+ 
+-XOFFLINE
+-SET &&OUTLINE2 = '';
+-TYPE Before OFFLINE
+OFFLINE
+-TYPE After OFFLINE
+-RUN
+-GOTO CONT
+ 
+-CONT
+-SET &&RPT_HOLD = 'RPTHOLD';
+ 
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-INCLUDE SELCATQT
+-RUN
+ 
+EX &&CATQTRPR
+-RUN
+ 
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+ 
+-SET &&SMD = 'M';
+-RUN
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :TA1;
+-SET &&RPTGRP_OVERRIDE='AIR';
+EX CODEGEN
+-INCLUDE SELCATQT
+-RUN
+-:TA1
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF0;
+-INCLUDE AVRP_SUBFOOT
+-:AVSF0
+ 
+EX AIRUSE
+-RUN
+ 
+EX SELDESC2
+-RUN
+ 
+EX SIMPEX
+-RUN
+ 
+ 
+ 
+EX SIMPA2
+-RUN
+ 
+ 
+EX SIMPAIR4
+-RUN
+ 
+ 
+EX SIMPSUM4
+-RUN
+ 
+-CONTINUE
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW=&&EXPARM;
+-INCLUDE ERRORCHK
+-IF &&RET GT 1 GOTO XXIT;
+-* REJ ADDED TO TRAP ERRORS
+ 
+-IF &RECORDS GT 0 THEN GOTO DOIT;
+ 
+-NORECORDS
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF2;
+-INCLUDE OTHPARMS
+-INCLUDE AVRP_SUBFOOT
+-:AVSF2
+
+-INCLUDE NORECRPT
+-RUN
+
+-GOTO XXIT
+ 
+-DOIT
+-INCLUDE SETECHO
+-RUN
+ 

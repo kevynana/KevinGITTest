@@ -1,0 +1,190 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* JK Added Level2, Level3 9/16/04
+-* JK Changed Level2, Level3 to carry through instead of a sort prior to the
+-*    match
+-* DV ADDED CODE FOR GLOBAL CURRENCY - 1/5/05
+-* DV CARRIED THROUGH LEVEL1
+-* ADDED TRANTYPE INCLUDE - JK 12/19/14 STORY ID S-06492
+
+-* File TOPAIRPX.FEX
+-********************************************************************
+-********************************************************************
+-*
+-* This program extracts data for a frequent flyer report
+
+-********************************************************************
+-INCLUDE SETECHO
+-*SET TEMPERASE = OFF
+
+SET ASNAMES = ON
+-RUN
+
+-SET HOLDATTR = ON;
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+-SET &WHATDATE = IF '&&DATETYPE.EVAL' EQ 'I' THEN 'TRN_DATE' ELSE 'FST_DPT_DATE';
+
+DEFINE FILE &&EXTRACT
+  FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+  LEVEL_DESC/A60      = &&LDESC;
+  DV_ADV_PUR/A8       = IF (ADV_PURCH LT 4) THEN '0 - 3' ELSE
+                          IF (ADV_PURCH LT 7) THEN '4 - 6' ELSE
+                          IF (ADV_PURCH LT 14) THEN '7 - 13' ELSE '14 +';  
+  NET_TKT_CNT/D8S    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NEW_SEG_LOWEST/D9 = SEG_LOWEST;
+  NEW_SEG_MILES/D9 = SEG_MILES;
+  NEW_STAY/D9 = STAY;
+  NEW_TRIP_LENGTH/D12 = TRIP_LENGTH;
+  REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID;  
+  TKT_AMOUNT/D12.2CS  = TICKET_AMT + TAX_AMT;
+  TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TOTAL_FARE/D12.2S = SEG_AMT + SEG_TAX;
+  TRAN_MONTH/MT = TRN_DATE;
+  VASAVINGS/D11.2CS = SEG_DISCOUNT - TOTAL_FARE;
+  XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XDPT_DT/MDYY         = DPT_DATE;
+  XTRAN_DT/MDYY        = TRN_DATE;
+-* DEFINES ON PREVIOUS DEFINES
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST; 
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+  CPMILE/D12.2CS = IF ((SEG_MILES LT 1) AND (SEG_MILES GT (-1))) THEN 0 ELSE
+                      (FARE_PAID/SEG_MILES);
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  LSAV_CNT/D8CS = IF DISSAVINGS NE 0 THEN NET_TKT_CNT ELSE 0; 
+  DVAP1/D8S = IF DV_ADV_PUR EQ '0 - 3' THEN NET_TKT_CNT ELSE 0;
+  DVAP2/D8S = IF DV_ADV_PUR EQ '4 - 6' THEN NET_TKT_CNT ELSE 0;
+  DVAP3/D8S = IF DV_ADV_PUR EQ '7 - 13' THEN NET_TKT_CNT ELSE 0;
+  DVAP4/D8S = IF DV_ADV_PUR EQ '14 +' THEN NET_TKT_CNT ELSE 0;
+  DVAP1_FAR/D12.2CS = IF DV_ADV_PUR EQ '0 - 3' THEN FARE_PAID ELSE 0;
+  DVAP2_FAR/D12.2CS = IF DV_ADV_PUR EQ '4 - 6' THEN FARE_PAID ELSE 0;
+  DVAP3_FAR/D12.2CS = IF DV_ADV_PUR EQ '7 - 13' THEN FARE_PAID ELSE 0;
+  DVAP4_FAR/D12.2CS = IF DV_ADV_PUR EQ '14 +' THEN FARE_PAID ELSE 0;
+-INCLUDE TRANTYPE
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT   AIR_KEY
+        AIRLINE 
+        AIR_MAIN.INTL_DOM   
+        AR_BRANCH
+        BR_CL_IDX
+        CLIENT_NUM  
+        DISSAVINGS
+        DISSAVINGS
+        DV_ADV_PUR        
+        FARE_PAID
+        LEVEL_DESC  
+        LEVEL1  
+        LEVEL2  
+        LEVEL3
+        LSAV_CNT
+        NET_TKT_CNT             
+        NEW_SEG_LOWEST
+        PASSNGR_NAME
+        TICKET_BRANCH   
+        TKT_AMOUNT
+        TKT_DATE    
+        TKT_NUM 
+        TKT_PURCH
+        TKT_SORT
+        TKT_TYPE    
+        TOTAL_FARE  
+        TRN_DATE    
+        VAL_AIRLINE 
+        XDPT_DT 
+        XPSNGR_NM   
+        XTRAN_DT
+        DVAP1
+        DVAP2
+        DVAP3
+        DVAP4
+        DVAP1_FAR
+        DVAP2_FAR
+        DVAP3_FAR
+        DVAP4_FAR
+         
+
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+-* &&WHERE7
+-* &&WHERE8
+-* &&WHERE9
+-* &&WHERE10
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS TOPAIRH  
+END
+-RUN
+
+
+TABLE FILE TOPAIRH
+SUM NET_TKT_CNT 
+    FARE_PAID
+    DISSAVINGS
+    LEVEL1
+    LEVEL2
+    LEVEL3
+    DVAP1
+    DVAP2
+    DVAP3
+    DVAP4
+    DVAP1_FAR
+    DVAP2_FAR
+    DVAP3_FAR
+    DVAP4_FAR
+BY PASSNGR_NAME
+BY TKT_NUM
+-*ON TABLE HOLD AS TPAIRPX
+END
+-RUN
+-QUIT
+
+
+

@@ -1,0 +1,385 @@
+-* 1/30/13 - DEB changed due to expansion of hotel database to
+-* include trip purpose
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*4/26/2017-JEM-S-33318-updated logic for no records report
+
+-INCLUDE SETECHO
+
+SET ASNAMES=ON
+-RUN
+
+
+-INCLUDE RETUDID
+-RUN
+
+
+
+TABLE FILE &&RPT_HOLD
+PRINT BOOKINGS
+  CAR_TYPE 
+  CCR_CONFIRM
+  DAILY_RATE
+  DROP_CTY_NAME
+  DROP_OFF_DT
+  INV_DATE
+  INVOICE_DATE	
+  INVOICE_NUM 	
+  LEVEL_DESC
+  LEVEL1
+  LEVEL2  
+  NBR_DAYS
+  PASSNGR_NAME
+  PICK_CTY_NAME
+  PICK_UP_DT	
+  PNR_LOCATOR 
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  RENTAL_AMT
+  RENTAL_DAYS	
+  TRIP_PURPOSE
+  TRIP_RSN
+  VENDOR_NAME 
+BY CAR_KEY
+ON TABLE HOLD AS CHOLD1
+END
+-RUN
+
+-IF '&&SETF.EVAL' EQ 'ABUCTRP' OR 'EXUCTRIP' THEN GOTO EXBUCKLE;
+-IF '&&SETF.EVAL' EQ 'JHUCFBO' THEN GOTO EXJHA;
+-IF '&&SETF.EVAL' EQ 'LFCBCDS' GOTO EXLIFE;
+
+
+-EXBUCKLE
+
+-*EX UDCBUCKLE2
+-*-RUN
+
+
+DEFINE FILE CHOLD1
+TRP_PRP/A2 = TRIP_PURPOSE;
+END
+TABLE FILE CHOLD1
+PRINT 
+      BOOKINGS 
+      CAR_TYPE
+      DAILY_RATE
+      DROP_CTY_NAME
+      DROP_OFF_DT
+      INV_DATE       
+      INVOICE_DATE
+      INVOICE_NUM
+      LEVEL_DESC
+      LEVEL1
+      LEVEL2
+      NBR_DAYS
+      PASSNGR_NAME
+      PICK_CTY_NAME      
+      PICK_UP_DT
+      PNR_LOCATOR
+      REFUSAL_DESC
+      REFUSE_CODE
+      RENTAL_AMT
+      RENTAL_DAYS
+      VENDOR_NAME 
+BY TRP_PRP 
+ON TABLE HOLD AS CHOLD2
+END
+-RUN
+
+DEFINE FILE TRP_REF
+ TRIP_KEY/A2   = EDIT(TRP_KEY, '$$$$$$$$99');
+ TRP_PRP/A2 = TRIP_KEY;  
+END
+TABLE FILE TRP_REF
+PRINT TRP_DESC
+BY TRP_PRP 
+WHERE TRP_KEY CONTAINS '&&ROLLUP.EVAL'
+ON TABLE HOLD AS CTRIPRSN
+END
+-RUN
+
+
+
+MATCH FILE CHOLD2
+PRINT BOOKINGS
+  CAR_TYPE 
+  DAILY_RATE
+  DROP_CTY_NAME
+  DROP_OFF_DT
+  INV_DATE
+  INVOICE_DATE	
+  INVOICE_NUM 	
+  LEVEL_DESC	
+  LEVEL1
+  LEVEL2
+  NBR_DAYS
+  PASSNGR_NAME
+  PICK_CTY_NAME
+  PICK_UP_DT	
+  PNR_LOCATOR 
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  RENTAL_AMT
+  RENTAL_DAYS	
+  VENDOR_NAME 
+BY TRP_PRP
+ON TABLE HOLD
+RUN
+FILE CTRIPRSN
+SUM TRP_DESC
+BY TRP_PRP
+AFTER MATCH HOLD AS CHOLD3 OLD-AND-NEW
+END
+-RUN
+
+
+DEFINE FILE CHOLD3
+TRP_PRP2/A10 = IF TRP_PRP EQ ' ' THEN 'NONE GIVEN' ELSE TRP_PRP;
+END
+TABLE FILE CHOLD3
+PRINT BOOKINGS
+  CAR_TYPE 
+  DAILY_RATE
+  DROP_CTY_NAME
+  DROP_OFF_DT
+  INV_DATE
+  INVOICE_DATE	
+  INVOICE_NUM 	
+  LEVEL_DESC	
+  LEVEL1
+  LEVEL2
+  NBR_DAYS
+  PASSNGR_NAME
+  PICK_CTY_NAME
+  PICK_UP_DT	
+  PNR_LOCATOR 
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  RENTAL_AMT
+  RENTAL_DAYS	
+  TRP_PRP
+  TRP_PRP2
+  TRP_DESC
+  VENDOR_NAME 
+BY LEVEL_DESC
+-INCLUDE CARRATE
+ON TABLE HOLD AS CARHOLD4
+END
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+
+
+-GOTO FinishRpt
+
+-EXJHA
+
+EX UDCJHA2
+-RUN
+
+-IF '&&NOJHAREC.EVAL' EQ 'Y' THEN GOTO NORECORDS;
+-GOTO FinishRpt
+
+
+
+-EXLIFE
+EX UDCLIF2
+-RUN
+
+-IF '&&NOLIFREC.EVAL' EQ 'Y' THEN GOTO NORECORDS;
+-GOTO FinishRpt;
+
+
+
+
+
+
+
+-FinishRpt;
+ 
+
+
+-* -IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-* 
+-SET &&DRILLRPT = CARHOLD4;
+
+-INCLUDE DRILWHRS
+
+-SKIP_DRIL
+
+DEFINE FILE CARHOLD4 ADD
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+ 
+TABLE FILE CARHOLD4
+
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-* ADDED ON 02/06/2003
+  COMPUTE AVGDR/D12.2CS=IF (RENTAL_AMT LT 0) AND (NBR_DAYS LT 0)
+    THEN ((RENTAL_AMT/NBR_DAYS) * (-1)) ELSE  IF ((RENTAL_AMT LT 1) AND
+    (RENTAL_AMT GT (-1))) THEN 0 ELSE 
+    (RENTAL_AMT/NBR_DAYS); NOPRINT
+  
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+
+-*
+&&OUTLINE1 
+&&OUTPUTDEST
+&&OUTLINE2
+END 
+-RUN
+-GOTO XXIT
+
+-NORECORDS
+-SET &INST_KEY = &&IKEY;
+
+TABLE FILE BRPTINST
+PRINT PAIR_DB RPT_GROUP RPT_STREAM GLOBAL_PARM USE_PARM INST_KEY
+WHERE INST_KEY EQ &INST_KEY
+ON TABLE SAVE AS PAIRDB
+END
+-RUN
+
+-READ PAIRDB &PAIRDB.A1. &RPTGRP.A3. &RPTSTREAM.A8. &SETFILE.A8. &VIEW.A8.
+-CLOSE PAIRDB
+ 
+-SET &RPTGRP = '&RPTGRP.EVAL';
+-SET &VIEW = '&VIEW.EVAL';
+-SET &STREAM = '&RPTSTREAM.EVAL';
+
+-SET &HEADER = IF &RPTGRP EQ 'ADD' OR 'CDD' OR 'HDD' THEN 'NORECHDRDD' ELSE 'NORECHDR';
+-RUN
+
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN &HEADER ELSE  
+-              IF &RPTGRP EQ 'ADD' OR 'CDD' OR 'HDD' THEN 'HDREXLSDD' ELSE 
+-              IF &STREAM EQ 'AIR_BNM' THEN 'HDREXLSDD' ELSE 'HDREXLS';
+
+-RUN
+
+
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE 'NORECSTY';
+
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+-RUN
+
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE &&PAHDR
+PRINT EMPTY AS 'REPORT,MESSAGE'
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+ 
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-XXIT
+

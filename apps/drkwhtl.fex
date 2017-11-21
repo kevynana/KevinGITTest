@@ -1,0 +1,291 @@
+-* Kiewit Non-Compliance Hotel Drilldown Report
+-*05/16/2006 - STEVE - Changed Daily Rate from $300 to $200
+-* 07/12/2017 - RSB - S-29908 - Webfocus Upgrade - Reports that do not run in ER5 Sandbox
+
+-INCLUDE SETECHO
+-*SET TEMPERASE = OFF
+-DEFAULT &&LSEL = 'XX';
+-DEFAULT &&SETF = 'XX';
+
+-SET &&LSEL = &ROW_LABEL;
+
+-SET &&ROLLUP = &ROLUP;
+-SET &&UNAME = &user;
+
+-**** the following two lines added 11/03/2003 ****
+-DEFAULT &FPARM = ' ';
+-SET &&FIPARM = &FPARM;
+-SET &&DRILLED_RUN = 'Y';
+
+EX RPTRESET
+-RUN
+-*
+EX RESET
+-RUN
+
+-**********************************************************************
+-* CHECK FOR PRESENCE OF ORIGINAL SET FILE
+-*********************************************************************
+-*****  USE VALUE PASSED AS &SETFNM TO DETERMINE FILE NAME
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-SET &&LOCPATH = '&&DATASRV.EVAL' || '\TT\ '|| &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&LOCPATH || &SETFNM || '.FTM';
+-GOTO CHKFILE;
+
+-SETWEB
+-SET &&WEBPATH = '&&WEBSRV.EVAL' || '\TTWEB\ ' || &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&WEBPATH || &SETFNM || '.FTM';
+
+-CHKFILE
+STATE &FILEXIST
+-RUN
+-IF &RETCODE NE 0 GOTO NOFILE;
+
+-SET &TMPDRIL = &&WEB_PATH || 'TEMPDRIL.FEX' ;
+COPY &FILEXIST &TMPDRIL
+-SET &&SETF='TEMPDRIL';
+-RUN
+
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE GetForDrillDown
+-RUN
+
+-SET &&OUTLINE1 = 'ON TABLE SET ONLINE-FMT';
+-SET &&OUTLINE2 = IF &&OUTLINE2 CONTAINS 'PDF' THEN 'PDF' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXCEL' THEN 'EXCEL' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXL2K' THEN 'EXL2K' ELSE 'PDF';   
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-SET &&RPTTYP = ' ';
+-SET &&SMD = 'S';
+EX TS_JAMS2
+-RUN
+
+-INCLUDE SELCATQT
+-RUN
+
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+
+
+EX HTLUSE
+-RUN
+
+-SET &&RPTGRP = 'HTL';
+EX UDIDGEN
+-RUN
+
+
+-TYPE Before Extract
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+-SET &HTLDATES = &&WEB_PATH || 'HTLDATES.fex';
+DEFINE FILE &&EXTRACT
+CITY_ST/A35 = PROP_CITY||(', '| PROP_STATE);
+IN_DATE/MDYY = CHKIN_DATE;
+INV_DT/YYMD = INVOICE_DATE;
+LEVEL_DESC/A60  = &&LDESC; 
+NBR_ROOMS/D12 = NUM_ROOMS;
+NBR_DAYS/D12 = NUM_DAYS;
+NEW_ROOM_RATE/D12.2C = ROOM_RATE;
+NEW_TOTAL_AMT/D12.2C = TOTAL_AMT;
+NNROOMS/D12 = IF NBR_DAYS LT 0 AND NUM_ROOMS LT 0 THEN
+              ((NBR_DAYS*NUM_ROOMS) * (-1)) ELSE NBR_DAYS*NUM_ROOMS;
+OUT_DATE/MDYY = CHKOUT_DATE;
+REFUSE_CD/A2 = EDIT(REFUSE_KEY,'$$$$$$$$99');   
+ 
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  CITY_ST     
+  HTL_KEY     
+  IN_DATE   
+  INV_DT      
+  INVOICE_DATE  
+  LEVEL_DESC  
+  NBR_DAYS    
+  NBR_ROOMS
+  NEW_ROOM_RATE
+  NEW_TOTAL_AMT       
+  NNROOMS   
+  OUT_DATE    
+  PASSNGR_NAME  
+  PROP_NAME   
+  REFUSE_KEY
+  REFUSE_CD
+-INCLUDE &HTLDATES    
+WHERE DAILY_RATE GE 200
+-***************************************************************
+-* Where statements to select data specified in user profile
+-***************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+
+WHERE LEVEL_DESC EQ '&&LSEL.EVAL'
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RPTHOLD
+
+END
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-RUN
+
+-TYPE After Extract
+DEFINE FILE RPTHOLD
+NOWTOD/A8 WITH OUT_DATE = HHMMSS (NOWTOD);
+END
+-RUN
+-TYPE Before Report
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE RPTHOLD
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+
+-*
+-*******************************************************************
+-* Sum statement with fields passed from the user profile database
+-*******************************************************************
+-*
+SUM 
+NNROOMS AS 'NUMBER,NIGHTS'
+NBR_ROOMS AS 'NUMBER,ROOMS'
+NEW_TOTAL_AMT AS 'TOTAL,AMOUNT'
+COMPUTE AVGDR/D12.2CS = IF NEW_TOTAL_AMT LT 0 AND NNROOMS LT 0
+ THEN ((NEW_TOTAL_AMT/NNROOMS) * (-1)) 
+ ELSE NEW_TOTAL_AMT/NNROOMS; AS 'AVERAGE,DAILY,RATE'
+-*
+-******************************************************************
+-* By statements (one per field)
+-******************************************************************
+-*
+BY PASSNGR_NAME AS 'PASSENGER NAME'
+BY PROP_NAME AS 'HOTEL'
+BY CITY_ST AS 'CITY/STATE'
+BY IN_DATE AS 'CHECKIN,DATE'
+BY OUT_DATE AS 'CHECKOUT,DATE'
+BY REFUSE_CD AS 'REASON'
+-*
+-******************************************************************
+-* On Table statements for code appropriate to On Table commands
+-******************************************************************
+-*
+ON PASSNGR_NAME SKIP-LINE
+ON PASSNGR_NAME RECOMPUTE AS 'TOTAL FOR'
+-*
+-******************************************************************
+-* Report specific footer(s)
+-******************************************************************
+-*
+
+FOOTING BOTTOM
+-INCLUDE FOOTERDT
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+-TYPE After Report
+-GOTO XXIT;
+
+
+-FIRST
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+-NOFILE
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THE REPORT IS NO LONGER DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+
+-GOTO XXIT;
+
+-NORECORDS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>NO RECORDS FOUND FOR THIS SELECTION!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+
+
+-XXIT

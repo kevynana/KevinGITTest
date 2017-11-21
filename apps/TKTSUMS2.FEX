@@ -1,0 +1,188 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File TKTSUM.FEX
+-*10/05/04 - JK - USING THIS SPECIFICALLY FOR CH2M
+-*10/08/04 - DV - CHANGED PROGRAM SO SETFILE WOULD PRODUCE REPORT
+-**********************************************************************
+
+-**********************************************************************
+
+
+SET ASNAMES=ON
+-*SET TEMPERASE = OFF
+
+
+-SET &&RPTSUF = 'SUM';
+-INCLUDE FDEFRPTS
+-RUN
+
+-GOTO NOUSE;
+
+-* -Cont_Use;
+
+-* -IF &&HFLG EQ 'N' AND &&CFLG EQ 'N' THEN GOTO AIRONLY;
+
+-SET &HLDPATH=TEMPPATH(50,'A50');
+-SET &HNKA=&HLDPATH || 'HOLDA.FOC';
+-SET &HNKB=&HLDPATH || 'HOLDH.FOC';
+-SET &HNKC=&HLDPATH || 'HOLDC.FOC';
+-RUN
+
+
+USE CLEAR *
+-RUN
+
+EX SUUSES
+-RUN 
+
+USE ADD 
+&HNKA AS HOLDA
+&HNKB AS HOLDA
+&HNKC AS HOLDA
+END
+-RUN
+
+-NOUSE;
+
+TABLE FILE HOLDA
+SUM
+  AMOUNT
+  TTL_COUNT
+BY PASSNGR_NAME
+BY PNR_LOCATOR
+BY TRAN_DATE
+BY TKT_NUM
+BY TSORT
+BY SEG
+BY TYPE
+BY NAME
+BY DATE
+BY CITY1
+BY CITY2
+-* BY TTL_COUNT
+BY LEVEL_DESC
+BY FLAG
+ON TABLE HOLD AS HOLDE 
+END
+-RUN
+
+-**************************************************************************
+DEFINE FILE HOLDE
+COUNT1/D12CS = IF (FLAG EQ 'A') THEN TTL_COUNT ELSE 0;
+COUNT2/D12CS = IF (FLAG EQ 'C') THEN TTL_COUNT ELSE 0;
+COUNT3/D12CS = IF (FLAG EQ 'H') THEN TTL_COUNT ELSE 0;
+FLAGA/A5 = DECODE FLAG ('A' 'AIR'   'C' 'CAR'  'H' 'HOTEL');                         
+XPSNGR_NM/A15        = 
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+TICKET_NMBR/A10 = IF (TKT_NUM EQ '0000000000') THEN ' ' ELSE
+                  IF (TKT_NUM NE LAST TKT_NUM) OR (FLAG NE LAST FLAG)
+                  THEN TKT_NUM ELSE ' '; 
+                    
+-*DEFINES ON PREVIOUS DEFINES 
+PASNGR_NAME/A15 = IF TKT_NUM NE LAST TKT_NUM THEN XPSNGR_NM ELSE ' ';
+NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLDE';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+TABLE FILE HOLDE
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+ -*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+ 
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+

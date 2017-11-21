@@ -1,0 +1,203 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*8/28/02    JOY 	        CHANGED MRK_CNT DEFINE TO EX_FLAG/RF_FLAG
+-*                              NE ' ' FOR BALANCING ACCURACY
+-*7/13/04    Joy                Revised The Graph style for better readability
+
+DEFINE FILE OVMHOLD
+FARE_PAID/D12.2 = SEG_AMT + SEG_TAX ;
+MRK_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                     (FARE_PAID GE 0) AND
+                     (SEG_COUNT EQ 1) AND
+                     (CONJ_REL EQ 1) THEN 1 ELSE
+                  IF (TICKET_CODE EQ '1') AND
+                     (EX_FLAG NE ' ') THEN (-1) ELSE
+                  IF (TICKET_CODE EQ '1') AND
+                     (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+BITMAP/A12 WITH MRK_CNT = 'CARRIER.GIF';
+
+CMAMT/D12.2 = IF CURRENT EQ 'Y' THEN FARE_PAID ELSE 0;
+PMAMT/D12.2 = IF PRIOR EQ 'Y' THEN FARE_PAID ELSE 0;
+CMCNT/D8CS = IF CURRENT EQ 'Y' THEN MRK_CNT ELSE 0;
+PMCNT/D8CS = IF PRIOR EQ 'Y' THEN MRK_CNT ELSE 0;
+
+END
+-RUN
+
+TABLE FILE OVMHOLD
+ SUM CMAMT CMCNT BITMAP
+ BY AIRLINE_NAME
+WHERE CURRENT EQ 'Y'
+ON TABLE HOLD AS HOLD1 
+END
+-RUN
+
+TABLE FILE OVMHOLD
+SUM PMAMT PMCNT BITMAP
+BY AIRLINE_NAME
+WHERE PRIOR EQ 'Y'
+ON TABLE HOLD AS HOLD2 
+END
+-RUN
+
+
+MATCH FILE HOLD1
+PRINT CMAMT
+      CMCNT
+      BITMAP
+BY AIRLINE_NAME
+ON TABLE HOLD
+RUN
+FILE HOLD2
+PRINT PMAMT
+      PMCNT
+      BITMAP
+BY AIRLINE_NAME
+AFTER MATCH HOLD AS HOLD3 OLD-OR-NEW
+END
+
+TABLE FILE HOLD3
+SUM CMAMT
+    CMCNT
+    PMAMT
+    PMCNT
+    BITMAP
+BY AIRLINE_NAME
+ON TABLE HOLD AS HOLD4 
+END
+-RUN
+
+TABLE FILE HOLD4
+PRINT *
+RANKED BY HIGHEST CMCNT NOPRINT
+ON TABLE HOLD AS HOLD5 
+END
+-RUN
+
+
+-SET &RECFOUND = &RECORDS;
+
+
+
+DEFINE FILE HOLD5
+  LIST/D9 = IF AIRLINE_NAME NE LAST AIRLINE_NAME THEN 
+           (LAST LIST + 1) ELSE LAST LIST;
+  DRANK/D9 = RANK;
+-*************************************************************************
+-*DATE          NAME               DESCRIPTION
+-*10/11/00    IBISTL-SB         CHANGED THE ARANK FIELD TO 'A11'
+-*10/11/00    IBISTL-SB         CHANGED RANK_VALUE FIELD
+-*************************************************************************
+  ARANK/A11 = FTOA(DRANK, '(D9)', ARANK);
+  ARANK1/A9 = EDIT(ARANK, '$$999999999');
+  RANK_VALUE/A9 = IF LIST GT 3 THEN 'OTHER' ELSE ARANK1;
+  RANK_LABEL1/A25 = IF RANK_VALUE NE 'OTHER' THEN AIRLINE_NAME
+                      ELSE 'All Other';
+  RANK_LABEL/A25 = LCWORD(25, RANK_LABEL1, RANK_LABEL);
+END
+-RUN
+
+TABLE FILE HOLD5
+SUM CMCNT
+    CMAMT
+    PMCNT
+    PMAMT
+    BITMAP
+BY RANK_VALUE NOPRINT
+BY RANK_LABEL
+ON TABLE HOLD AS HOLD6 
+END
+-RUN
+
+-IF &RECFOUND EQ 0 GOTO SKIP_GRAPH;
+
+SET LOOKGRAPH=BAR
+SET HAXIS=600, VAXIS=315
+GRAPH FILE HOLD6
+SUM CMCNT AS 'Current'
+    PMCNT AS 'Prior'
+BY RANK_LABEL AS ' '
+ON TABLE SET GRAPHSTYLE *
+setLegendDisplay(true);
+setLegendTextAutofit(true);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),true);
+setFontStyle(getLegendText(),2);
+setLegendMarkerPosition(2);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),2);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(true);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),2);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Top Carriers");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),11);
+setFontSize(getTitle(),20);
+setSubtitleString(" ");
+ENDSTYLE
+ON TABLE HOLD AS CARRIER FORMAT GIF
+END
+-RUN
+
+-SKIP_GRAPH
+
+
+-SET &&C_GIF=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+-INCLUDE DTRANGE
+-RUN
+
+DEFINE FILE HOLD6
+BITMAP/A12 WITH CMCNT = 'CARRIER.GIF';
+CATEGORY/A25 = 'Carriers';
+CAT_ORDER/I2 = 4;
+END
+-RUN
+
+TABLE FILE HOLD6
+PRINT CATEGORY/A25 AND RANK_LABEL/A25 AS 'ROW_LABEL' AND
+CAT_ORDER/I2 AND CMCNT/D15 AS 'VOL_CURR' AND 
+CMAMT/D15 AS 'TKT_CURR' AND PMCNT/D15 AS 'VOL_PRIOR' 
+AND PMAMT/D15 AS 'TKT_PRIOR' AND 
+COMPUTE ROW_ORDER/I2 = ROW_ORDER + 1;    
+ON TABLE HOLD AS HOLD7 
+END
+-RUN
+
+TABLE FILE HOLD7
+PRINT CATEGORY AND ROW_LABEL AND CAT_ORDER
+      AND ROW_ORDER AND VOL_CURR AND TKT_CURR
+      AND VOL_PRIOR AND TKT_PRIOR
+ON TABLE HOLD AS HOLD8 
+END
+MODIFY FILE OV1_MAIN
+FIXFORM FROM HOLD8
+MATCH ROW_LABEL
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON HOLD8
+END
+-RUN
+
+
+-*-EXIT
+
+
+
+

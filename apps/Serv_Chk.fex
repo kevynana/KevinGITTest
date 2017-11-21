@@ -1,0 +1,118 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File SERV_CHK.FEX
+-*
+-*****   This routine checks the Report Instance DB for any scheduled
+-*****     reports to be run, and sets the INSTPASS parameters accordingly.
+-*****     Basically the same as CYC_CHK, except this is run for a server
+-*****     environment, and prioritizes on multiple ROLLUPs that might have
+-*****     reports scheduled.
+-*****   AUTHOR:  Dave Kuzanek
+-*****   PRODUCTION DATE:
+
+MAINTAIN FILES RPT_INST AND RPT_SET AND CONTROL AND ROLLUP AND I_SUMM
+
+COMPUTE Cnt1/I5 = ;
+COMPUTE In_Pm/A72 = ;
+COMPUTE St_Pm/A8 = ;
+COMPUTE Se_Pm/A8 = ;
+COMPUTE Rp_Pm/A3 = ;
+COMPUTE Rt_Pm/A50 = ;
+COMPUTE Sn_Pm/A40 = ;
+COMPUTE Sq/A4 = ;
+COMPUTE Sq_Pm/A4 = ;
+COMPUTE Sr_Pm/A1 = ;
+COMPUTE Cyc_Queue.Rpt_Seq/I6 = ;
+COMPUTE Cyc_Queue.Set_Seq/I6 = ;
+COMPUTE Cyc_Queue.Roll_Seq/I6 = ;
+COMPUTE Cyc_Queue.Roll_Code/A8 = ;
+COMPUTE Cyc_Queue.Inst_Key/A72 = ;
+COMPUTE Cyc_Queue.Rpt_Stream/A8 = ;
+COMPUTE Cyc_Queue.Global_Parm/A8 = ;
+COMPUTE Cyc_Queue.Rpt_Type/A3 = ;
+COMPUTE Cyc_Queue.Rpt_Name/A50 = ;
+COMPUTE Cyc_Queue.Set_Name/A40 = ;
+COMPUTE Cyc_Queue.Ex_Flag/A1 = ;
+COMPUTE Cyc_Queue.Insid/A22 = ;
+COMPUTE Cyc_Queue.Screen/A1 = ;
+
+  REPOSITION CONTROL
+  STACK CLEAR P_Stack
+  NEXT CONTROL.ROLLUP_CODE INTO P_Stack
+
+  REPOSITION RPT_INST.INST_KEY
+  FOR ALL NEXT RPT_INST.INST_KEY INTO RI_Stack
+    WHERE (RPT_INST.EXECUTE_FLAG GT ' ');
+  STACK CLEAR Cyc_Queue
+  COMPUTE Cnt1 = 1;
+  REPEAT WHILE Cnt1 LE RI_Stack.FocCount
+
+   REPOSITION I_SUMM.INST_KEY 
+    NEXT I_SUMM.INST_KEY INTO IS_STACK
+      WHERE I_SUMM.INST_KEY EQ RQ_STACK(Cnt1).INST_KEY
+
+    REPOSITION RPT_SET.SET_KEY
+    NEXT RPT_SET.SET_KEY INTO RS_Stack
+      WHERE RPT_SET.SET_KEY EQ RI_Stack(Cnt1).SET_KEY
+
+    REPOSITION ROLLUP.ROLLUP_CODE
+    NEXT ROLLUP.ROLLUP_CODE INTO Roll_Stack
+      WHERE ROLLUP.ROLLUP_CODE EQ RI_Stack(Cnt1).ROLLUP_CODE
+
+    COMPUTE Cyc_Queue(Cnt1).Ex_Flag = RI_Stack(Cnt1).EXECUTE_FLAG;
+    COMPUTE Cyc_Queue(Cnt1).Rpt_Seq = RI_Stack(Cnt1).RUN_SEQ;
+    COMPUTE Cyc_Queue(Cnt1).Set_Seq = RS_Stack.RUN_SEQ;
+    COMPUTE Cyc_Queue(Cnt1).Roll_Seq = Roll_Stack.RUN_SEQ;
+    COMPUTE Cyc_Queue(Cnt1).Roll_Code = Roll_Stack.ROLLUP_CODE;
+    COMPUTE Cyc_Queue(Cnt1).Inst_Key = RI_Stack(Cnt1).INST_KEY;
+    COMPUTE Cyc_Queue(Cnt1).Rpt_Stream = RI_Stack(Cnt1).RPT_STREAM;
+    COMPUTE Cyc_Queue(Cnt1).Global_Parm = RI_Stack(Cnt1).GLOBAL_PARM;
+    COMPUTE Cyc_Queue(Cnt1).Rpt_Type = RI_Stack(Cnt1).RPT_TYPE;
+    COMPUTE Cyc_Queue(Cnt1).Rpt_Name = RI_Stack(Cnt1).RPT_NAME;
+    COMPUTE Cyc_Queue(Cnt1).Set_Name = RS_Stack.SET_NAME;
+    COMPUTE Cyc_Queue(Cnt1).Insid = RI_Stack.INSTANCE_ID;
+    COMPUTE Cyc_Queue(Cnt1).Screen = IS_Stack().SCREEN;
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+
+  STACK SORT Cyc_Queue BY Ex_Flag BY Roll_Seq BY Set_Seq BY Rpt_Seq
+
+  IF Cyc_Queue.FocCount GT 0 THEN
+  BEGIN
+    COMPUTE In_Pm = Cyc_Queue(1).Inst_Key;
+    COMPUTE St_Pm = Cyc_Queue(1).Rpt_Stream;
+    COMPUTE Se_Pm = Cyc_Queue(1).Global_Parm;
+    COMPUTE Rp_Pm = Cyc_Queue(1).Rpt_Type;
+    COMPUTE Rt_Pm = Cyc_Queue(1).Rpt_Name;
+    COMPUTE Sn_Pm = Cyc_Queue(1).Set_Name;
+    COMPUTE Sq_Pm = Cyc_Queue.FocCount - 1;
+    COMPUTE Ix_pM = Cyc_Queue(1).Insid;
+    COMPUTE Sr_Pm = Cyc_Queue(1).Screen ;
+    TYPE ON INSTPASS
+"<St_Pm <9 <Se_Pm <17 <Rp_Pm <20 <In_Pm <92 <Rt_Pm <142 <Sn_Pm <182 <Sq_Pm
+ <186 <Ix_Pm <210 <Sr_Pm"
+    COMPUTE P_Stack(1).ROLLUP_CODE = Cyc_Queue(1).Roll_Code
+    UPDATE CONTROL.ROLLUP_CODE FROM P_Stack(1)
+    STACK CLEAR RI_Stack
+    REPOSITION RPT_INST.INST_KEY
+    NEXT RPT_INST.INST_KEY INTO RI_Stack
+      WHERE RPT_INST.INST_KEY EQ Cyc_Queue(1).Inst_Key;
+    COMPUTE RI_Stack(1).RPT_SERVER = P_Stack(1).USER_ID;
+    UPDATE RPT_INST.RPT_SERVER FROM RI_Stack(1)
+    COMMIT
+    GOTO END RESET
+  ENDBEGIN
+  ELSE
+  BEGIN
+    TYPE ON INSTPASS "xxxxxxxx"
+    GOTO END RESET
+  ENDBEGIN
+
+case Winform_Form1
+   Winform show Form1
+endcase
+
+
+
+
+END

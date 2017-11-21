@@ -1,0 +1,42 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+-* File TS_JAMS.FEX
+-*
+-*****   This routine forces an 'S' into the PAIR_DB field for the currently
+-*****     executing Travel Summary report
+-*****   AUTHOR:  Dave Kuzanek
+-*****   PRODUCTION DATE:
+-*
+-*  02/05/2015  REJ  S-05681 Changes for Available Reports.  Adding code so that the
+-*                           program will run in current Review and in Available Reports.
+ 
+-*MAINTAIN FILE BRPTINST AND CONTROL
+-*
+-*INFER BRPTINST.INST_KEY INTO RI_Stack
+-*
+-*REPOSITION CONTROL.CONTROL_ID
+-*STACK CLEAR Ctl_Stack
+-*NEXT CONTROL.CONTROL_ID INTO Ctl_Stack
+-*
+-*STACK CLEAR RI_Stack
+-*REPOSITION BRPTINST.INST_KEY
+-*NEXT BRPTINST.INST_KEY INTO RI_Stack
+-*    WHERE (BRPTINST.INST_KEY EQ Ctl_Stack(1).INST_KEY)
+-*COMPUTE RI_Stack(1).PAIR_DB = 'S';
+-*UPDATE BRPTINST.PAIR_DB FROM RI_Stack(1)
+-*COMMIT
+-*
+-*END
+ 
+ 
+ 
+MODIFY FILE BRPTINST
+FREEFORM INST_KEY PAIR_DB
+MATCH INST_KEY
+  ON NOMATCH REJECT
+  ON MATCH UPDATE PAIR_DB
+DATA
+&&IKEY,S,$
+END
+ 
+-SET &&PAIRDB='S';

@@ -1,0 +1,155 @@
+-* 5/10/10 - changed Level1 to be handled like all other Levels - Deb
+-*7/13/16 -DLV -  S-20630   Added &EMPID variable
+-* 08/01/2016 - DLV - S-21658 Added 'Not Available' to variable &LV1 &LV2 &LV3
+-*                                   &LV4 &LV5 &LV6 &LV7
+-* 10/05/2016   RSB S-24454 - Create custom AIR file for Big Data feed
+-*                            Added logic to bypass UPCASE and NOPRINT.
+-* 10/14/2016   RSB S-24468 - Create custom Car file for Big Data feed
+-*                            Added ABBDFCAR to the logic to bypass UPCASE and NOPRINT.
+-* 10/17/2016   RSB S-24470 - Create custom Limo file for Big Data feed
+-*                            Added ABBDFLIM to the logic to bypass UPCASE and NOPRINT.
+-* 10/24/2016   RSB S-24469 - Create custom Hotel file for Big Data feed
+-*                            Added ABBDFHTL to the logic to bypass UPCASE and NOPRINT.
+-* 06/16/17  DLV - D-01541 - CHANGED TO USE ROLLUP_SQL
+-* 07/13/17 - DLV - S-36108 - Added ATIEVA-R to &TRIPPRP &TRIPRSN
+-* 09/06/2017 RSB - S-39235 - Update procedure DATAVROLL.FEX for new Level and EMPID title fields
+-*
+-INCLUDE SETECHO
+-*
+-* Set &BYPASS to 'Y' to retain mixed case LEVEL values and display all columns.
+-SET &BYPASS = IF '&&SETF.EVAL' EQ 'ABBDFAIR' OR 'ABBDFCAR' OR 'ABBDFLIM' OR 'ABBDFHTL' THEN 'Y' ELSE ' ';
+-*
+-IF &BYPASS EQ 'Y' THEN GOTO SKIP_UPCASE;
+-*
+DEFINE FILE ROLLUP_SQL
+ LV1/A20 = UPCASE(20, LEV1, LV1);
+ LV2/A20 = UPCASE(20, LEV2, LV2);
+ LV3/A20 = UPCASE(20, LEV3, LV3);
+ LV4/A20 = UPCASE(20, LEV4, LV4);
+ LV5/A20 = UPCASE(20, LEV5, LV5);
+ LV6/A20 = UPCASE(20, LEV6, LV6);
+ LV7/A20 = UPCASE(20, LEV7, LV7);
+ EMPID/A20 =  UPCASE(20, EMPID_DESC, EMPID);
+END
+-*
+TABLE FILE ROLLUP_SQL
+ PRINT LV1 
+       LEV1_TITLE
+       LV2 
+       LEV2_TITLE
+       LV3 
+       LEV3_TITLE
+       LV4 
+       LEV4_TITLE
+       LV5 
+       LEV5_TITLE
+       LV6 
+       LEV6_TITLE
+       LV7 
+       LEV7_TITLE
+       EMPID
+       EMPID_TITLE
+WHERE ROLLUP EQ '&&ROLLUP.EVAL'
+ON TABLE SAVE AS ROLLLEV
+END
+-RUN
+-GOTO GET_LEVS
+-*
+-************
+-SKIP_UPCASE
+-************
+TABLE FILE ROLLUP_SQL
+ PRINT LEV1 
+       LEV1_TITLE
+       LEV2 
+       LEV2_TITLE
+       LEV3 
+       LEV3_TITLE
+       LEV4 
+       LEV4_TITLE
+       LEV5 
+       LEV5_TITLE
+       LEV6 
+       LEV6_TITLE
+       LEV7 
+       LEV7_TITLE
+       EMPID_DESC
+       EMPID_TITLE
+WHERE ROLLUP EQ '&&ROLLUP.EVAL'
+ON TABLE SAVE AS ROLLLEV
+END
+-RUN
+-*
+-************
+-GET_LEVS
+-************
+-READ ROLLLEV &LEV1.A20. &LEV1_TITLE.A60. &LEV2.A20. &LEV2_TITLE.A60. &LEV3.A20. &LEV3_TITLE.A60. &LEV4.A20. &LEV4_TITLE.A60. &LEV5.A20. &LEV5_TITLE.A60. &LEV6.A20. &LEV6_TITLE.A60. &LEV7.A20. &LEV7_TITLE.A60. &&EMPID.A20. &EMPID_TITLE.A60.
+-CLOSE ROLLLEV
+-*
+-* Ensuring that both sets of variables have the same name.
+-IF &BYPASS NE 'Y' THEN GOTO SKIP0;
+-SET &LV1  = 'AS' | ' ' | '''&LEV1.EVAL''';
+-SET &LV2  = 'AS' | ' ' | '''&LEV2.EVAL''';
+-SET &LV3  = 'AS' | ' ' | '''&LEV3.EVAL''';
+-SET &LV4  = 'AS' | ' ' | '''&LEV4.EVAL''';
+-SET &LV5  = 'AS' | ' ' | '''&LEV5.EVAL''';
+-SET &LV6  = 'AS' | ' ' | '''&LEV6.EVAL''';
+-SET &LV7  = 'AS' | ' ' | '''&LEV7.EVAL''';
+-SET &EMPID= IF '&&EMPID.EVAL' EQ 'NOT USED' THEN 'AS' | ' ' | '''EMP_ID,Not Used''' ELSE 'AS' | ' ' | '''&&EMPID.EVAL''';;
+-*
+-GOTO NO_NOPRINT;
+-*
+-*****
+-SKIP0
+-*****
+-SET &LVL1       = '&LEV1.EVAL';
+-SET &LVL1_TITLE = '&LEV1_TITLE.EVAL';
+-SET &LVL2       = '&LEV2.EVAL';
+-SET &LVL2_TITLE = '&LEV2_TITLE.EVAL';
+-SET &LVL3       = '&LEV3.EVAL';
+-SET &LVL3_TITLE = '&LEV3_TITLE.EVAL';
+-SET &LVL4       = '&LEV4.EVAL';
+-SET &LVL4_TITLE = '&LEV4_TITLE.EVAL';
+-SET &LVL5       = '&LEV5.EVAL';
+-SET &LVL5_TITLE = '&LEV5_TITLE.EVAL';
+-SET &LVL6       = '&LEV6.EVAL';
+-SET &LVL6_TITLE = '&LEV6_TITLE.EVAL';
+-SET &LVL7       = '&LEV7.EVAL';
+-SET &LVL7_TITLE = '&LEV7_TITLE.EVAL';
+-*
+-SET &EMP_ID      = '&&EMPID.EVAL';
+-* 
+-SET &LV1       = IF '&LVL1.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL1 || '''';
+-SET &LV1_TITLE = IF '&LVL1.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL1_TITLE || '''';
+-SET &LV2       = IF '&LVL2.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL2 || '''';
+-SET &LV2_TITLE = IF '&LVL2.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL2_TITLE || '''';
+-SET &LV3       = IF '&LVL3.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL3 || '''';
+-SET &LV3_TITLE = IF '&LVL3.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL3_TITLE || '''';
+-SET &LV4       = IF '&LVL4.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL4 || '''';
+-SET &LV4_TITLE = IF '&LVL4.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL4_TITLE || '''';
+-SET &LV5       = IF '&LVL5.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL5 || '''';
+-SET &LV5_TITLE = IF '&LVL5.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL5_TITLE || '''';
+-SET &LV6       = IF '&LVL6.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL6 || '''';
+-SET &LV6_TITLE = IF '&LVL6.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL6_TITLE || '''';
+-SET &LV7       = IF '&LVL7.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' OR 'GLOBAL DATA KEY' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL7 || '''';
+-SET &LV7_TITLE = IF '&LVL7.EVAL' EQ 'NOT USED' OR 'NOT AVAILABLE' OR 'GLOBAL DATA KEY' THEN 'NOPRINT' ELSE 'AS ' | '''' || &LVL7_TITLE || '''';
+-*
+-SET &EMPID      = IF '&EMP_ID.EVAL' EQ 'NOT USED' THEN 'NOPRINT' ELSE 'AS ' | '''' || &EMP_ID || '''';
+-SET &EMPID_TITLE= IF '&EMP_ID.EVAL' EQ 'NOT USED' THEN 'NOPRINT' ELSE 'AS ' | '''' || &EMPID_TITLE || '''';
+-*
+-***********
+-NO_NOPRINT
+-***********
+-SET &TRIPPRP = IF '&&ROLLUP.EVAL' NE 'SURGIC-R' OR 'ATIEVA-R' THEN 'NOPRINT' ELSE 'AS ' | '''TRIP,PURPOSE''';
+-SET &TRIPRSN = IF '&&ROLLUP.EVAL' NE 'SURGIC-R' OR 'ATIEVA-R' THEN 'NOPRINT' ELSE 'AS ' | '''TRIP,DESC''';
+ 
+ 
+-TYPE &TRIPPRP
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

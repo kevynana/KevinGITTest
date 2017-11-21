@@ -1,0 +1,93 @@
+-***************************************************
+-* File Name: QRCARSM.FEX
+-* Set up to run Car Summary
+-* Top 10 vendors and top 10 cities.
+-***************************************************
+-INCLUDE SETECHO
+
+-SET &&AUSEPASS = &&WEB_PATH || 'AUSEINCL.FTM';
+-SET &&CUSEPASS = &&WEB_PATH || 'CUSEINCL.FTM';
+-SET &&HUSEPASS = &&WEB_PATH || 'HUSEINCL.FTM';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+FILEDEF CUSEINCL DISK &&CUSEPASS
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+-***************************************************
+-* get date values from BRPTINST database and
+-* assign to the global variables.
+-***************************************************
+EX QRSetDate
+-RUN
+-***************************************************
+-* reset dates and report type in control file
+-***************************************************
+-*retain current quarter
+-SET &&CQFMDT ='&&FROMDT.EVAL'; 
+-SET &&CQTODT ='&&TODT.EVAL'; 
+
+-*specify the values for program catqtr
+-SET &&RPTTYP = 'SPD';
+-SET &&SMD = 'S';
+-*reset the date ranges for Trending Data
+-SET &&FROMDT = '&&CYFMDT.EVAL';
+-SET &&TODT = '&&CYTODT.EVAL';
+-SET &&FXDATE = '&&PYFMDT.EVAL';
+-SET &&TXDATE = '&&PYTODT.EVAL';
+CREATE FILE QRCVDR
+-RUN
+CREATE FILE QRCCTY
+-RUN
+CREATE FILE QRCADR
+-RUN
+-**************************************************************
+-* START FROM BASE ROLLUP frist
+-* generate include file for database allocation
+-**************************************************************
+-SET &&ROLLUP = '&&BASEROLL.EVAL';
+-SET &&COMPNY = '&&BASECOMP.EVAL';
+EX QRSETBDB
+-RUN
+-***************************************************
+-* generate include file for database allocation
+-***************************************************
+
+EX CARUSE
+-RUN
+
+-********************************************************
+-* Execute program to generate data from base rollup
+-********************************************************
+EX NQCRBEX
+-RUN
+-* initialize the temp file to hold peer group data
+
+-**************************************************************
+-* LOOP THROUGH ALL THE PEERS SELECTED
+-**************************************************************
+-IF &&TOTPEERS EQ 0 THEN GOTO ALLPEERS;
+-SET &CNT = 1;
+-REPEAT ALLPEERS &&TOTPEERS TIMES
+-SET &&ROLLUP = &&PEERMBR.&CNT;
+-TYPE &&ROLLUP
+
+EX QRSETBDB
+-RUN
+
+EX CARUSE
+-RUN
+-********************************************************
+-*Execute program to generate data from selected Peers
+-********************************************************
+EX NQCRPEX
+-RUN
+
+-SET &CNT = &CNT + 1;
+-ALLPEERS
+
+-********************************************************
+-* EXECUTE THE PROGRAM TO GENERATE final report
+
+-********************************************************
+EX NQCARSM
+-RUN

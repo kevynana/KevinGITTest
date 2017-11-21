@@ -1,0 +1,58 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+-* File HEADER.FEX
+-********************************************************************
+-*06/27/2017-JEM-D-01556 Created to correct drilldown dates
+
+
+-********************************************************************
+-SET &FMM=EDIT(&&FROMDT,'$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'9999');
+-SET &&SP = '|';
+-SET &&SP1A = IF &&ROLLNME EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP1 = IF &&ROLLCS EQ ' ' THEN ' ' ELSE &&SP1A;
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLPA = IF &&RCNCT.EVAL GE 10 OR &&CSL.EVAL GE 10 THEN 60 ELSE 68;
+-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN 78 ELSE &&CSLPA;
+-SET &&ROLLCS11 = TRUNCATE(&&ROLLCS);
+-SET &&RCNCT1 = TRUNCATE(&&ROLLCNCT);
+
+-SET &&BLANK = ' ';
+ 
+
+-IF &&ROLLEMAIL GT ' ' THEN GOTO EMLHDR;
+
+-NOEMLCHK1; 
+ 
+-********************************************************************
+-*
+-* Standard Page Header Routine places client information, TandT
+-* branch information, report date, date range selection, etc.
+-*
+-********************************************************************
+-NOP;
+"&&ROLLNME &&SP1 &&ROLLCS11 &&SP3 &&RCNCT1 &&SP4 &&ROLLPHN"
+"&&DTDESC &FMM/&FMD/&FMY - &TOM/&TOD/&TOY"
+"&&RPT_TTL1"
+"&&RPT_TTL2"
+
+-GOTO HDRXXIT; 
+
+-EMLHDR;
+
+"&&ROLLNME &&SP1 &&ROLLCS11 &&SP3 &&RCNCT1 &&SP4 &&ROLLEMAIL"
+"&&DTDESC &FMM/&FMD/&FMY - &TOM/&TOD/&TOY"
+"&&RPT_TTL1"
+"&&RPT_TTL2"
+
+-GOTO HDRXXIT; 
+
+
+-HDRXXIT;

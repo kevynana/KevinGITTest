@@ -1,0 +1,102 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-********************************************************************
+-* MODIFICAIONS:
+-* This report extracts data to be used on the NW Listing of Exchanges
+-* Report will be inclusive of exchange days.
+-*07/26/16   DLV   S-20630 - Added New Employee ID database field EMP_ID 
+-********************************************************************
+-INCLUDE SETECHO
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT  
+ADDCOLLECT/D12.2CS = EXCH_NET_FARE + EXCH_NET_TAX;
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+LEVEL_DESC/A60 = &&LDESC;
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+NRFLAG/A15 = IF NONREF_FLAG EQ 'N' THEN 'NON-REFUNDABLE' ELSE
+            IF NONREF_FLAG EQ 'R' OR ' '  THEN 'REFUNDABLE' ELSE ' ';
+XARR_DT/MDYY         = ARR_DATE;
+XDPT_DT/MDYY         = DPT_DATE;
+XPSNGR_NM/A15        = 
+            EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+XTRAN_DT/MDYY        = TRN_DATE;
+AIRLINE_FEE/D12.2CS = IF EMBARK EQ 'FP2' OR 'FP3' 
+     THEN FARE_PAID ELSE 0;
+-* ****DEFINES ON PREVIOUS DEFINES****  
+DPT/MDYY = IF SEG_NBR EQ '01' OR EMBARK EQ 'FP2' THEN XDPT_DT ELSE ' ';   
+-INCLUDE TRANTYPE  
+               
+END
+TABLEF FILE &&EXTRACT
+PRINT ADDCOLLECT
+  AIR_KEY
+  AIRLINE_FEE
+  BR_CL_IDX
+  DOC_NUMBER
+  DOC_TYPE
+  DST_APC
+  DPT
+  DPT_TIME
+  EMBARK
+  EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'
+  EMP_ID
+  EXCHG_SALE 
+  FARE_BAS
+  FARE_PAID	
+  INVOICE_NUM	
+  LEVEL_DESC
+  LEVEL1
+  LEVEL2
+  NET_TKT_CNT	
+  NRFLAG
+  REFUSE_CODE
+  ROUTE
+  RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'	
+  SEG_COUNT	
+  SEG_NBR
+  STOP_CON
+  TKT_NUM	
+  TKT_SORT	
+  TRN_DATE
+  VAL_AIR.AIRLINE_NAME AS 'AIR'
+  XARR_DT	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT	  
+-INCLUDE &AIRDATES
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+
+
+
+

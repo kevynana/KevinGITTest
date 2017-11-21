@@ -1,0 +1,44 @@
+-**********************************************************************
+-* This program is created temporary for drilldown reports to run in
+-* the new release; while the reports ran before the release date.
+-* 
+-* Date: Nov 12. 2003
+-**********************************************************************
+
+-SET &&OLDDRILL='N';
+-SET &LEN = &&IKEY.LENGTH;
+
+-TYPE &&IKEY
+-TYPE &LEN
+
+-IF &LEN GT 7 THEN GOTO OLDKEY;
+-TYPE "NEW KEY"
+-GOTO XXIT;
+
+-OLDKEY
+-SET &&OLDDRILL='Y';
+TABLE FILE INSTKEYS
+PRINT NEW_KEY
+WHERE OLD_KEY CONTAINS 
+'&&IKEY.EVAL'
+ON TABLE SAVE
+END
+-RUN
+-IF &LINES EQ 0 THEN GOTO XXIT;
+-READ SAVE &NEWKEY.7.
+-CLOSE SAVE
+-SET &&IKEY   = &NEWKEY;
+-SET &&INSTID = &NEWKEY;
+-SET &&IDKEY  = &NEWKEY;
+
+-XXIT
+TABLE FILE RPT_INST
+PRINT SET_KEY RPT_TYPE
+WHERE INST_KEY EQ &&IKEY
+ON TABLE SAVE
+END
+-RUN
+-IF &LINES EQ 0 THEN GOTO XXIT;
+-READ SAVE &NSETKEY.7. &&RPTTYP.A3.
+-CLOSE SAVE
+-SET &&SKEY = &NSETKEY;

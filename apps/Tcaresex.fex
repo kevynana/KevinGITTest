@@ -1,0 +1,117 @@
+-*2/22/05        JK                 ADDED TNT_COMPANY WHERE STATEMENT
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+DEFINE FILE &&EXTRACT
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+TKT_PURCH/D8.2CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+RESSYS/A1           = EDIT(MIRSEQ, '9$$$$$');
+RES_SYS/A7          = IF RESSYS EQ 'X' THEN 'SABRE' ELSE 'APOLLO';
+END
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  FARE_PAID
+  NET_TKT_CNT
+  REF_EXCH_CNT
+  TKT_PURCH  
+  RES_SYS
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TCRES 
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACTED DATA FROM ABOVE
+-*========================================================================
+DEFINE FILE TCRES
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TCRES
+SUM FARE_PAID
+    NET_TKT_CNT    
+    REF_EXCH_CNT
+    TKT_PURCH 
+BY ROLLCD
+BY RES_SYS
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+
+DEFINE FILE AIRHOLD1
+ NMB/I5 = NMB + 1;
+END
+TABLE FILE AIRHOLD1
+PRINT FARE_PAID
+    NET_TKT_CNT    
+    REF_EXCH_CNT
+    TKT_PURCH 
+    RES_SYS
+BY ROLLCD
+BY NMB
+ON TABLE HOLD AS TCRES1
+END
+-RUN
+
+
+
+
+MODIFY FILE TC_ARES
+FIXFORM FROM TCRES1
+MATCH ROLLCD NMB
+ON NOMATCH INCLUDE
+ON MATCH REJECT
+DATA ON TCRES1
+END
+-RUN
+
+
+
+
+
+-NEXTONE

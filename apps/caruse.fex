@@ -1,0 +1,36 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File CARUSE.FEX
+
+-*****   This routine sets up the USE directory for the Car Rpts 
+-*****   AUTHOR:  Dave Kuzanek and Lynne Povondra
+-*****   LAST UPDATE: 06/24/98 
+-*
+-***********************************************************
+-*  DATE        NAME         DESCRIPTION
+-* 08/31/00   IBISTL-DLM     CONVERTED THE ROLL_KEY FROM A VARIABLE
+-*                           LENGTH TO FIXED LENGTH OF 50 CHARACTERS
+-* 4/1/02        SAC                 TOOK OUT REFERENCE TO HPXXXX
+-*-**********************************************************
+
+
+-SET &&CH = AH_50;
+-SET &&DCH = AH_50 || '.';
+-SET &&EXTRACT = CR_50;
+-SET &&EXTJOIN = CAR_JOIN;
+
+-SET &&USE_CAR = 
+- &&CAR_PATH || &&CAR_DB;
+-SET &&USE_CH = 
+- &&CAR_PATH || &&CH_DB;
+
+USE CLEAR  
+-RUN
+EX SUUSES
+-RUN
+
+USE ADD
+-INCLUDE &&CUSEPASS
+  &&USE_CH AS &&CH
+END
+-*-EXIT

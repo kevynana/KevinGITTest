@@ -1,0 +1,21 @@
+-********************************************************************
+-* Program Name: ConvKeys.fex
+-*               This is a temporay program to convert the old 
+-*               inst_key to new inst_key for drilldown reports
+-*               ran before the conversion date.
+-* Date: 11/07/2003
+-********************************************************************
+
+-If &&IKEY GT 1 AND &&IKEY LT 9999999 THEN GOTO NewKey;
+
+
+
+
+
+
+
+
+
+
+
+-NewKey

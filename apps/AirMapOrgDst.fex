@@ -1,0 +1,111 @@
+-**********************************************************************************************
+-* AirMapOrgDst.fex
+-* similar to AVI101, setfile: ABTOPMP
+-**********************************************************************************************
+-INCLUDE SETECHO
+-INCLUDE AirMapSetupReportData
+-RUN
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-DEFAULT &ORG = 'OMA';
+-DEFAULT &DST = '';
+-SET &WhatOrgApc = IF '&ORG.EVAL' EQ '' THEN '' ELSE 'WHERE ORG_APC EQ ''&ORG.EVAL'''; 
+-SET &WhatDstApc = IF '&DST.EVAL' EQ '' THEN '' ELSE 'WHERE FNL_DEST_AIRPORT EQ ''&DST.EVAL'''; 
+
+
+DEFINE FILE SR_50
+FARE_PAID/D12.2C   = SEG_AMT + SEG_TAX;
+NET_TKT_CNT/D9CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND
+                           (CONJ_REL EQ 1) THEN 1 ELSE
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;  
+
+KILO/D9      = CITYPAIR.SEG_MILES * 1.60934 ;  
+
+FLIGHT_HOURS/D12.2 = FLIGHT_DURATION/60;
+
+END
+-RUN
+
+TABLEF FILE SR_50
+PRINT 
+
+  
+  C_ITIN
+  ORG_APC
+  DST_APC
+  FNL_DEST_AIRPORT
+  ADIR_ALL
+  
+  ADIR_STP
+  ANON_ALL
+  
+-*  EMBARK
+-*  ROUTE
+-*  ORG_DST 
+-****************************************************************************************  
+  FARE_PAID 
+  NET_TKT_CNT
+  CITYPAIR.SEG_MILES/D9C  AS 'MILES'	
+-*kilometers
+  KILO
+-*segment flight duration  
+  FLIGHT_HOURS
+
+-*itinerary
+  BY TKT_NUM
+  BY SEG_NBR
+  BY TKT_SORT
+  
+-****************************************************************************************
+
+WHERE VOID_DATE EQ 0
+&WhatOrgApc
+&WhatDstApc
+-*WHERE DST_APC NE FNL_DEST_AIRPORT
+ON TABLE HOLD AS RPTHOLD
+END
+-RUN
+
+TABLE FILE RPTHOLD
+SUM FARE_PAID MILES NET_TKT_CNT FLIGHT_HOURS
+BY C_ITIN
+BY ORG_APC
+BY FNL_DEST_AIRPORT
+
+ON TABLE HOLD AS HOLD2X
+END
+-RUN
+
+SET PAGE-NUM = OFF
+DEFINE FILE HOLD2X
+  ROW_NUM/I5 = ROW_NUM + 1;
+  REMAINDER /I5 = IMOD(ROW_NUM,2,REMAINDER);
+END
+
+TABLE FILE HOLD2X
+HEADING CENTER
+"Air Report By Origin/Destination"
+SUM FARE_PAID AS 'Fare,Paid'
+MILES AS 'Miles'
+NET_TKT_CNT AS 'Net,Tickets'
+FLIGHT_HOURS AS 'Flight,Hours'
+BY C_ITIN AS 'Itinerary'
+BY ROW_NUM NOPRINT
+BY REMAINDER NOPRINT
+-*BY ORG_APC AS 'Origin'
+-*BY FNL_DEST_AIRPORT AS 'Destination'
+
+ON TABLE SET STYLE *
+-INCLUDE AirMapStyle001
+ENDSTYLE
+END
+-RUN

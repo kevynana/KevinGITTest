@@ -1,0 +1,411 @@
+-* 2/26/14 - DEB - CARRIED THROUGH LEVEL1
+-*12/18/15 - DLV - S-13284   Updated to allow reports to sort/subtotal by id-levels
+-*9/29/16-JEM-S-20812-Added routine for NDUHNRS
+-*S-20812-10/7/16-JEM-Added HRS_AMT1
+-* 06/22/17 - DLV - S-33777 - Added ABHRSAG TO EXHRSD routine Added HRS_DUE define
+-*                            Code report style sheet for Position to be variable instead of hard coded
+-* 08/14/2017 RSB S-38044 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+-*                         Backed out old footer changes.
+
+SET ASNAMES=ON
+-RUN
+
+-INCLUDE RETUDID
+-RUN 
+
+
+TABLE FILE &&RPT_HOLD 
+PRINT BOOKINGS
+      CHAIN_NAME
+      CITY_ST
+      HOTEL_PHONE
+      HTL_KEY
+      IBOOK
+      IN_DATE
+      INVOICE_DATE
+      INVOICE_NUM
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7  
+      NBR_DAYS
+      NBR_ROOMS
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      NEW_TOTAL_AMT
+      NNROOMS
+      OUT_DATE
+      PNR_LOCATOR      
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_NAME
+      PROP_STATE_CD
+      PROP_ZIP5
+      RATE_CODE
+      RESV_STATUS
+      REFUSAL_DESC
+      REFUSE_CODE
+      RSNCDE
+      TOTAL_SLSAV 
+      TOTAL_STD
+      TRIP_PURPOSE
+      XPSNGR_NM
+BY LEVEL_DESC
+ON TABLE HOLD AS HTLHLD
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM 
+  NBR_DAYS AS 'TDAY'
+  NEW_TOTAL_AMT AS 'TAMT'
+BY LEVEL_DESC 
+ON TABLE HOLD AS HHOLD1
+END
+-RUN
+
+MATCH FILE HTLHLD
+PRINT BOOKINGS
+      CHAIN_NAME
+      CITY_ST
+      HOTEL_PHONE
+      HTL_KEY
+      IBOOK
+      IN_DATE
+      INVOICE_DATE
+      INVOICE_NUM
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7  
+      NBR_DAYS
+      NBR_ROOMS
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      NEW_TOTAL_AMT
+      NNROOMS
+      OUT_DATE
+      PNR_LOCATOR      
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_NAME
+      PROP_STATE_CD
+      PROP_ZIP5
+      RATE_CODE
+      RESV_STATUS
+      REFUSAL_DESC
+      REFUSE_CODE
+      RSNCDE
+      TOTAL_SLSAV 
+      TOTAL_STD
+      TRIP_PURPOSE
+      XPSNGR_NM
+BY LEVEL_DESC
+ON TABLE HOLD
+RUN
+FILE HHOLD1
+SUM TDAY
+    TAMT
+BY LEVEL_DESC
+AFTER MATCH HOLD AS XONE OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE XONE
+PRINT BOOKINGS
+      CHAIN_NAME
+      CITY_ST
+      HOTEL_PHONE
+      IBOOK
+      IN_DATE
+      INVOICE_DATE
+      INVOICE_NUM
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7  
+      LEVEL_DESC
+      NBR_DAYS
+      NBR_ROOMS
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      NEW_TOTAL_AMT
+      NNROOMS
+      OUT_DATE
+      PNR_LOCATOR      
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_NAME
+      PROP_STATE_CD
+      PROP_ZIP5
+      RATE_CODE
+      RESV_STATUS
+      REFUSAL_DESC
+      REFUSE_CODE
+      RSNCDE
+      TOTAL_SLSAV 
+      TOTAL_STD
+      TRIP_PURPOSE
+      XPSNGR_NM
+      TDAY
+      TAMT
+BY HTL_KEY
+ON TABLE HOLD AS HTLHLD2
+END
+-RUN
+
+
+-IF '&&SETF.EVAL' EQ 'ABUHHRS' OR 'KCUHHRS' OR 'ABHRSAG' THEN GOTO EXHRSD;
+-IF '&&SETF.EVAL' EQ 'NDUHNRS' GOTO EXNDNRSD;
+
+-EXJHA
+EX UDHLSJHA
+-RUN
+
+-GOTO Skip;
+
+-EXNDNRSD
+EX UDNDNRS
+-RUN
+
+-GOTO Skip1;
+
+
+-EXHRSD
+
+EX UDHRS 
+-RUN
+
+-Skip
+
+DEFINE FILE HTLHLD3
+HRS_DUE/D12.2CS = IF HRS_AMT1 EQ 0 THEN 0 ELSE HRS_AMT1 * .30;
+END
+TABLE FILE HTLHLD3
+PRINT BOOKINGS
+      CHAIN_NAME
+      CITY_ST
+      HOTEL_PHONE
+      IBOOK
+      IN_DATE
+      INVOICE_DATE
+      INVOICE_NUM
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7  
+      LEVEL_DESC
+      NBR_DAYS
+      NBR_ROOMS
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      NEW_TOTAL_AMT
+      NNROOMS
+      OUT_DATE
+      PNR_LOCATOR
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_NAME
+      PROP_ZIP5
+      PROP_STATE_CD
+      RATE_CODE
+      RESV_STATUS
+      REFUSAL_DESC
+      REFUSE_CODE
+      RSNCDE
+      TOTAL_SLSAV 
+      TOTAL_STD
+      XPSNGR_NM
+      TDAY
+      TAMT
+      HTL_LSAV
+      TRP_PRP
+      HRS_AMT1
+      HRS_DAYS
+      HRS_BOOK
+      HRS_DUE
+BY LEVEL_DESC
+ON TABLE HOLD AS HTLHOLD4
+END
+-RUN
+-GOTO UDIDRPTCONT;
+
+-Skip1;
+
+TABLE FILE HTLHLD3
+PRINT BOOKINGS
+      CHAIN_NAME
+      CITY_ST
+      HOTEL_PHONE
+      IBOOK
+      IN_DATE
+      INVOICE_DATE
+      INVOICE_NUM
+      LEVEL1
+      LEVEL2
+      LEVEL3
+      LEVEL4
+      LEVEL5
+      LEVEL6
+      LEVEL7  
+      LEVEL_DESC
+      NBR_DAYS
+      NBR_ROOMS
+      NEW_ROOM_RATE
+      NEW_STD_RATE
+      NEW_TOTAL_AMT
+      NNROOMS
+      OUT_DATE
+      PNR_LOCATOR
+      PROP_ADDRESS
+      PROP_CITY
+      PROP_NAME
+      PROP_ZIP5
+      PROP_STATE_CD
+      RATE_CODE
+      RESV_STATUS
+      REFUSAL_DESC
+      REFUSE_CODE
+      RSNCDE
+      TOTAL_SLSAV 
+      TOTAL_STD
+      XPSNGR_NM
+      TDAY
+      TAMT
+      HTL_LSAV
+      TRP_PRP
+      NRS_AMT1
+      NRS_DAYS
+      NRS_BOOK
+      HLS_AMT1
+BY LEVEL_DESC
+ON TABLE HOLD AS HTLHOLD4
+END
+-RUN
+-GOTO UDIDRPTCONT;
+
+-UDIDRPTCONT; 
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+ 
+
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = HTLHOLD4;
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+
+DEFINE FILE HTLHOLD4 ADD
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+PROPNM/A20 = EDIT(PROP_NAME, '99999999999999999999');
+PRP_ADD/A25 = EDIT(PROP_ADDRESS, '9999999999999999999999999');
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HTLHOLD4
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+ 
+
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+FOOTING BOTTOM
+-INCLUDE FOOTERDT
+
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT

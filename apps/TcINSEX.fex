@@ -1,0 +1,80 @@
+-* 12/28/04 - DEB - ADDED ADDT'L DOD_TYPE TO BOOKING TYPE DEFINES
+
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+DEFINE FILE &&EXTRACT
+
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+-*LEVEL_DESC/A60 = &&LDESC;
+NET_TKT_CNT/D12CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+ARC_FLAG/A6 = IF DOC_TYPE EQ '9' THEN 'NONARC' ELSE 'ARC';
+
+END
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  ARC_FLAG
+  NET_TKT_CNT
+  RESV_BRANCH
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TC_INS 
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACTED DATA FROM ABOVE
+-*========================================================================
+DEFINE FILE TC_INS
+ROLLCD/A8 = '&&ROLL';
+NMB/I5    = NMB + 1;
+END
+
+TABLE FILE TC_INS
+SUM NET_TKT_CNT    
+BY ROLLCD
+BY NMB
+BY RESV_BRANCH
+BY ARC_FLAG
+ON TABLE HOLD AS TCINS1 
+END
+-RUN
+
+MODIFY FILE TCINS
+FIXFORM FROM TCINS1
+DATA ON TCINS1
+END
+-RUN
+
+
+
+-NEXTONE

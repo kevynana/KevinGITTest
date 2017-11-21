@@ -1,0 +1,1779 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: CVIEW2DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*4/27/04    DEB                ADDED INVOICE NUMBER 
+-*                              CARRIED THROUGH NBR_CARS
+-*11/22/04   DEB                ADDED CODE FOR GLOBAL CURRENCY
+-*11/22/11   GSE                Removed parens from around CLIMIT in DEFINEs
+-*                              and backed up -* to first two positions on
+-*                              a line to prevent errors in 7.7.03
+-*2/12/14   DEB                 ADDED UPTOPCAR TO GOTO ROUTINE NEXT2 TO
+-*                              CORRECT DRILLDOWN ERROR
+-*9/27/16-JEM-S-25160-Updated print to sum on carhld2 due to drilldown error on KWTOPCAR
+-* S-28840-JEM-2/16/17-Added logic for new report ABTPCDD
+-*09/05/17- JEM - S-24416 - Added logic for new report GCTPCARB - produces seperate tabs per hierarchy selected 
+
+-**************************************************************************
+-INCLUDE SETECHO
+
+-TYPE &&RPT_TTL2
+
+SET ASNAMES=ON
+-RUN
+
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = ' TOTAL,DOLLARS, (' | &&CURRENCY || ')';
+-SET &CDRT_CUR = 'DAILY,RATE, (' | &&CURRENCY || ')';
+-SET &&PRINT2 ='GCAR_AMT/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+-SET &&PRINT5='COMPUTE AVGDR/D12.2CS=IF (GCAR_AMT LT 0) AND (NMBR_DAYS LT 0)';
+-SET &&PRINT6='THEN ((GCAR_AMT/NMBR_DAYS)*(-1)) ELSE IF ((NMBR_DAYS LT 1) AND';
+-SET &&PRINT7='(NMBR_DAYS GT (-1))) THEN 0 ELSE GCAR_AMT/NMBR_DAYS;';
+-SET &&PRINT8='AS ' | '''&CDRT_CUR.EVAL''';
+
+-NEXT;
+
+-IF &&SETF EQ 'WRTPCAR' OR 'UPTOPCAR' THEN GOTO NEXT2;
+-IF '&&SETF.EVAL' EQ 'ABCPN' THEN GOTO PRNP;
+-IF '&&SETF.EVAL' EQ 'ABCPNV' THEN GOTO PRNP1;
+-IF '&&SETF.EVAL' EQ 'ABTPCDD' THEN GOTO TOPCDD;
+-IF '&&SETF.EVAL' EQ 'GCTPCARB' GOTO GCTPCARB;
+
+
+TABLE FILE CARHLD2
+SUM NBR_DAYS/I8 AS 'NMBR_DAYS'
+  RENTAL_AMT/D12.2 AS 'CAR_AMT'
+  AMT_RENTALX/D16.2 AS 'GCAR_AMT'
+  NBR_CARS/I8 AS 'NMBR_CARS'
+  NAMEC
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY STATE_CODE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+PRINT CAR_AMT/D12.2
+  GCAR_AMT/D16.2
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+  VENDOR_NAME
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY STATE_CODE
+RANKED BY HIGHEST &&RANK_METH NOPRINT
+-* BY VENDOR_NAME
+ON TABLE HOLD AS HOLD2
+END
+
+DEFINE FILE HOLD2
+  DRANK/D5      = RANK;
+  ARANKX/A6 = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5 = EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+-RUN
+
+TABLE FILE HOLD2
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY STATE_CODE
+BY RANK_VALUE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+TABLE FILE HOLD3
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY STATE_CODE
+BY RANK_VALUE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+TABLE FILE HOLD1
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+-* BY PICK_CTY_NAME
+BY CITY_ST
+ON TABLE HOLD AS RHOLD1
+END
+-RUN
+
+TABLE FILE RHOLD1
+SUM CAR_AMT
+    GCAR_AMT
+    NMBR_DAYS
+    NMBR_CARS
+    NAMEC
+RANKED BY HIGHEST &&RANK_METH AS 'DAYS_RANK'
+BY CITY_ST
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+MATCH FILE HOLD4
+PRINT CAR_AMT
+      GCAR_AMT
+      NMBR_DAYS
+      VENDOR_NAME
+      RANK_VALUE
+      NMBR_CARS
+      NAMEC
+      STATE_CODE
+      PICK_CTY_NAME
+BY CITY_ST
+ON TABLE HOLD
+RUN
+FILE RHOLD2
+SUM DAYS_RANK
+BY CITY_ST
+AFTER MATCH HOLD AS HOLD5 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD5
+SUM CAR_AMT
+    GCAR_AMT
+    NMBR_DAYS
+    NMBR_CARS
+    NAMEC
+RANKED BY HIGHEST DAYS_RANK
+BY CITY_ST
+BY PICK_CTY_NAME
+BY STATE_CODE
+BY RANK_VALUE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD6
+END
+
+DEFINE FILE HOLD6
+  CTY_LIMIT/I2 = &&RANK_LIMIT;
+  CLIMIT/A2    = EDIT(CTY_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6      = IF PICK_CTY_NAME NE LAST PICK_CTY_NAME THEN 
+                 (LAST LIST + 1) ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6  = EDIT(FRANKX,'$999999');
+  CTY_VALUE/A6 = IF CTY_LIMIT EQ 0 THEN BRANK ELSE
+               IF RANK GT CTY_LIMIT THEN 'OTHER' ELSE BRANK;
+  CTYST_PRINT/A35 = IF CTY_VALUE LT CLIMIT THEN CITY_ST ELSE ' ';               
+  CTY_PRINT/A35 = IF CTY_VALUE LT CLIMIT THEN PICK_CTY_NAME ELSE 'OTHER';
+  ST_PRINT/A3 = IF CTY_VALUE LT CLIMIT THEN STATE_CODE ELSE ' ';
+  VENDOR_RANK/A5 = IF CTY_VALUE LT CLIMIT THEN RANK_VALUE ELSE ' ';
+-* JN6KEY/A50 = PICK_CTY_NAME||VENDOR_NAME;
+  JN6KEY/A50 = CITY_ST||VENDOR_NAME;
+END
+-RUN
+
+TABLE FILE HOLD6
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY JN6KEY
+BY CTY_VALUE
+BY CTYST_PRINT
+BY CTY_PRINT
+BY ST_PRINT
+BY VENDOR_RANK
+BY VENDOR_NAME
+ON JN6KEY SUMMARIZE
+ON TABLE HOLD AS HOLD7 FORMAT FOCUS INDEX JN6KEY
+END
+
+
+DEFINE FILE CARHLD2
+-* JN6KEY/A50 = PICK_CTY_NAME||VENDOR_NAME;
+  JN6KEY/A50 = CITY_ST||VENDOR_NAME;
+END
+-RUN
+
+TABLE FILE CARHLD2
+SUM RENTAL_AMT/D12.2 AS 'CAR_AMT'
+    AMT_RENTALX/D16.2 AS 'GCAR_AMT'
+    NBR_DAYS/I8 AS 'NMBR_DAYS'
+    NBR_CARS/I8 AS 'NMBR_CARS'
+    NAMEC
+BY JN6KEY
+BY VENDOR_NAME
+BY PASSNGR_NAME
+BY CAR_TYPE
+BY CAR_DESC
+BY PICK_UP_DT
+BY DROP_OFF_DT
+BY DROP_CTY_NAME
+BY AIRPORT_NAME
+BY INVOICE_NUM
+ON TABLE HOLD AS HOLD8 FORMAT FOCUS INDEX JN6KEY
+END
+
+
+-GOTO CONTINUE;
+
+-NEXT2
+
+TABLE FILE CARHLD2
+SUM NBR_DAYS/D8 AS 'NMBR_DAYS'
+  RENTAL_AMT/D12.2 AS 'CAR_AMT'
+  AMT_RENTALX/D16.2 AS 'GCAR_AMT'
+  NBR_CARS/D8 AS 'NMBR_CARS'
+  NAMEC
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY DROP_CTY_NAME
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+PRINT CAR_AMT/D12.2
+  GCAR_AMT/D16.2
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+  VENDOR_NAME
+  PICK_CTY_NAME
+  DROP_CTY_NAME
+BY CITY_ST
+RANKED BY HIGHEST &&RANK_METH NOPRINT 
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+
+DEFINE FILE HOLD2
+  DRANK/D5      = RANK;
+  ARANKX/A6 = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5 = EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+-RUN
+
+TABLE FILE HOLD2
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY CITY_ST
+BY PICK_CTY_NAME
+BY DROP_CTY_NAME
+BY RANK_VALUE  
+-* BY PICK_CTY_NAME
+-* BY DROP_CTY_NAME
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+
+TABLE FILE HOLD3
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY CITY_ST
+BY PICK_CTY_NAME
+BY DROP_CTY_NAME  
+BY RANK_VALUE  
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+TABLE FILE HOLD1
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY DROP_CTY_NAME
+ON TABLE HOLD AS RHOLD1
+END
+-RUN
+
+TABLE FILE RHOLD1
+SUM CAR_AMT
+    GCAR_AMT
+    NMBR_DAYS
+    NMBR_CARS
+    NAMEC
+RANKED BY HIGHEST &&RANK_METH AS 'DAYS_RANK'
+BY CITY_ST
+BY PICK_CTY_NAME
+BY DROP_CTY_NAME
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+MATCH FILE HOLD4
+PRINT CAR_AMT
+      GCAR_AMT
+      NMBR_DAYS
+      VENDOR_NAME
+      RANK_VALUE
+      NMBR_CARS
+      NAMEC
+      PICK_CTY_NAME
+      DROP_CTY_NAME
+BY CITY_ST
+ON TABLE HOLD
+RUN
+FILE RHOLD2
+SUM DAYS_RANK
+BY CITY_ST
+AFTER MATCH HOLD AS HOLD5 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD5
+SUM CAR_AMT
+    GCAR_AMT
+    NMBR_DAYS
+    NMBR_CARS
+    NAMEC
+RANKED BY HIGHEST DAYS_RANK
+BY CITY_ST
+BY PICK_CTY_NAME
+BY DROP_CTY_NAME
+BY RANK_VALUE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD6
+END
+-RUN
+
+
+DEFINE FILE HOLD6
+  CTY_LIMIT/I2 = &&RANK_LIMIT;
+  CLIMIT/A2    = EDIT(CTY_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6      = IF PICK_CTY_NAME NE LAST PICK_CTY_NAME THEN 
+                 (LAST LIST + 1) ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6  = EDIT(FRANKX,'$999999');
+  CTY_VALUE/A6 = IF CTY_LIMIT EQ 0 THEN BRANK ELSE
+               IF RANK GT CTY_LIMIT THEN 'OTHER' ELSE BRANK;
+  CTYST_PRINT/A35 = IF CTY_VALUE LT CLIMIT THEN CITY_ST ELSE ' ';               
+  CTY_PRINT/A35 = IF CTY_VALUE LT CLIMIT THEN PICK_CTY_NAME ELSE ' ';
+  CTY_PRINT2/A35 = IF CTY_VALUE LT CLIMIT THEN DROP_CTY_NAME ELSE ' ';
+  VENDOR_RANK/A5 = IF CTY_VALUE LT CLIMIT THEN RANK_VALUE ELSE ' ';
+-*   JN6KEY/A85 = PICK_CTY_NAME||DROP_CTY_NAME||VENDOR_NAME;
+JN6KEY/A85 = CITY_ST||DROP_CTY_NAME||VENDOR_NAME;
+END
+-RUN
+
+TABLE FILE HOLD6
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY JN6KEY
+BY CTY_VALUE
+BY CTYST_PRINT
+BY CTY_PRINT
+BY CTY_PRINT2
+BY VENDOR_RANK
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD7 FORMAT FOCUS INDEX JN6KEY
+END
+-RUN
+
+DEFINE FILE CARHLD2
+-* JN6KEY/A85 = PICK_CTY_NAME||DROP_CTY_NAME||VENDOR_NAME;
+JN6KEY/A85 = CITY_ST||DROP_CTY_NAME||VENDOR_NAME; 
+END
+TABLE FILE CARHLD2
+SUM RENTAL_AMT/D12.2 AS 'CAR_AMT'
+    AMT_RENTALX/D16.2 AS 'GCAR_AMT'
+    NBR_DAYS/I8 AS 'NMBR_DAYS'
+    NBR_CARS/I8 AS 'NMBR_CARS'
+    NAMEC
+BY JN6KEY
+BY VENDOR_NAME
+BY PASSNGR_NAME
+BY CAR_TYPE
+BY CAR_DESC
+BY PICK_UP_DT
+BY DROP_OFF_DT
+BY DROP_CTY_NAME
+BY AIRPORT_NAME
+BY INVOICE_NUM
+ON TABLE HOLD AS HOLD8 FORMAT FOCUS INDEX JN6KEY
+END
+-RUN
+
+
+-CONTINUE;
+
+
+-TYPE JOIN 7 AND 8
+JOIN HOLD8.JN6KEY IN HOLD8 TO HOLD7.JN6KEY IN HOLD7 AS MYJOIN
+-RUN
+
+-GOTO ENDTEST;
+TABLE FILE HOLD8
+ BY CTY_VALUE AS 'RANK'
+ BY CTY_PRINT AS 'CITY'
+ BY VENDOR_RANK 
+ BY VENDOR_NAME AS 'VENDOR'
+ WHERE HOLD8.JN6KEY EQ HOLD7.JN6KEY
+END
+-RUN
+-QUIT
+
+
+-ENDTEST
+
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD8';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+
+DEFINE FILE HOLD8
+NOWTOD/A8 WITH CTY_PRINT = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+
+TABLE FILE HOLD8
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+
+-GOTO XXIT
+
+
+-TOPCDD;
+
+-SET &&RANK_METH = IF &&RANK_METH EQ 'CAR_AMT' THEN 'CCAR_AMT'
+- ELSE IF &&RANK_METH EQ 'NMBR_DAYS' THEN 'CCAR_DAYS' 
+- ELSE 'CCAR_DAYS';
+
+TABLE FILE CAR_HOLD
+SUM CBOOK
+    CCAR_AMT
+    CCAR_DAYS
+    PBOOK
+    PCAR_AMT
+    PCAR_DAYS
+    CAR_AMT
+    NMBR_DAYS
+BY CITY_ST
+-* BY PICK_CTY_NAME
+-* BY STATE_CODE
+BY VENDOR_NAME
+BY PREF_NON
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+ 
+
+
+TABLE FILE HOLD1
+PRINT CBOOK
+      CCAR_AMT
+      CCAR_DAYS
+      PBOOK
+      PCAR_AMT
+      PCAR_DAYS
+      VENDOR_NAME
+      PREF_NON
+      NMBR_DAYS
+      CAR_AMT
+BY CITY_ST
+RANKED BY HIGHEST &&RANK_METH NOPRINT
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+DEFINE FILE HOLD2
+  DRANK/D5      = RANK;
+  ARANKX/A6 = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5=EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT;  
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                  IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;                  
+END
+-RUN
+
+TABLE FILE HOLD2
+SUM CBOOK
+    CCAR_AMT
+    CCAR_DAYS
+    PBOOK
+    PCAR_AMT
+    PCAR_DAYS
+    NMBR_DAYS
+    CAR_AMT
+BY CITY_ST
+BY RANK_VALUE
+BY VENDOR_NAME
+BY PREF_NON
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+TABLE FILE HOLD3
+SUM CBOOK
+    CCAR_AMT
+    CCAR_DAYS
+    PBOOK
+    PCAR_AMT
+    PCAR_DAYS
+    NMBR_DAYS
+    CAR_AMT
+BY CITY_ST   
+BY RANK_VALUE
+BY VENDOR_NAME
+BY PREF_NON
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+
+TABLE FILE HOLD1
+PRINT CBOOK
+      CCAR_AMT
+      CCAR_DAYS
+      PBOOK
+      PCAR_AMT
+      PCAR_DAYS
+      NMBR_DAYS
+      CAR_AMT
+BY CITY_ST    
+ON TABLE HOLD AS RHOLD1
+END
+-RUN
+
+TABLE FILE RHOLD1
+PRINT CBOOK
+      CCAR_AMT
+      CCAR_DAYS
+      CITY_ST
+      PBOOK
+      PCAR_AMT
+      PCAR_DAYS
+      NMBR_DAYS
+      CAR_AMT
+RANKED BY HIGHEST &&RANK_METH AS 'DAYS_RANK'
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+
+MATCH FILE HOLD4
+PRINT CBOOK
+      CCAR_AMT
+      CCAR_DAYS
+      CITY_ST
+      PBOOK
+      PCAR_AMT
+      PCAR_DAYS
+      RANK_VALUE
+      VENDOR_NAME
+      PREF_NON
+      NMBR_DAYS
+      CAR_AMT
+BY CITY_ST
+ON TABLE HOLD
+RUN
+FILE RHOLD2
+SUM DAYS_RANK
+BY CITY_ST
+AFTER MATCH HOLD AS HOLD5 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD5
+PRINT CBOOK
+      CCAR_AMT
+      CCAR_DAYS
+      CITY_ST
+      PBOOK
+      PCAR_AMT
+      PCAR_DAYS
+      RANK_VALUE
+      VENDOR_NAME
+      PREF_NON
+      NMBR_DAYS
+      CAR_AMT
+RANKED BY HIGHEST DAYS_RANK
+ON TABLE HOLD AS HOLD6
+END
+-RUN
+
+
+
+DEFINE FILE HOLD6
+  CTY_LIMIT/I2 = &&RANK_LIMIT;
+  CLIMIT/A2    = EDIT(CTY_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+-*  LIST/D6 = IF PICK_CTY_NAME NE LAST PICK_CTY_NAME THEN
+-*                        (LAST LIST + 1) ELSE LAST LIST;
+-*  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+-*   FRANK/A6=EDIT(FRANKX,'$999999');
+  CTY_VALUE/A6 = IF CTY_LIMIT EQ 0 THEN BRANK ELSE
+                 IF RANK GT CTY_LIMIT THEN 'OTHER' ELSE BRANK;
+  CTYST_PRINT/A35 = IF CTY_VALUE LT CLIMIT THEN CITY_ST ELSE 'OTHER';               
+-*  CTY_PRINT/A35 = IF CTY_VALUE LT CLIMIT THEN PICK_CTY_NAME ELSE 'OTHER';
+-*  ST_PRINT/A3 = IF CTY_VALUE LT CLIMIT THEN STATE_CODE ELSE ' ';
+  VENDOR_RANK/A5 = IF CTY_VALUE LT CLIMIT THEN RANK_VALUE ELSE ' ';
+  VNDRP/A12 = IF CTY_VALUE LT CLIMIT THEN VNDR ELSE ' ';
+  PNPR/A1 = IF CTY_VALUE LT CLIMIT THEN PREF_NON ELSE  ' ';
+  JN6KEY/A53 = CITY_ST||VENDOR_NAME||PREF_NON;
+END
+-RUN
+
+TABLE FILE HOLD6
+SUM CBOOK
+    CCAR_AMT
+    CCAR_DAYS
+    PBOOK
+    PCAR_AMT
+    PCAR_DAYS
+    NMBR_DAYS
+    CAR_AMT
+BY JN6KEY    
+BY CTY_VALUE
+BY CTYST_PRINT
+BY VENDOR_RANK
+BY VENDOR_NAME
+BY PREF_NON
+ON TABLE HOLD AS HOLD7 FORMAT FOCUS INDEX JN6KEY
+END
+-RUN
+
+
+
+DEFINE FILE CAR_HOLD
+  JN6KEY/A53 = CITY_ST||VENDOR_NAME||PREF_NON;
+END
+-RUN
+
+TABLE FILE CAR_HOLD
+SUM CBOOK
+    CCAR_AMT
+    CCAR_DAYS
+    PBOOK
+    PCAR_AMT
+    PCAR_DAYS
+    NMBR_DAYS
+    CAR_AMT
+BY JN6KEY
+BY PERIOD
+BY VENDOR_NAME
+BY PASSNGR_NAME
+BY CAR_TYPE
+BY CAR_DESC
+BY PICK_UP_DT
+BY DROP_OFF_DT
+BY DROP_CTY_NAME
+BY AIRPORT_NAME
+BY INVOICE_NUM
+BY PREF_NON
+ON TABLE HOLD AS HOLD8 FORMAT FOCUS INDEX JN6KEY
+END
+-RUN
+
+
+
+-TYPE JOIN 7 AND 8
+JOIN HOLD8.JN6KEY IN HOLD8 TO HOLD7.JN6KEY IN HOLD7 AS MYJOIN
+-RUN
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRILTP;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD8';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRILTP
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+
+DEFINE FILE HOLD8
+NOWTOD/A8 WITH CTYST_PRINT = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = 'HDREXLSDD'; 
+-SET &&PASTYD = 'DTEXL';
+-RUN
+
+
+TABLE FILE HOLD8
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPCTP;
+"</2"
+-NOSPCTP;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHRTP;
+-INCLUDE &&DRILLWHR
+-SKIP_WHRTP
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-GOTO XXIT;
+
+
+
+-PRNP;
+-********************************************************
+-* PREFERRED/NON-PREFERRED CAR REPORT
+-********************************************************
+
+
+TABLE FILE CARHLD2
+SUM BOOKINGS
+    NEW_RENTAL_AMT AS 'RENTAL_AMT'
+    NBR_DAYS
+    TOTAL_SLSAV
+BY CITY_ST
+BY PREF_NON
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE CARHLD2
+SUM NEW_RENTAL_AMT AS 'CAR_AMT'    
+    NBR_DAYS AS 'NMBR_DAYS'
+BY CITY_ST    
+ON TABLE HOLD AS HOLD2    
+END
+-RUN
+
+MATCH FILE HOLD1
+PRINT BOOKINGS
+      RENTAL_AMT
+      NBR_DAYS
+      TOTAL_SLSAV
+      PREF_NON
+BY CITY_ST
+ON TABLE HOLD
+RUN 
+FILE HOLD2
+SUM CAR_AMT
+    NMBR_DAYS
+BY CITY_ST
+AFTER MATCH HOLD AS HOLD3 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD3
+PRINT BOOKINGS
+      RENTAL_AMT
+      NBR_DAYS
+      TOTAL_SLSAV
+      PREF_NON
+      CAR_AMT
+      NMBR_DAYS
+RANKED BY HIGHEST &&RANK_METH NOPRINT
+BY CITY_ST
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+  
+
+DEFINE FILE HOLD4
+  DRANK/D5      = RANK;
+  ARANKX/A6 = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5=EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                  IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+  CTY_PRINT/A35 = IF RANK_VALUE LE '&&RANK_LIMIT' THEN CITY_ST ELSE 'OTHER';  
+  JNKEY/A50 = CITY_ST||PREF_NON;
+END
+-RUN
+
+TABLE FILE HOLD4
+SUM NBR_DAYS
+    NMBR_DAYS
+    CAR_AMT
+    RENTAL_AMT
+    BOOKINGS
+    TOTAL_SLSAV
+BY JNKEY    
+BY RANK_VALUE
+BY CTY_PRINT
+BY PREF_NON
+ON TABLE HOLD AS HOLD5 FORMAT FOCUS INDEX JNKEY
+END
+-RUN
+
+
+
+DEFINE FILE CARHLD2
+JNKEY/A50 = CITY_ST||PREF_NON;
+END
+TABLE FILE CARHLD2
+SUM BOOKINGS
+    NEW_RENTAL_AMT AS 'RENTAL_AMT'
+    NBR_DAYS
+    TOTAL_SLSAV
+BY JNKEY
+BY PREF_NON
+BY VENDOR_NAME
+BY PASSNGR_NAME
+BY CAR_TYPE
+BY CAR_DESC
+BY PICK_UP_DT
+BY DROP_OFF_DT
+BY DROP_CTY_NAME
+BY AIRPORT_NAME
+BY INVOICE_NUM
+ON TABLE HOLD AS HOLD6 FORMAT FOCUS INDEX JNKEY
+END
+-RUN
+
+
+-TYPE JOIN 5 AND 6
+JOIN HOLD6.JNKEY IN HOLD6 TO HOLD5.JNKEY IN HOLD5 AS MYJOIN
+-RUN
+
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD6';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+
+DEFINE FILE HOLD6
+NOWTOD/A8 WITH CTY_PRINT = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HOLD6
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+
+-GOTO XXIT
+
+
+-PRNP1;
+-********************************************************
+-* PREFERRED/NON-PREFERRED CAR REPORT
+-********************************************************
+
+
+TABLE FILE CARHLD2
+SUM BOOKINGS
+    NEW_RENTAL_AMT AS 'RENTAL_AMT'
+    NBR_DAYS
+    TOTAL_SLSAV
+BY VENDOR_NAME
+BY PREF_NON
+BY CAR_TYPE
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE CARHLD2
+SUM NEW_RENTAL_AMT AS 'CAR_AMT'    
+    NBR_DAYS AS 'NMBR_DAYS'
+BY VENDOR_NAME   
+ON TABLE HOLD AS HOLD2    
+END
+-RUN
+
+MATCH FILE HOLD1
+PRINT BOOKINGS
+      RENTAL_AMT
+      NBR_DAYS
+      TOTAL_SLSAV
+      PREF_NON
+      CAR_TYPE
+BY VENDOR_NAME
+ON TABLE HOLD
+RUN 
+FILE HOLD2
+SUM CAR_AMT
+    NMBR_DAYS
+BY VENDOR_NAME
+AFTER MATCH HOLD AS HOLD3 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD3
+PRINT BOOKINGS
+      RENTAL_AMT
+      NBR_DAYS
+      TOTAL_SLSAV
+      PREF_NON
+      CAR_AMT
+      NMBR_DAYS
+      CAR_TYPE
+RANKED BY HIGHEST &&RANK_METH NOPRINT
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+  
+
+DEFINE FILE HOLD4
+  DRANK/D5      = RANK;
+  ARANKX/A6 = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5=EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                  IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+  VNDR_PRINT/A12 = IF RANK_VALUE LE '&&RANK_LIMIT' THEN VENDOR_NAME ELSE 'OTHER';  
+ 
+
+  JNKEY/A37 = VENDOR_NAME||PREF_NON||CAR_TYPE;
+END
+-RUN
+
+TABLE FILE HOLD4
+SUM NBR_DAYS
+    NMBR_DAYS
+    CAR_AMT
+    RENTAL_AMT
+    BOOKINGS
+    TOTAL_SLSAV
+BY JNKEY    
+BY RANK_VALUE
+BY VNDR_PRINT
+BY PREF_NON
+BY CAR_TYPE
+ON TABLE HOLD AS HOLD5 FORMAT FOCUS INDEX JNKEY
+END
+-RUN
+
+
+
+DEFINE FILE CARHLD2
+JNKEY/A37 = VENDOR_NAME||PREF_NON||CAR_TYPE;
+END
+TABLE FILE CARHLD2
+SUM BOOKINGS
+    NEW_RENTAL_AMT AS 'RENTAL_AMT'
+    NBR_DAYS
+    TOTAL_SLSAV
+BY JNKEY
+BY CITY_ST
+BY PREF_NON
+BY VENDOR_NAME
+BY PASSNGR_NAME
+BY CAR_TYPE
+BY CAR_DESC
+BY PICK_UP_DT
+BY DROP_OFF_DT
+BY DROP_CTY_NAME
+BY AIRPORT_NAME
+BY INVOICE_NUM
+ON TABLE HOLD AS HOLD6 FORMAT FOCUS INDEX JNKEY
+END
+-RUN
+
+
+-TYPE JOIN 5 AND 6
+JOIN HOLD6.JNKEY IN HOLD6 TO HOLD5.JNKEY IN HOLD5 AS MYJOIN
+-RUN
+
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD6';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+
+DEFINE FILE HOLD6
+NOWTOD/A8 WITH VNDR_PRINT = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HOLD6
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-GOTO XXIT;
+
+-GCTPCARB;
+
+TABLE FILE CARHLD2
+SUM NBR_DAYS/I8 AS 'NMBR_DAYS'
+  RENTAL_AMT/D12.2 AS 'CAR_AMT'
+  AMT_RENTALX/D16.2 AS 'GCAR_AMT'
+  NBR_CARS/I8 AS 'NMBR_CARS'
+  NAMEC
+BY LEVEL_DESC  
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY STATE_CODE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+PRINT CAR_AMT/D12.2
+  GCAR_AMT/D16.2
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+  VENDOR_NAME
+BY LEVEL_DESC  
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY STATE_CODE
+RANKED BY HIGHEST &&RANK_METH NOPRINT
+-* BY VENDOR_NAME
+ON TABLE HOLD AS HOLD2
+END
+
+DEFINE FILE HOLD2
+  DRANK/D5      = RANK;
+  ARANKX/A6 = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5 = EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+-RUN
+
+TABLE FILE HOLD2
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY LEVEL_DESC  
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY STATE_CODE
+BY RANK_VALUE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+TABLE FILE HOLD3
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY LEVEL_DESC  
+BY CITY_ST  
+BY PICK_CTY_NAME
+BY STATE_CODE
+BY RANK_VALUE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+TABLE FILE HOLD1
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+-* BY PICK_CTY_NAME
+BY LEVEL_DESC
+BY CITY_ST
+ON TABLE HOLD AS RHOLD1
+END
+-RUN
+
+TABLE FILE RHOLD1
+SUM CAR_AMT
+    GCAR_AMT
+    NMBR_DAYS
+    NMBR_CARS
+    NAMEC
+BY LEVEL_DESC    
+RANKED BY HIGHEST &&RANK_METH AS 'DAYS_RANK'
+BY CITY_ST
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+MATCH FILE HOLD4
+PRINT CAR_AMT
+      GCAR_AMT
+      NMBR_DAYS
+      VENDOR_NAME
+      RANK_VALUE
+      NMBR_CARS
+      NAMEC
+      STATE_CODE
+      PICK_CTY_NAME
+BY LEVEL_DESC
+BY CITY_ST
+ON TABLE HOLD
+RUN
+FILE RHOLD2
+SUM DAYS_RANK
+BY LEVEL_DESC
+BY CITY_ST
+AFTER MATCH HOLD AS HOLD5 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD5
+SUM CAR_AMT
+    GCAR_AMT
+    NMBR_DAYS
+    NMBR_CARS
+    NAMEC
+BY LEVEL_DESC    
+RANKED BY HIGHEST DAYS_RANK
+BY CITY_ST
+BY PICK_CTY_NAME
+BY STATE_CODE
+BY RANK_VALUE
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD6
+END
+
+DEFINE FILE HOLD6
+  CTY_LIMIT/I2 = &&RANK_LIMIT;
+  CLIMIT/A2    = EDIT(CTY_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+-*   LIST/D6      = IF PICK_CTY_NAME NE LAST PICK_CTY_NAME THEN 
+-*                  (LAST LIST + 1) ELSE LAST LIST;
+ LIST/D6 =IF LEVEL_DESC NE LAST LEVEL_DESC THEN (1) ELSE
+          IF PICK_CTY_NAME NE LAST PICK_CTY_NAME THEN (LAST LIST + 1) ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6  = EDIT(FRANKX,'$999999');
+  CTY_VALUE/A9 = IF CTY_LIMIT EQ 0 THEN BRANK ELSE
+                 IF LIST GT CTY_LIMIT THEN 'All Other' ELSE FRANK;
+  CTYST_PRINT/A35 = IF CTY_VALUE LT CLIMIT THEN CITY_ST ELSE 'All Other';               
+  CTY_PRINT/A35 = IF CTY_VALUE LT CLIMIT THEN PICK_CTY_NAME ELSE 'All Other';
+  ST_PRINT/A3 = IF CTY_VALUE LT CLIMIT THEN STATE_CODE ELSE ' ';
+  VENDOR_RANK/A5 = IF CTY_VALUE LT CLIMIT THEN RANK_VALUE ELSE ' ';
+-* JN6KEY/A50 = PICK_CTY_NAME||VENDOR_NAME;
+  JN6KEY/A130 = LEVEL_DESC||CITY_ST||VENDOR_NAME;
+END
+-RUN
+
+TABLE FILE HOLD6
+SUM CAR_AMT
+  GCAR_AMT
+  NMBR_DAYS
+  NMBR_CARS
+  NAMEC
+BY JN6KEY
+BY CTY_VALUE
+BY CTYST_PRINT
+BY CTY_PRINT
+BY ST_PRINT
+BY VENDOR_RANK
+BY VENDOR_NAME
+ON TABLE HOLD AS HOLD7 FORMAT FOCUS INDEX JN6KEY
+END
+-RUN
+
+DEFINE FILE CARHLD2
+-* JN6KEY/A50 = PICK_CTY_NAME||VENDOR_NAME;
+  JN6KEY/A130 = LEVEL_DESC||CITY_ST||VENDOR_NAME;
+END
+-RUN
+
+TABLE FILE CARHLD2
+SUM RENTAL_AMT/D12.2 AS 'CAR_AMT'
+    AMT_RENTALX/D16.2 AS 'GCAR_AMT'
+    NBR_DAYS/I8 AS 'NMBR_DAYS'
+    NBR_CARS/I8 AS 'NMBR_CARS'
+    NAMEC
+BY JN6KEY
+BY LEVEL_DESC
+BY VENDOR_NAME
+BY PASSNGR_NAME
+BY CAR_TYPE
+BY CAR_DESC
+BY PICK_UP_DT
+BY DROP_OFF_DT
+BY DROP_CTY_NAME
+BY AIRPORT_NAME
+BY INVOICE_NUM
+ON TABLE HOLD AS HOLD8 FORMAT FOCUS INDEX JN6KEY
+END
+
+-TYPE JOIN 7 AND 8
+JOIN HOLD8.JN6KEY IN HOLD8 TO HOLD7.JN6KEY IN HOLD7 AS MYJOIN
+-RUN
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD8';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+
+DEFINE FILE HOLD8
+NOWTOD/A8 WITH CTY_PRINT = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+
+TABLE FILE HOLD8
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+
+-GOTO XXIT
+
+
+
+-SKIPTHIS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+
+-XXIT

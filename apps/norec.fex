@@ -1,0 +1,39 @@
+
+
+FILEDEF NOREC DISK NOREC.FEX
+-RUN
+-WRITE NOREC NO RECORDS FOUND FOR THIS SELECTION
+-WRITE NOREC Rollup - &&ROLLUP
+-WRITE NOREC Report Set Name - &&RS
+-WRITE NOREC Report Name - &&RN
+-WRITE NOREC Set key - &&SKEY
+-WRITE NOREC Instance Key - &&IKEY
+-IF &&RPTTYP EQ 'STS' GOTO TS_DATES;
+-IF &&RPTTYP EQ 'SPD' GOTO DUAL_DATES;
+-WRITE NOREC Date Range - FROM = &&FROMDT  TO = &&TODT
+-GOTO SKIP_TS
+-DUAL_DATES
+-WRITE RPTMSG Date Range - FROM 1 = &&FROMDT  TO 1 = &&TODT
+-WRITE NOREC              FROM 2 = &&FXDATE  TO 2 = &&TXDATE
+-GOTO SKIP_TS
+-TS_DATES
+-WRITE NOREC  Travel Summary Dates:
+-WRITE NOREC           Current Month - From = &&CMFMDT  To = &&CMTODT 
+-WRITE NOREC             Prior Month - From = &&PMFMDT  To = &&PMTODT
+-WRITE NOREC           Current Year  - From = &&CYFMDT  To = &&CYTODT 
+-WRITE NOREC             Prior Year  - From = &&PYFMDT  To = &&PYTODT
+-SKIP_TS
+-WRITE NOREC Setfile - &&SETF
+-WRITE NOREC Focexec - &&FEXNOW
+-CLOSE NOREC
+
+
+-* -SET &EADDR='scords@tandt.com';
+
+-* EXEC EMAIL PROGRAM
+-* -DOS D:\ibi\webfocus436\javamail\SENDMSG &EADDR &MAILFILES
+
+-* -SET &EADDR='ttdev@tandt.com';
+
+-* EXEC EMAIL PROGRAM
+-* -DOS D:\ibi\webfocus436\javamail\SENDMSG &EADDR &MAILFILES

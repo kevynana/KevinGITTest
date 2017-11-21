@@ -1,0 +1,115 @@
+-INCLUDE SETECHO
+-* File TSAIRUSE.FEX
+ 
+-***********************************************************************
+-* DATE          NAME                DESCRIPTION
+-* 8/31/00     IBISTL-DLM           MODIFIED CODE TO REFLECT FIXED
+-*                                   KEY LENGTH OF 50.
+-* 4/1/02        SAC                 TOOK OUT REFERENCE TO HPXXXX
+-***********************************************************************
+-TYPE IN TSAIRUSE
+-TYPE &&SMD
+-TYPE &&AIR_DB
+-TYPE &&AH_DB
+-TYPE &&MRK_DB
+ 
+-IF (&&SMD EQ 'S')  THEN GOTO USE50S ELSE
+-IF (&&SMD EQ 'M')  THEN GOTO USE50M ELSE
+-IF (&&SMD EQ 'D')  THEN GOTO USE50D;
+-RUN
+ 
+-* **********************************************************************
+ 
+-USE50S
+-SET &&AH = AH_50;
+-SET &&DAH = AH_50 || '.';
+-SET &&EXTRACT = TSR_50;
+-SET &&EXTJOIN = TSR_JOIN;
+-RUN
+-* **********************************************************************
+-SET &&USE_AIR = &&AIR_PATH || &&AIR_DB;
+-SET &&USE_AH = &&AIR_PATH || &&AH_DB;
+-SET &&USE_SEG =  &&AIR_PATH || &&SEG_DB;
+-RUN
+-GOTO USE_S
+ 
+-*****************************************************************
+ 
+-USE50M
+-SET &&AH = AH_50;
+-SET &&DAH = AH_50 || '.';
+-SET &&EXTRACT = TMR_50;
+-SET &&EXTJOIN = TMR_JOIN;
+-RUN
+-* **********************************************************************
+-SET &&USE_AIR = &&AIR_PATH || &&AIR_DB;
+-SET &&USE_AH = &&AIR_PATH || &&AH_DB;
+-SET &&USE_SEG =  &&AIR_PATH || &&MRK_DB;
+-RUN
+-GOTO USE_M
+ 
+-****************************************************************
+ 
+-USE50D
+-SET &&AH = AH_50;
+-SET &&DAH = AH_50 || '.';
+-SET &&EXTRACT = TDR_50;
+-SET &&EXTJOIN = TDR_JOIN;
+-RUN
+-* **********************************************************************
+-SET &&USE_AIR = &&AIR_PATH || &&AIR_DB;
+-SET &&USE_AH = &&AIR_PATH || &&AH_DB;
+-SET &&USE_SEG =  &&AIR_PATH || &&DST_DB;
+-RUN
+-GOTO USE_D
+ 
+-USE_S
+USE CLEAR
+-RUN
+EX SUUSES
+-RUN
+ 
+USE ADD
+ 
+-INCLUDE &&AUSEPASS
+ 
+  &&USE_AH AS &&AH
+END
+-RUN
+-GOTO JOINIT
+ 
+-USE_M
+USE CLEAR
+-RUN
+EX SUUSES
+-RUN
+ 
+USE ADD
+ 
+-INCLUDE &&AUSEPASS
+ 
+ 
+  &&USE_AH AS &&AH
+END
+-RUN
+-GOTO JOINIT
+ 
+-USE_D
+USE CLEAR
+-RUN
+EX SUUSES
+-RUN
+ 
+USE ADD
+ 
+-INCLUDE &&AUSEPASS
+ 
+  &&USE_AH AS &&AH
+END
+-RUN
+-GOTO JOINIT
+ 
+-JOINIT
+-TYPE LEAVING TSAIRUSE
+ 
+-*-EXIT

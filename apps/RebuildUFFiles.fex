@@ -1,0 +1,35 @@
+-**************************************************************************************************
+-* RebuildUFFiles.fex
+-*
+-* Rebuild all the cuurent UFxxxxxx files for all clients.
+-* need to copy UDFILE2.mas to tnt\ttracker\data folder. 
+-**************************************************************************************************
+-SET &ECHO = ALL;
+
+
+-SET &&DRV = '\\&&DATASRV.EVAL\D$';
+-SET &DBPATH = '&&DRV.EVAL' | '\TNT\TTRACKER\DATA\';
+-SET &NEWFILE =  'UDFILE2';
+
+TABLE FILE ROLLUP
+PRINT COMP
+BY ROLLUP_CODE 
+WHERE UPD_ENABLE EQ 'X';
+ON TABLE SAVE
+END
+-RUN
+-SET &TOTALFILES = &LINES;
+
+-REPEAT TOEND &TOTALFILES TIMES
+-READ SAVE NOCLOSE &ROLLUP.8. &&COMP.6.
+-TYPE &ROLLUP : &&COMP
+
+-SET &OLDFILE =  'UF' | '&&COMP.EVAL';
+
+-INCLUDE REBUILDFILE
+-RUN
+
+
+-TOEND
+
+

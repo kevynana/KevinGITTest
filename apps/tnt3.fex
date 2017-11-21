@@ -1,0 +1,36 @@
+-HTMLFORM BEGIN
+
+<!--DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN"-->
+<html>
+ 
+<head>
+<title>ETTek Review System Launch</title>
+</head>
+
+<body onload="SubmitForm()">
+<script language="JavaScript"><!--
+
+function SubmitForm() {
+  document.starter.submit();
+}
+
+ 
+// -->
+</script>
+ 
+ 
+<form action="/ibi_apps/WFServlet" method="POST" name="starter">
+  <input type="hidden" name="IBIS_connect" value="on">
+  <input type="hidden" name="IBIS_outbound" value="off">
+  <input type="hidden" name="IBIF_cmd" value="MNTCON  RUN AdminFun">
+  <input type="hidden" name="IBIS_passthru" value="on">
+  <input type="hidden" size="20" maxlength="256" name="user" 
+value="<!-- WEBFOCUS VAR UID -->">
+  <input type="hidden" size="20" maxlength="256" name="IBIC_pass" 
+value="ttracker">
+</form>
+</body>
+</html>
+
+
+-HTMLFORM END

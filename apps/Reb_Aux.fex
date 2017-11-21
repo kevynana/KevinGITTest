@@ -1,0 +1,178 @@
+-*=========================================================================
+-* REBUILD AUXILLARY FILES
+-*=========================================================================
+USE CLEAR *
+USE     D:\TNT\TTRACKER\SYSTEM\DATA\CLIENT.FOC
+        D:\TNT\TTRACKER\SYSTEM\DATA\HOTL_PRP.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\AIRLINE.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\VAL_AIR.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\FL_CLASS.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\CITY.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\EMBCITY.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\EMBARPT.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\RTECITY.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\RTEARPT.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\NDOCITY.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\NDDCITY.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\NDDARPT.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\AIRPORT.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\BRANCH.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\AIR_REF.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\CAR_REF.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\HTL_REF.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\CAR_VEND.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\HOTL_CHN.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\COUNTRY.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\STATE.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\CAR_TYPE.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\GEO.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\AL_RATE.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\AGENT.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\HIER_LVL.FOC
+	D:\TNT\TTRACKER\SYSTEM\DATA\COVERPG.FOC
+END
+-*=========================================================================
+REBUILD
+REBUILD
+CLIENT
+N
+-*=========================================================================
+REBUILD
+REBUILD
+HOTL_PRP
+N
+-*=========================================================================
+REBUILD
+REBUILD
+AIRLINE
+N
+-*=========================================================================
+REBUILD
+REBUILD
+VAL_AIR
+N
+-*=========================================================================
+REBUILD
+REBUILD
+FL_CLASS
+N
+-*=========================================================================
+REBUILD
+REBUILD
+MILEAGE
+N
+-*=========================================================================
+REBUILD
+REBUILD
+CITY
+N
+-*=========================================================================
+REBUILD
+REBUILD
+EMBCITY
+N
+-*=========================================================================
+REBUILD
+REBUILD
+EMBARPT
+N
+-*=========================================================================
+REBUILD
+REBUILD
+RTECITY
+N
+-*=========================================================================
+REBUILD
+REBUILD
+RTEARPT
+N
+-*=========================================================================
+REBUILD
+REBUILD
+NDOCITY
+N
+-*=========================================================================
+REBUILD
+REBUILD
+NDDCITY
+N
+-*=========================================================================
+REBUILD
+REBUILD
+NDDARPT
+N
+-*=========================================================================
+REBUILD
+REBUILD
+AIRPORT
+N
+-*=========================================================================
+REBUILD
+REBUILD
+BRANCH
+N
+-*=========================================================================
+REBUILD
+REBUILD
+AIR_REF
+N
+-*=========================================================================
+REBUILD
+REBUILD
+CAR_REF
+N
+-*=========================================================================
+REBUILD
+REBUILD
+HTL_REF
+N
+-*=========================================================================
+REBUILD
+REBUILD
+CAR_VEND
+N
+-*=========================================================================
+REBUILD
+REBUILD
+HOTL_CHN
+N
+-*=========================================================================
+REBUILD
+REBUILD
+COUNTRY
+N
+-*=========================================================================
+REBUILD
+REBUILD
+STATE
+N
+-*=========================================================================
+REBUILD
+REBUILD
+CAR_TYPE
+N
+-*=========================================================================
+REBUILD
+REBUILD
+GEO
+N
+-*=========================================================================
+REBUILD
+REBUILD
+AL_RATE
+N
+-*=========================================================================
+REBUILD
+REBUILD
+AGENT
+N
+-*=========================================================================
+REBUILD
+REBUILD
+HIER_LVL
+N
+-*=========================================================================
+REBUILD
+REBUILD
+COVERPG
+N

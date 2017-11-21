@@ -1,0 +1,205 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*-SET &BITMP3 = 'CAR.GIF';
+
+DEFINE FILE OVCHOLD
+NBR_DAYS/D10 = IF (NUM_DAYS LT 0) AND
+                  (NUM_CAR LT 0) THEN      
+                  (NUM_DAYS * NUM_CAR) * (-1) ELSE
+                  (NUM_DAYS * NUM_CAR);
+
+TC_AMT/D12.2 = RENTAL_AMT;
+BITMAP/A12 WITH NBR_DAYS = 'CAR.GIF';
+CURRENT/A1 = IF INVOICE_DATE GE &&FROMDT.EVAL AND
+                INVOICE_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF INVOICE_DATE GE &&FXDATE.EVAL AND
+               INVOICE_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+
+CDAY/D10 = IF CURRENT EQ 'Y' THEN NBR_DAYS ELSE 0;
+PDAY/D10 = IF PRIOR EQ 'Y' THEN NBR_DAYS ELSE 0;
+CAMT/D12.2 = IF CURRENT EQ 'Y' THEN TC_AMT ELSE 0;
+PAMT/D12.2 = IF PRIOR EQ 'Y' THEN TC_AMT ELSE 0;
+END
+-RUN
+
+TABLE FILE OVCHOLD
+SUM CDAY 
+    CAMT
+    BITMAP
+BY VENDOR_NAME
+WHERE CURRENT EQ 'Y'
+ON TABLE HOLD AS CHOLD1 
+END
+-RUN
+
+TABLE FILE OVCHOLD
+SUM PDAY 
+    PAMT
+    BITMAP
+BY VENDOR_NAME
+WHERE PRIOR EQ 'Y'
+ON TABLE HOLD AS CHOLD2 
+END
+-RUN
+
+MATCH FILE CHOLD1
+PRINT CDAY
+      CAMT
+      BITMAP
+BY VENDOR_NAME
+ON TABLE HOLD
+RUN
+FILE CHOLD2
+PRINT PDAY
+      PAMT
+      BITMAP
+BY VENDOR_NAME
+AFTER MATCH HOLD AS CHOLD3 OLD-OR-NEW
+END
+
+TABLE FILE CHOLD3
+SUM CDAY
+    CAMT
+    PDAY
+    PAMT
+    BITMAP
+BY VENDOR_NAME
+ON TABLE HOLD AS CHOLD4 
+END
+-RUN
+
+TABLE FILE CHOLD4
+PRINT *
+RANKED BY HIGHEST CDAY NOPRINT
+ON TABLE HOLD AS CHOLD5 
+END
+-RUN
+
+
+-SET &RECFOUND = &RECORDS;
+
+
+
+DEFINE FILE CHOLD5
+  LIST/D9 = IF VENDOR_NAME NE LAST VENDOR_NAME THEN (LAST LIST + 1) ELSE 
+  LAST LIST;
+  DRANK/D9 = RANK;
+-*************************************************************************
+-*DATE          NAME               DESCRIPTION
+-*10/11/00    IBISTL-SB         CHANGED THE ARANK FIELD TO 'A11'
+-*10/11/00    IBISTL-SB         CHANGED RANK_VALUE FIELD
+-*************************************************************************
+  ARANK/A11 = FTOA(DRANK, '(D9)', ARANK);
+  ARANK1/A9 = EDIT(ARANK, '$$999999999');
+  RANK_VALUE/A9 = IF LIST GT 3 THEN 'OTHER' ELSE ARANK1;
+  RANK_LABEL1/A30 = IF RANK_VALUE NE 'OTHER' THEN VENDOR_NAME
+                      ELSE 'All Other';
+  RANK_LABEL/A25 = LCWORD(25, RANK_LABEL1, RANK_LABEL);
+END
+-RUN
+
+TABLE FILE CHOLD5
+SUM CDAY
+    CAMT
+    PDAY
+    PAMT
+    BITMAP
+BY RANK_VALUE NOPRINT
+BY RANK_LABEL
+ON TABLE HOLD AS CHOLD6 
+END
+-RUN
+
+-IF &RECFOUND EQ 0 GOTO SKIP_GRAPH;
+-RUN
+
+GRAPH FILE CHOLD6
+SUM CDAY AS ' '
+ACROSS RANK_LABEL 
+ON GRAPH SET LOOKGRAPH PIE
+ON GRAPH SET GRAPHEDIT OFF
+ON GRAPH SET GRAPHSTYLE *
+setConnectLineMarkers(true);
+setO1LabelDisplay(true);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1LabelDisplay(true);
+setY1AxisSide(0);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setAutofit(getPieSliceLabel(),true);
+setFontStyle(getPieSliceLabel(),2);
+setTextFormatPreset (getPieSliceLabel () ,1);
+setLegendDisplay(true);
+setLegendTextAutofit(true);
+setAutofit(getLegendText(),true);
+setFontStyle(getLegendText(),2);
+setLegendMarkerPosition(2);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),11);
+setFontSize(getTitle(),15);
+setTitleString("Car Booking Summary");
+setTextJustHoriz(getTitle(), 1);
+setSubtitleString("Based Upon Number of Rental Days");
+setTextJustHoriz(getSubtitle(), 1);
+setFontSizeAbsolute(getSubtitle(),true); 
+setAutofit(getSubtitle(),false);
+setFontStyle(getSubtitle(),11);
+setFontSize(getSubtitle(),15);
+ENDSTYLE
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET GRID ON
+ON GRAPH SAVE AS CAR FORMAT GIF
+END
+-RUN
+
+-SKIP_GRAPH
+
+-SET &&CAR_GIF=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+-INCLUDE DTRANGE
+-RUN
+
+
+DEFINE FILE CHOLD6
+BITMAP/A12 WITH CDAY = 'CAR.GIF';
+CATEGORY/A30 = 'Car Vendors';
+CAT_ORDER/I2 = 5;
+END
+-RUN
+
+TABLE FILE CHOLD6
+PRINT CATEGORY/A25 AND RANK_LABEL/A25 AS 'ROW_LABEL' AND
+CAT_ORDER/I2 AND CDAY/D15 AS 'VOL_CURR' AND 
+CAMT/D15 AS 'TKT_CURR' AND PDAY/D15 AS 'VOL_PRIOR' 
+AND PAMT/D15 AS 'TKT_PRIOR' AND 
+COMPUTE ROW_ORDER/I2 = ROW_ORDER + 1;    
+ON TABLE HOLD AS CHOLD7 
+END
+-RUN
+
+TABLE FILE CHOLD7
+PRINT CATEGORY AND ROW_LABEL AND CAT_ORDER
+      AND ROW_ORDER AND VOL_CURR AND TKT_CURR
+      AND VOL_PRIOR AND TKT_PRIOR
+ON TABLE HOLD AS CHOLD8 
+END
+MODIFY FILE OV1_MAIN
+FIXFORM FROM CHOLD8
+MATCH ROW_LABEL
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON CHOLD8
+END
+-RUN
+
+
+-*-EXIT
+
+
+
+

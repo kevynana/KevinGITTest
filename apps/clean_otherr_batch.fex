@@ -1,0 +1,64 @@
+-*======================================================================
+-*  PROGRAM : CLEAN_OTHERR_BATCH.FEX                    DATE: 01/30/2014
+-*======================================================================
+-*  DESCRIPTION: This program finds runs the OTHER-R Client cleanup
+-*  routine in a batch mode.
+-*
+-*  PROGRAMMER: GSE                               REQUESTOR: STEVE CORDS
+-*  DATE       PROGRAMMER  CHANGE
+-*  ----       ----------  ---------------------------------
+-*======================================================================
+ 
+-* Put  Date, Time, UserID and together
+-SET &D_T=&YYMD || '_' || EDIT(HHMMSS('A8'),'99$99$99');
+ 
+-* Define the working directory
+-SET &DIR='d:\temp\' | &D_T.EVAL;
+-SET &LOGDIR='d:\temp\';
+ 
+-* Define the batch file that will execute
+-SET &CMD=&DIR || '\clean_otherr.bat';
+-SET &T3I=&DIR || '\clean_otherr.t3i';
+-SET &T3O=&DIR || '\clean_otherr.t3o';
+-SET &T3O2=&LOGDIR || '\clean_otherr.log';
+ 
+-* Make the working directory
+DOS MKDIR &DIR
+-RUN
+ 
+FILEDEF BATFILE DISK &CMD
+-RUN
+-WRITE BATFILE cd &DIR
+-WRITE BATFILE SET EDATEMP=&DIR
+-WRITE BATFILE d:\ibi\srv77\wfs\bin\edastart -f &T3I
+-CLOSE BATFILE
+ 
+FILEDEF T3IFILE DISK &T3I
+-RUN
+ 
+-WRITE T3IFILE %connect
+-WRITE T3IFILE %begin
+-WRITE T3IFILE EX clean_otherr_clients.fex
+-WRITE T3IFILE %end
+-WRITE T3IFILE %disconnect
+-WRITE T3IFILE %stop_server
+-CLOSE T3IFILE
+ 
+DOS &CMD.EVAL
+ 
+DOS COPY &T3O &T3O2 > NUL
+-*DOS COPY &T3O &LOGDIR > NUL
+ 
+-* Remove the working directory and files inside of it
+DOS RMDIR /S /Q &DIR
+ 
+-HTMLFORM BEGIN
+<HTML>
+<BODY bgcolor="#f2f2f2">
+<CENTER>
+Processing Complete.
+</CENTER>
+</BODY>
+</HTML>
+-HTMLFORM END
+ 

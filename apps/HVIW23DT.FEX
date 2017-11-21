@@ -1,0 +1,234 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: HVIW23DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+
+-**************************************************************************
+SET ASNAMES=ON
+-RUN
+
+-INCLUDE SETECHO
+TABLE FILE HTLHLD
+PRINT  
+   BOOKINGS
+  CHAIN_CODE	
+  CHAIN_NAME
+  CITY_ST
+  HOTEL_PHONE
+  HTLPRP_CD
+  IBOOK	
+  IN_DATE
+  INV_DATE
+  INVOICE_NUM
+  LEVEL_DESC	
+  NBR_DAYS	
+  NBR_ROOMS	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NNROOMS
+  NUM_DAYS
+  NUM_ROOMS	
+  OUT_DATE	
+  PASSNGR_NAME	
+  PNR_LOCATOR
+  PROP_ADDRESS	
+  PROP_CITY	
+  PROP_CODE
+  PROP_NAME	
+  PROP_STATE_CD
+  PROP_ZIP 
+ 	
+  ROOM_RATE	
+  ROOM_TYPE	
+  STD_RATE	
+  TOTAL_AMT	
+  TOTAL_SLSAV
+  TOTAL_STD
+  XPSNGR_NM
+BY COUNTRY
+ON TABLE HOLD AS HC1 
+END
+ 
+TABLE FILE COUNTRY
+PRINT COUNTRY_NAME
+BY COUNTRY_CODE
+ON TABLE HOLD AS HC2
+END
+-RUN
+
+MATCH FILE HC1
+PRINT  
+   BOOKINGS
+  CHAIN_CODE	
+  CHAIN_NAME
+  CITY_ST
+  HOTEL_PHONE
+  HTLPRP_CD
+  IBOOK	
+  IN_DATE
+  INV_DATE
+  INVOICE_NUM
+  LEVEL_DESC	
+  NBR_DAYS	
+  NBR_ROOMS	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NNROOMS
+  NUM_DAYS
+  NUM_ROOMS	
+  OUT_DATE	
+  PASSNGR_NAME	
+  PNR_LOCATOR
+  PROP_ADDRESS	
+  PROP_CITY
+  PROP_CODE
+  PROP_NAME	
+  PROP_STATE_CD
+  PROP_ZIP 
+ 	
+  ROOM_RATE	
+  ROOM_TYPE	
+  STD_RATE	
+  TOTAL_AMT	
+  TOTAL_SLSAV
+  TOTAL_STD
+  XPSNGR_NM
+BY COUNTRY
+ON TABLE HOLD
+RUN 
+FILE HC2
+SUM COUNTRY_NAME
+BY COUNTRY_CODE
+AFTER MATCH HOLD AS HC3 OLD-AND-NEW
+END
+-RUN
+
+
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = HC3;
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+DEFINE FILE HC3 ADD
+NOWTOD/A8 WITH COUNTRY_NAME = HHMMSS (NOWTOD);
+BLANK/A10 = ' ';
+CLT_RATE/D8.2CS = 0;
+CUR/A3 = 'USD';
+TAX_INC/A1 = 'N';
+TAX_PCT/D3% = 0;
+SVC_INC/A1 = 'N';
+SVC_PCT/D3% = 0;
+BKFST_INC/A1 = 'N';
+BKFST_TYPE/A13 = ' ';
+BKFST_CST/D8.2CS = 0;
+RATE_LRA/A1 = 'N';
+
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HC3
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+
+
+ SUM 
+ PROP_CODE AS 'Galileo/, Apollo, GDS Code'
+ CHAIN_CODE AS 'Hotel,Chain,Code'
+ PROP_NAME AS 'Hotel,Name'
+ PROP_ADDRESS AS 'Address'
+ PROP_CITY AS 'City'
+ COUNTRY_NAME AS 'Country,Code'
+ PROP_ZIP AS 'Post/Zip,Code'
+ HOTEL_PHONE AS 'Telephone'
+ NUM_ROOMS AS 'Total,Room,Nights'
+ NEW_TOTAL_AMT AS 'Total,Spend,USD'
+ BLANK AS 'Start,Date'
+ BLANK AS 'End,Date'
+ CLT_RATE AS 'Client,Rate'
+ CUR AS 'Currency'
+ TAX_INC AS 'Tax,Included'
+ TAX_PCT AS 'Tax %'
+ SVC_INC AS 'Service,Included'
+ SVC_PCT AS 'Service %'
+ BKFST_INC AS 'Breakfast,Included'
+ BKFST_TYPE AS 'Breakfast,Type'
+ BKFST_CST AS 'Breakfast,Cost'
+ ROOM_TYPE AS 'Room,Type'
+RATE_LRA AS 'Rate,LRA'
+
+
+BY PROP_CODE NOPRINT
+BY CHAIN_CODE NOPRINT
+ BY PROP_NAME NOPRINT
+BY PROP_ADDRESS NOPRINT
+BY PROP_CITY NOPRINT
+BY PROP_ZIP NOPRINT
+BY HOTEL_PHONE NOPRINT
+ON TABLE COLUMN-TOTAL
+ 
+
+
+
+
+
+
+
+
+
+-FOOTER
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+FOOTING BOTTOM
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+
+
+
+
+
+
+
+-XXIT

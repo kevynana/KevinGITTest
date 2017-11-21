@@ -1,0 +1,1080 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Removed Conagra Special from here so that they could have the standard
+-* report as well as their specialized version JK 10/16/03
+-* Added Current Total Average Ticket Price per Patti JK 2/24/04
+-* Carried through new intl fields added routine for CHBNMPXI - DEB 8/29/13
+-* Added code for CHBNMPXD - DEB 9/9/13
+-* Updated date variables as they were not displaying correctly - JK 8/18/14
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*  03/31/2015  REJ  S-05681 Changes for Available Reports.  Adding code so that the
+-*                           program will run in current Review and in Available Reports.
+-*  04/09/2015  REJ  S-05681 Corrected an error with the variable name &&FROMAVRP.  Only had one ampersand on it.
+-* 09/29/16 - DLV - S-25275 -  carried through EMP_ID changed sort when used for employee number
+-* 02/24/2017 - DLV - S-22486 CHANGED ettek Review to Post-trip Reporting
+-* 07/07/2017 - RSB - S-36531 Reports that do not use a view to be updated with standard footer (part 2)
+-* 08/28/2017 - RSB - S-39056 Footer changes to be backed out of story S-36531
+-*
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL'   ELSE &&DTSTY;
+-*      
+-INCLUDE SETECHO 
+SET ASNAMES=ON
+ 
+ 
+ 
+ 
+-SET &&RPTSUF = 'BENCHMARK';
+ 
+-IF &&FROMAVRP EQ 'Y' GOTO :CS1;
+ 
+-SET &FMM=EDIT(&&FROMDT,'$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'9999');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$99');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$99');
+-SET &FXMY=EDIT(&&FXDATE,'9999');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$99');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$99');
+-SET &TXOY=EDIT(&&TXDATE,'9999');
+-GOTO :CS1_CONT;
+ 
+-:CS1
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$$99');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$$99');
+-SET &FXMY=EDIT(&&FXDATE,'$9999');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$$99');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$$99');
+-SET &TXOY=EDIT(&&TXDATE,'$9999');
+-:CS1_CONT
+ 
+-SET &&SP = '|';
+-SET &&SP1A = IF &&ROLLNME EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP1 = IF &&ROLLCS EQ ' ' THEN ' ' ELSE &&SP1A;
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLPA = IF &&RCNCT.EVAL GE 10 OR &&CSL.EVAL GE 10 THEN 60 ELSE 68;
+-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN 78 ELSE &&CSLPA;
+-SET &&ROLLCS11 = TRUNCATE(&&ROLLCS);
+-SET &&RCNCT1 = TRUNCATE(&&ROLLCNCT);
+-SET &&BLANK = ' ';
+ 
+ 
+-IF '&&SETF.EVAL' EQ 'ARBNMPX' THEN GOTO NextJoin;
+-IF '&&SETF.EVAL' EQ 'BDBNMPX' THEN GOTO NoCar;
+-IF '&&SETF.EVAL' EQ 'CEBNMPX1' THEN GOTO CBNM;
+-IF '&&SETF.EVAL' EQ 'CEBNMPX' THEN GOTO CERN;
+-IF '&&SETF.EVAL' EQ 'CHBNMPX' OR 'CHBNMPXD' OR 'CHBNMPXI' THEN GOTO CH2M ELSE GOTO STD;
+ 
+ 
+-STD;
+ 
+ 
+JOIN TRANTWO.EMP_ID IN TRANTWO TO CARTHREE.EMP_ID IN CARTHREE AS J1
+JOIN TRANTWO.EMP_ID IN TRANTWO TO HTLHLD3.EMP_ID IN HTLHLD3 AS J2
+-RUN
+ 
+-GOTO NXT;
+ 
+-CBNM;
+JOIN TRANTWO.PASSNGR_NAME IN TRANTWO TO CARTHREE.PASSNGR_NAME IN CARTHREE AS J1
+JOIN TRANTWO.PASSNGR_NAME IN TRANTWO TO HTLHLD3.PASSNGR_NAME IN HTLHLD3 AS J2
+-RUN
+ 
+-GOTO NXT;
+ 
+ 
+-NextJoin;
+JOIN TRANTWO.PASSNGR_NAME IN TRANTWO TO CARTHREE.PASSNGR_NAME IN CARTHREE AS J1
+JOIN TRANTWO.PASSNGR_NAME IN TRANTWO TO HTLHLD3.PASSNGR_NAME IN HTLHLD3 AS J2
+-* JOIN TRANTWO.XPSNGR_NM IN TRANTWO TO CARTHREE.XPSNGR_NM IN CARTHREE AS J1
+-* JOIN TRANTWO.XPSNGR_NM IN TRANTWO TO HTLHLD3.XPSNGR_NM IN HTLHLD3 AS J2
+END
+-RUN
+-GOTO NXT;
+ 
+-NoCar
+MATCH FILE TRANTWO
+PRINT CAVOL
+    CDAVOL
+    CDLS
+    CDLSAV
+    CDONL
+    CDNTKT
+    CLSAV
+    CLSTKT
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CLS6
+    CLS_AO
+    CLSTKT
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    CLS200
+    CLS2001
+    CADVT
+    CADVT1
+    CADVT2
+    CADVT3
+    CDNONONL
+    PFARE
+    PMILES
+    CTAVGT
+    CAVGT
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CDNONONLP
+    CNONONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CDTLSV
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CCLS6
+    CCLS_AO
+    CPMILE
+    PMILE
+    CTLSV
+    CLS100P
+    CDATKT
+    CILSAV
+    CTILSV
+    CIATKT
+    CINONONL
+BY LEVEL1
+BY XPSNGR_NM
+ON TABLE HOLD
+RUN
+FILE HTLHLD3
+SUM CHTTLA
+    AVGRATE
+BY LEVEL1
+BY XPSNGR_NM
+AFTER MATCH HOLD AS TRANTHREE OLD-OR-NEW
+END
+-RUN
+ 
+-GOTO Baird;
+ 
+ 
+-CERN
+ 
+ 
+ 
+MATCH FILE TRANTWO
+PRINT CAVOL
+    CDAVOL
+    CDLS
+    CDLSAV
+    CDONL
+    CDNTKT
+    CLSAV
+    CLSTKT
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CLS6
+    CLS_AO
+    CLSTKT
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    CLS200
+    CLS2001
+    CADVT
+    CADVT1
+    CADVT2
+    CADVT3
+    CDNONONL
+    PFARE
+    PMILES
+    CTAVGT
+    CAVGT
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CDNONONLP
+    CNONONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CDTLSV
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CCLS6
+    CCLS_AO
+    CPMILE
+    PMILE
+    CTLSV
+    CLS100P
+    CDATKT
+    CILSAV
+    CTILSV
+    CIATKT
+    CINONONL
+    PASSNGR_NAME
+BY EMP_ID
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN
+FILE HTLHLD3
+SUM CHTTLA
+    AVGRATE
+    PASSNGR_NAME
+    PASSNGR_NAME AS 'HPAX'
+BY EMP_ID
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS XONE OLD-OR-NEW
+END
+-RUN
+ 
+MATCH FILE XONE
+PRINT CAVOL
+    CDAVOL
+    CDLS
+    CDLSAV
+    CDONL
+    CDNTKT
+    CLSAV
+    CLSTKT
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CLS6
+    CLS_AO
+    CLSTKT
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    CLS200
+    CLS2001
+    CADVT
+    CADVT1
+    CADVT2
+    CADVT3
+    CDNONONL
+    PFARE
+    PMILES
+    CTAVGT
+    CAVGT
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CDNONONLP
+    CNONONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CDTLSV
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CCLS6
+    CCLS_AO
+    CPMILE
+    PMILE
+    CTLSV
+    CLS100P
+    CDATKT
+    CILSAV
+    CTILSV
+    CIATKT
+    CINONONL
+    PASSNGR_NAME
+    CHTTLA
+    AVGRATE
+    HPAX
+BY EMP_ID
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN
+FILE CARTHREE
+SUM CRENTAL
+    CRENTALA
+    CNOCMP_DAYS
+    CNOMID_DAYS
+    PASSNGR_NAME
+    PCTNOCMP
+    PCTNOMID
+    AVGCAR
+    PASSNGR_NAME AS 'CPAX'
+BY EMP_ID
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS TRANTWO OLD-OR-NEW
+END
+-RUN
+ 
+ 
+ 
+-GOTO NXT;
+ 
+-CH2M;
+ 
+ 
+ 
+MATCH FILE TRANTWO
+PRINT BD_CAVOL
+    CAVOL
+    CDAVOL
+    CDLS
+    CDLSAV
+    CDONL
+    CDONLP
+    CDNTKT
+    CLSAV
+    CLSTKT
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CLS6
+    CLS_AO
+    CLS_BD
+    CLSTKT
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    CLS200
+    CLS2001
+    CADVT
+    CADVT1
+    CADVT2
+    CADVT3
+    CDNONONL
+    MILES
+    PFARE
+    PMILES
+    CTAVGT
+    CAVGT
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CDNONONLP
+    CNONONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CDTLSV
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CCLS6
+    CCLS_AO
+    CPMILE
+    PMILE
+    CTLSV
+    CLS100P
+    CDATKT
+    CIATKT
+    CILSAV
+    CTILSV
+    CINONONL
+    PASSNGR_NAME
+BY EMP_ID
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN
+FILE HTLHLD3
+SUM CHTTLA
+    AVGRATE
+BY EMP_ID
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS XONE OLD-OR-NEW
+END
+-RUN
+ 
+ 
+ 
+ 
+MATCH FILE XONE
+PRINT BD_CAVOL
+    CAVOL
+    CDAVOL
+    CDLS
+    CDLSAV
+    CDONL
+    CDONLP
+    CDNTKT
+    CLSAV
+    CLSTKT
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CLS6
+    CLS_AO
+    CLS_BD
+    CLSTKT
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    CLS200
+    CLS2001
+    CADVT
+    CADVT1
+    CADVT2
+    CADVT3
+    CDNONONL
+    MILES
+    PFARE
+    PMILES
+    CTAVGT
+    CAVGT
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CDNONONLP
+    CNONONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CDTLSV
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CCLS6
+    CCLS_AO
+    CPMILE
+    PMILE
+    CTLSV
+    CLS100P
+    CDATKT
+    CIATKT
+    CILSAV
+    CTILSV
+    CINONONL
+    PASSNGR_NAME
+    CHTTLA
+    AVGRATE
+BY EMP_ID
+BY PASSNGR_NAME
+ON TABLE HOLD
+RUN
+FILE CARTHREE
+SUM CRENTAL
+    CRENTALA
+    CNOCMP_DAYS
+    CNOMID_DAYS
+    PASSNGR_NAME
+    PCTNOCMP
+    PCTNOMID
+    AVGCAR
+BY EMP_ID
+BY PASSNGR_NAME
+AFTER MATCH HOLD AS TRANTWO OLD-OR-NEW
+END
+-RUN
+ 
+ 
+ 
+-NXT;
+ 
+ 
+ 
+ 
+DEFINE FILE TRANTWO
+NOWTOD/A8 WITH CAVOL = HHMMSS (NOWTOD);
+BLANK/A1 = ' ';
+END
+-RUN
+ 
+-IF '&&SETF.EVAL' EQ 'CHBNMPX' OR 'CHUABMPX' OR 'CHBNMPXD' THEN GOTO CH2MD ELSE
+-IF '&&SETF.EVAL' EQ 'CHBNMPXI' THEN GOTO CH2MI ELSE
+-IF '&&SETF.EVAL' EQ 'ARBNMPX' THEN GOTO Arch ELSE
+-IF '&&SETF.EVAL' EQ 'BDBNMPX' THEN GOTO Baird ELSE
+-IF '&&SETF.EVAL' EQ 'CEBNMPX' OR 'CEBNMPX1' AND '&&ROLLUP.EVAL' EQ 'CERN-R' THEN GOTO Cern ELSE
+-IF '&&SETF.EVAL' EQ 'CEBNMPX' AND '&&ROLLUP.EVAL' EQ 'CCI-R' THEN GOTO CCI ELSE GOTO STD;
+ 
+ 
+ 
+-STD
+-INCLUDE FDEFRPTS
+-RUN
+TABLE FILE TRANTWO
+SUM EMP_ID AS 'Associate,ID' PASSNGR_NAME AS 'Employee,Name '
+CAVOL/D12CS AS 'Total,Volume'
+CNTKT AS 'Net,Tickets'
+CDLSAV/D12CS AS 'Domestic Air Lost Savings'
+CTLSV  AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CLSAV/D12CS AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CDTLSV AS '% of Domestic Lost Savings, to Total Lost Savings'
+CVSAV/D12CS AS 'Contract,Savings'
+CDATKT AS 'Domestic,Average,Ticket,Price'
+CTAVGT AS 'Average,Ticket,Price'
+CADVT AS 'Net Tickets Purchased,0-6 Days'
+CADVT1 AS 'Net Tickets Purchased,7-13 Days'
+CADVT2 AS 'Net Tickets Purchased,14-20 Days'
+CADVT3 AS 'Net Tickets Purchased,21+ Days'
+CDNONONL AS '# of, Domestic,Offline Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOCMP AS '%,of Cars Larger,Than Compact'
+AVGCAR AS 'Average Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+BY EMP_ID NOPRINT
+BY PASSNGR_NAME NOPRINT
+ 
+ 
+-GOTO HEAD1
+ 
+-CH2MD
+ 
+ 
+-INCLUDE FDEFRPTS
+-RUN
+ 
+TABLE FILE TRANTWO
+SUM EMP_ID AS 'Associate,ID' PASSNGR_NAME AS 'Employee,Name '
+CAVOL/D12CS AS 'Total,Volume'
+MILES AS 'Total,Miles'
+CNTKT AS 'Net,Tickets'
+CDLSAV/D12CS AS 'Domestic Air Lost Savings'
+CTLSV  AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CLSAV/D12CS AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CDTLSV AS '% of Domestic Lost Savings, to Total Lost Savings'
+CVSAV/D12CS AS 'Contract,Savings'
+CDATKT AS 'Domestic,Average,Ticket,Price'
+CTAVGT AS 'Average,Ticket,Price'
+CADVT AS 'Net Tickets Purchased,0-6 Days'
+CADVT1 AS 'Net Tickets Purchased,7-13 Days'
+CADVT2 AS 'Net Tickets Purchased,14-20 Days'
+CADVT3 AS 'Net Tickets Purchased,21+ Days'
+CDNONONL AS '# of, Domestic,Offline Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOMID AS '%,of Cars Larger,Than Mid-Size'
+AVGCAR AS 'Average Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+BY EMP_ID NOPRINT
+BY PASSNGR_NAME NOPRINT
+ 
+-GOTO HEAD1
+ 
+-CH2MI
+ 
+ 
+-INCLUDE FDEFRPTS
+-RUN
+ 
+TABLE FILE TRANTWO
+SUM EMP_ID AS 'Associate,ID' PASSNGR_NAME AS 'Employee,Name '
+CAVOL/D12CS AS 'Total,Volume'
+MILES AS 'Total,Miles'
+CNTKT AS 'Net,Tickets'
+CILSAV/D12CS AS 'International Air Lost Savings'
+-*CTILSV  AS '% of,Intl Lost Savings, to Intl Air Volume'
+-*CLSAV/D12CS AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+-*CTILSV AS '% of Intl Lost Savings, to Total Lost Savings'
+CVSAV/D12CS AS 'Contract,Savings'
+CIATKT AS 'Intl,Average,Ticket,Price'
+-*CTAVGT AS 'Average,Ticket,Price'
+CADVT AS 'Net Tickets Purchased,0-6 Days'
+CADVT1 AS 'Net Tickets Purchased,7-13 Days'
+CADVT2 AS 'Net Tickets Purchased,14-20 Days'
+CADVT3 AS 'Net Tickets Purchased,21+ Days'
+CINONONL AS '# of, Intl,Offline Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOMID AS '%,of Cars Larger,Than Mid-Size'
+AVGCAR AS 'Average Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+BY EMP_ID NOPRINT
+BY PASSNGR_NAME NOPRINT
+ 
+ 
+-GOTO HEAD1
+ 
+-Baird
+ 
+ 
+DEFINE FILE TRANTHREE
+NOWTOD/A8 WITH CAVOL = HHMMSS (NOWTOD);
+BLANK/A1 = ' ';
+END
+-RUN
+-INCLUDE FDEFRPTS
+-RUN
+ 
+TABLE FILE TRANTHREE
+SUM LEVEL1  AS 'GL Code' XPSNGR_NM AS 'Employee,Name '
+CAVOL/D12CS AS 'Total,Volume'
+CNTKT AS 'Net,Tickets'
+CDLSAV/D12CS AS 'Domestic Air Lost Savings'
+CTLSV  AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CDATKT AS 'Domestic,Average,Ticket,Price'
+CADVP1 AS '% of,Net Tickets Purchased,0-6 Days'
+CADVP2 AS '% of,Net Tickets Purchased,7-13 Days'
+CADVP5 AS '% of,Net Tickets Purchased,14-20 Days'
+CDONL AS '# of, Domestic,Online Bookings'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+BY LEVEL1 NOPRINT
+BY XPSNGR_NM NOPRINT
+ 
+ 
+-GOTO HEAD1
+ 
+ 
+-Cern
+ 
+-INCLUDE FDEFRPTS
+-RUN
+ 
+-IF '&&SETF.EVAL' EQ 'CEBNMPX1' GOTO Cern2 ELSE GOTO Cern1;
+ 
+-Cern1
+ 
+ 
+ 
+TABLE FILE TRANTWO
+SUM EMP_ID AS 'Associate,ID'
+-* PASSNGR_NAME AS 'Employee,Name '
+-* TRIP_PURPOSE AS 'Trip,Purpose'
+CAVOL/D12CS AS 'Total,Volume'
+CNTKT AS 'Net,Tickets'
+CDLSAV/D12CS AS 'Domestic Air Lost Savings'
+CTLSV  AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CLSAV/D12CS AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CDTLSV AS '% of Domestic Lost Savings, to Total Lost Savings'
+CVSAV/D12CS AS 'Contract,Savings'
+CDATKT AS 'Domestic,Average,Ticket,Price'
+CTAVGT AS 'Average,Ticket,Price'
+CADVT AS 'Net Tickets Purchased,0-6 Days'
+CADVT1 AS 'Net Tickets Purchased,7-13 Days'
+CADVT2 AS 'Net Tickets Purchased,14-20 Days'
+CADVT3 AS 'Net Tickets Purchased,21+ Days'
+CDNONONL AS '# of, Domestic,Offline Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOCMP AS '%,of Cars Larger,Than Compact'
+AVGCAR AS 'Average Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+BY EMP_ID NOPRINT
+ 
+ 
+-GOTO Head
+ 
+-Cern2
+ 
+ 
+TABLE FILE TRANTWO
+SUM
+-* LEVEL1 AS 'Associate,ID'
+-* PASSNGR_NAME AS 'Employee,Name'
+CAVOL/D12CS AS 'Total,Volume'
+CNTKT AS 'Net,Tickets'
+CDLSAV/D12CS AS 'Domestic Air Lost Savings'
+CTLSV  AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CLSAV/D12CS AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CDTLSV AS '% of Domestic Lost Savings, to Total Lost Savings'
+CVSAV/D12CS AS 'Contract,Savings'
+CDATKT AS 'Domestic,Average,Ticket,Price'
+CTAVGT AS 'Average,Ticket,Price'
+CADVT AS 'Net Tickets Purchased,0-6 Days'
+CADVT1 AS 'Net Tickets Purchased,7-13 Days'
+CADVT2 AS 'Net Tickets Purchased,14-20 Days'
+CADVT3 AS 'Net Tickets Purchased,21+ Days'
+CDNONONL AS '# of, Domestic,Offline Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOCMP AS '%,of Cars Larger,Than Compact'
+AVGCAR AS 'Average Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+BY EMP_ID AS 'Associate,ID'
+BY PASSNGR_NAME AS 'Employee,Name'
+ 
+ 
+-GOTO HEAD;
+ 
+ 
+-CCI;
+-INCLUDE FDEFRPTS
+-RUN
+DEFINE FILE TRANTWO ADD
+PAX/A33 = IF PASSNGR_NAME EQ ' ' AND AVGRATE NE 0 THEN HPAX ELSE
+          IF PASSNGR_NAME EQ ' ' AND AVGCAR NE 0 THEN CPAX ELSE PASSNGR_NAME;
+END
+TABLE FILE TRANTWO
+SUM EMP_ID AS 'Associate,ID' PAX AS 'Employee,Name '
+CAVOL/D12CS AS 'Total,Volume'
+CNTKT AS 'Net,Tickets'
+CDLSAV/D12CS AS 'Domestic Air Lost Savings'
+CTLSV  AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CLSAV/D12CS AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CDTLSV AS '% of Domestic Lost Savings, to Total Lost Savings'
+CVSAV/D12CS AS 'Contract,Savings'
+CDATKT AS 'Domestic,Average,Ticket,Price'
+CTAVGT AS 'Average,Ticket,Price'
+CADVT AS 'Net Tickets Purchased,0-6 Days'
+CADVT1 AS 'Net Tickets Purchased,7-13 Days'
+CADVT2 AS 'Net Tickets Purchased,14-20 Days'
+CADVT3 AS 'Net Tickets Purchased,21+ Days'
+CDNONONL AS '# of, Domestic,Offline Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOCMP AS '%,of Cars Larger,Than Compact'
+AVGCAR AS 'Average Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+BY EMP_ID NOPRINT
+BY PAX NOPRINT
+ 
+-GOTO HEAD1
+
+-Head
+HEADING
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-INCLUDE FOOTERDT
+-*
+ON TABLE SET PAGE-NUM OFF
+ON TABLE NOTOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ 
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ 
+    TYPE=REPORT, COLUMN=N4, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N5, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N6, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N7, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N8, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N9, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N10, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N11, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N12, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N13, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N14, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N15, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N16, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N17, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N18, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N19, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N20, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N21, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N22, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N23, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N24, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N25, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N26, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N27, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N28, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N29, WRAP= 1.0,$
+ 
+ 
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS ELSE GOTO XXIT;
+ 
+ 
+ 
+-HEAD1
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-INCLUDE FOOTERDT
+-*
+ON TABLE SET PAGE-NUM OFF
+ON TABLE NOTOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ 
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ 
+    TYPE=REPORT, COLUMN=N3, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N4, WRAP= 2.15,$
+    TYPE=REPORT, COLUMN=N5, WRAP= .50,$
+    TYPE=REPORT, COLUMN=N6, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N7, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N8, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N9, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N10, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N11, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N12, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N13, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N14, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N15, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N16, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N17, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N18, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N19, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N20, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N21, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N22, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N23, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N24, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N25, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N26, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N27, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N28, WRAP= 1.0,$
+ 
+ 
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS ELSE GOTO XXIT;
+ 
+ 
+ 
+-Arch
+ 
+-INCLUDE FDEFRPTS
+-RUN
+ 
+ 
+TABLE FILE TRANTWO
+-* SUM PASSNGR_NAME AS 'Employee,Name '
+SUM PASSNGR_NAME AS 'Employee,Name '
+CAVOL/D12CS AS 'Total,Volume'
+CNTKT AS 'Net,Tickets'
+CDLSAV/D12CS AS 'Domestic Air Lost Savings'
+CTLSV  AS '% of,Domestic Lost Savings, to Domestic Air Volume'
+CLSAV/D12CS AS 'TOTAL $,Lost Savings'
+CTLS AS '% of,Total Lost Savings to,Total Air Volume'
+CLSTKT AS '# of Tickets, with Lost Savings'
+CCLS2 AS '% of,Lost Savings Due to,Time Specified'
+CCLS1 AS '% of,Lost Savings Due to,Declined Connection'
+CCLS3 AS '% of,Lost Savings Due to,Airline/Flight Specified'
+CCLS4 AS '% of,Lost Savings Due to,Refused Discount due to Penalty/Restrict'
+CCLS5 AS '% of,Lost Savings Due to,Section/Fare Type Specified'
+CCLS6 AS '% of,Lost Savings Due to,Fare Type Specified due to Upgrade'
+CCLS_AO AS '% of,Lost Savings Due to All Other reason codes'
+CDTLSV AS '% of Domestic Lost Savings, to Total Lost Savings'
+CVSAV/D12CS AS 'Contract,Savings'
+CDATKT AS 'Domestic,Average,Ticket,Price'
+CTAVGT AS 'Average,Ticket,Price'
+CADVT AS 'Net Tickets Purchased,0-6 Days'
+CADVT1 AS 'Net Tickets Purchased,7-13 Days'
+CADVT2 AS 'Net Tickets Purchased,14-20 Days'
+CADVT3 AS 'Net Tickets Purchased,21+ Days'
+CDNONONL AS '# of, Domestic,Offline Bookings'
+CNRP AS '%,of NonRefundable Tickets'
+CPMILE AS 'Cost Per Mile'
+PCTNOMID AS '%,of Cars Larger,Than Mid-Size'
+AVGCAR AS 'Average Car, Rate'
+AVGRATE AS 'Average,Hotel,Cost Per,Night'
+-* BY XPSNGR_NM NOPRINT
+BY PASSNGR_NAME NOPRINT
+ 
+ 
+ 
+-HEAD
+HEADING
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-INCLUDE FOOTERDT
+-*
+ON TABLE SET PAGE-NUM OFF
+ON TABLE NOTOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ 
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+
+    TYPE=REPORT, COLUMN=N2, WRAP=  2.15,$
+    TYPE=REPORT, COLUMN=N3, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N4, WRAP=  .50,$
+    TYPE=REPORT, COLUMN=N5, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N6, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N7, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N8, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N9, WRAP=  1.0,$
+    TYPE=REPORT, COLUMN=N10, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N11, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N12, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N13, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N14, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N15, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N16, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N17, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N18, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N19, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N20, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N21, WRAP= .75,$
+    TYPE=REPORT, COLUMN=N22, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N23, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N24, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N25, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N26, WRAP= 1.0,$
+    TYPE=REPORT, COLUMN=N27, WRAP= 1.0,$
+ 
+ 
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS ELSE GOTO XXIT;
+ 
+ 
+ 
+ 
+-NORECORDS
+-SET &&RPTSUF = 'MSG';
+-INCLUDE FDEFRPTS
+-RUN
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE HEADERDD
+PRINT EMPTY AS 'REPORT,MESSAGE'
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+ 
+-XXIT;

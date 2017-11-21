@@ -1,0 +1,330 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File TKTSUM.FEX
+-* 5/18/04 - DEB - ADDED AIRLINE_FEE COLUMN PER MONICA COLLIGAN
+-*10/08/04 - DV - CHANGED PROGRAM SO SETFILE WOULD PRODUCE REPORT
+-*                ADDED LEVEL1 LEVEL2 LEVEL3
+-*01/04/05 - DV - ADDED CODE FOR GLOBAL CURRENCY
+-*10/10/05 - DV - ADDED GEO_ZONE
+-**********************************************************************
+
+-**********************************************************************
+
+SET ASNAMES=ON
+
+USE CLEAR *
+-RUN 
+-SET &&RPTSUF = 'DTL';
+-INCLUDE FDEFRPTS
+-RUN
+
+
+-SET &HLDPATH=TEMPPATH(50,'A50');
+-SET &HNKA=&HLDPATH || 'HOLDA.FOC';
+-SET &HNKB=&HLDPATH || 'HOLDH.FOC';
+-SET &HNKC=&HLDPATH || 'HOLDC.FOC';
+-RUN
+
+-SET &FILENAME = 'HOLDA'; 
+-RUN
+
+-DOS STATE &HNKA
+-SET &HOLDFILEA = IF &RETCODE.EVAL EQ 0 THEN &HNKA | ' AS ' | &FILENAME ELSE ' ';
+
+-DOS STATE &HNKC
+-SET &HOLDFILEC = IF &RETCODE.EVAL EQ 0 THEN &HNKC | ' AS ' | &FILENAME ELSE ' ';
+
+-DOS STATE &HNKB
+-SET &HOLDFILEH = IF &RETCODE.EVAL EQ 0 THEN &HNKB | ' AS ' | &FILENAME ELSE ' ';
+
+USE ADD 
+&HOLDFILEA
+&HOLDFILEC
+&HOLDFILEH
+END
+
+TABLE FILE HOLDA
+PRINT
+  AMOUNT
+  TTL_COUNT
+BY LEVEL_DESC
+BY PASSNGR_NAME
+BY PNR_LOCATOR
+BY TRAN_DATE
+BY TKT_NUM
+BY LEVEL
+BY PCT
+BY LEVEL03
+BY LEVEL04
+BY LEVEL05
+BY FLAG
+BY TYPE
+BY NAME 
+BY DATE
+BY CITY1
+BY CITY2
+BY LEVEL1
+BY LEVEL2
+BY LEVEL3
+ON TABLE HOLD AS HOLDE 
+END
+-RUN
+
+
+-**************************************************************************
+DEFINE FILE HOLDE
+COUNT1/D12CS = IF (FLAG EQ 'A') THEN TTL_COUNT ELSE 0;
+COUNT2/D12CS = IF (FLAG EQ 'C') THEN TTL_COUNT ELSE 0;
+COUNT3/D12CS = IF (FLAG EQ 'H') THEN TTL_COUNT ELSE 0;
+AAMT/D12.2CSM = IF (FLAG EQ 'A') THEN AMOUNT ELSE 0;
+CAMT/D12.2CSM = IF (FLAG EQ 'C') THEN AMOUNT ELSE 0;
+HAMT/D12.2CSM = IF (FLAG EQ 'H') THEN AMOUNT ELSE 0;
+FLAGA/A5 = DECODE FLAG ('A' 'AIR'   'C' 'CAR'  'H' 'HOTEL');  
+PCTA/D3 = EDIT(PCT);
+PCTP/D4% = PCTA;
+
+XPSNGR_NM/A15        = 
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+TICKET_NMBR/A10 = IF (TKT_NUM EQ '0000000000') THEN ' ' ELSE
+                  TKT_NUM;
+                 
+-*DEFINES ON PREVIOUS DEFINES 
+PCT1/D8.2=EDIT(PCT) / 100;
+
+DPT_AMT/D12.2C = IF (FLAG EQ 'A') THEN (AAMT * PCT1) ELSE
+                  IF (FLAG EQ 'C') THEN (CAMT * PCT1) ELSE
+                  IF (FLAG EQ 'H') THEN (HAMT * PCT1) ELSE 0;
+
+
+END
+
+TABLE FILE HOLDE
+SUM TKT_NUM
+TRAN_DATE 
+AAMT  
+HAMT 
+CAMT
+DPT_AMT
+BY PASSNGR_NAME
+BY TKT_NUM
+BY FLAG
+BY DATE
+BY CITY1
+BY CITY2
+BY LEVEL_DESC  
+BY LEVEL03 
+BY LEVEL04 
+BY LEVEL05
+BY PCTP
+BY TYPE
+ON TABLE HOLD AS HOLDF
+END
+-RUN
+
+
+
+TABLE FILE HOLDF
+PRINT TKT_NUM
+      TRAN_DATE
+      AAMT
+      HAMT
+      CAMT
+      DPT_AMT    
+      PCTP
+      PASSNGR_NAME
+      TKT_NUM
+      FLAG
+      DATE
+      CITY1
+      CITY2
+      LEVEL_DESC
+      TYPE
+BY LEVEL03
+BY LEVEL04
+BY LEVEL05
+WHERE DPT_AMT NE 0
+ON TABLE HOLD AS HOLDG
+END
+ 
+DEFINE FILE HOLDG
+NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+END
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLDG';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+
+TABLE FILE HOLDG
+-INCLUDE HEADACH
+"&&SUBHEAD"
+"</2"
+
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+
+ 
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+  
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+-*-INCLUDE &&DTSTY 
+
+
+
+-*ENDSTYLE
+-*
+
+FOOTING BOTTOM
+"</2"
+"&&FOOTER1"
+"&&FOOTER2"
+
+"eTTek Review &DATE AT <NOWTOD <75 &&FOOTR"
+
+ON TABLE SET PAGE-NUM OFF
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.250000, 
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=7, BACKCOLOR=NONE, STYLE=NORMAL, $
+-* TYPE=REPORT, WRAP=1,$
+TYPE=REPORT, COLUMN=N2, WRAP= 1.0,$
+TYPE=REPORT, COLUMN=N3, WRAP= .75,$
+TYPE=REPORT, COLUMN=N4, WRAP= .75,$
+TYPE=REPORT, COLUMN=N5, WRAP= 1.0,$
+TYPE=REPORT, COLUMN=N6, WRAP= 1.50,$
+TYPE=REPORT, COLUMN=N7, WRAP=  .65,$
+TYPE=REPORT, COLUMN=N8, WRAP= 1.0,$
+TYPE=REPORT, COLUMN=N9, WRAP= .50,$
+TYPE=REPORT, COLUMN=N10, WRAP= 2.0,$
+TYPE=REPORT, COLUMN=N11, WRAP= .75,$
+TYPE=REPORT, COLUMN=N12, WRAP= 1.25,$
+TYPE=REPORT, COLUMN=N13, WRAP= 1.25,$
+TYPE=REPORT, COLUMN=N14, WRAP= .80,$
+TYPE=REPORT, COLUMN=N15, WRAP= .80,$
+TYPE=REPORT, COLUMN=N16, WRAP= .80,$
+TYPE=REPORT, COLUMN=N17, WRAP= 1.0,$
+
+
+-* TYPE=FOOTING, SIZE=9, LINE=17, OBJECT=FIELD, ITEM=2,COLOR=BLUE, FONT=TIMES NEW ROMAN,$
+
+-* TYPE=DATA, FONT=TIMES NEW ROMAN, SIZE=9, BACKCOLOR=RGB(128 255 255), $
+-* TYPE=DATA, SIZE=9, OBJECT=FIELD, ITEM=2,COLOR=BLUE, FONT=TIMES NEW ROMAN,$
+
+
+-* TYPE=HEADING, OBJECT=TEXT, SIZE=8, COLOR=BLACK, $
+TYPE=HEADING, LINE=4, SIZE=9, STYLE=BOLD, COLOR=GREY, $
+TYPE=HEADING, LINE=5, SIZE=9, STYLE=BOLD, COLOR=GREY, $
+TYPE=HEADING, LINE=6, SIZE=9, STYLE=BOLD, COLOR=GREY, $
+TYPE=HEADING, LINE=7, SIZE=9, STYLE=BOLD, COLOR=GREY, $
+TYPE=HEADING, LINE=8, SIZE=9, STYLE=BOLD, COLOR=GREY, $
+TYPE=HEADING, LINE=10, SIZE=9, STYLE=BOLD, COLOR=GREY, $
+TYPE=HEADING, LINE=11, SIZE=12, STYLE=BOLD+ITALIC, FONT=COURIER NEW, $
+TYPE=HEADING, LINE=12, SIZE=12, STYLE=BOLD+ITALIC, FONT=COURIER NEW, $
+TYPE=HEADING, LINE=13, SIZE=10, STYLE=BOLD+ITALIC, FONT=COURIER NEW, $
+
+
+TYPE=FOOTING, SIZE=7, STYLE=BOLD, COLOR=GREY, $
+TYPE=TITLE, STYLE=BOLD, $
+TYPE=SUBTOTAL, SIZE=8, STYLE=BOLD,$
+-*TYPE=SUBTOTAL, SIZE=8, STYLE=BOLD, N=10, BACKCOLOR=RGB(128 255 255),$
+TYPE=GRANDTOTAL, SIZE=8, STYLE=BOLD,$
+TYPE=REPORT, IMAGE=&&TNTPIC,  POSITION=(&&TNTDTPOS), SIZE=(&&TNTDTSIZ), $
+TYPE=REPORT, IMAGE=&&ROLLPIC, POSITION=(&&ROLDTPOS), SIZE=(&&ROLDTSIZ), $
+ENDSTYLE
+
+
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+

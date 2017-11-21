@@ -1,0 +1,60 @@
+-**************************************************************************************************
+-* file name: ConvertRPTFLDtrvlsmary.fex
+-*   convert fields from TRVLSMRY segment in RPT_FLDS into SQL rpt_flds_trvlsmry table.
+-* SQL tables: rpt_flds_total_r and rpt_flds_total_r2
+-*         
+-**************************************************************************************************
+-SET &ECHO = ALL;
+SET ASNAME = ON
+
+-* retrieve from roll1 segment
+-INCLUDE ConvertOldPath
+-RUN
+
+TABLE FILE RPT_FLDS
+PRINT TRVLSMRY.ID AS 'ID'
+	ORDER CHECKED
+BY INST_KEY
+WHERE TRVLSMRY.ID GT 0 
+&WHERE
+ON TABLE HOLD
+END
+-RUN
+
+-INCLUDE ConvertNewPath
+-RUN
+
+MODIFY FILE rpt_flds_trvlsmry
+FIXFORM FROM HOLD
+MATCH INST_KEY ID
+  ON MATCH REJECT
+  ON NOMATCH INCLUDE
+DATA ON HOLD
+END
+-RUN
+
+
+-* retrieve from roll2 segment
+-INCLUDE ConvertOldPath
+-RUN
+
+TABLE FILE RPT_FLDS
+PRINT UDINFO.UID AS 'UDID_SEQ' UINCL AS 'UDID_INCL' UDID UDDATA FROMVAL TOVAL
+BY INST_KEY
+WHERE UDINFO.UID GT 0
+&WHERE
+ON TABLE HOLD
+END
+-RUN
+
+-INCLUDE ConvertNewPath
+-RUN
+
+MODIFY FILE rpt_flds_UDID
+FIXFORM FROM HOLD
+MATCH INST_KEY UDID_SEQ
+  ON MATCH REJECT
+  ON NOMATCH INCLUDE
+DATA ON HOLD
+END
+-RUN

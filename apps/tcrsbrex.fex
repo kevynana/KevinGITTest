@@ -1,0 +1,270 @@
+-* 02/22/2017  JEM  S-30575 Added logic for new report TCDLINC
+-*09/26/2017 - DLV - S-37268 - UPDATED defines for ND_APTS ND_APTS1
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+
+-*========================================================================
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT
+
+
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+                           
+ORGDST/A6= ORG_APC||DST_APC;
+ORGDSTA/A6 = IF ORGDST EQ 'SEAANC' THEN 'ANCSEA' ELSE
+             IF ORGDST EQ 'SEABOI' THEN 'BOISEA' ELSE 
+             IF ORGDST EQ 'SEABOS' THEN 'BOSSEA' ELSE
+             IF ORGDST EQ 'SEADEN' THEN 'DENSEA' ELSE 
+             IF ORGDST EQ 'SEAGEG' THEN 'GEGSEA' ELSE
+             IF ORGDST EQ 'SEAHNL' THEN 'HNLSEA' ELSE
+             IF ORGDST EQ 'SEAKOA' THEN 'KOASEA' ELSE
+             IF ORGDST EQ 'SEALAS' THEN 'LASSEA' ELSE
+             IF ORGDST EQ 'SEALAX' THEN 'LAXSEA' ELSE
+             IF ORGDST EQ 'SEAMCO' THEN 'MCOSEA' ELSE
+             IF ORGDST EQ 'SEAOGG' THEN 'OGGSEA' ELSE
+             IF ORGDST EQ 'SEAPDX' THEN 'PDXSEA' ELSE 
+             IF ORGDST EQ 'SEAPHX' THEN 'PHXSEA' ELSE 
+             IF ORGDST EQ 'SEAPSP' THEN 'PSPSEA' ELSE
+             IF ORGDST EQ 'SEASAN' THEN 'SANSEA' ELSE
+             IF ORGDST EQ 'SFOSEA' THEN 'SEASFO' ELSE
+             IF ORGDST EQ 'SJCSEA' THEN 'SEASJC' ELSE
+             IF ORGDST EQ 'SMFSEA' THEN 'SEASMF' ELSE
+             IF ORGDST EQ 'SNASEA' THEN 'SEASNA' ELSE 
+             IF ORGDST EQ 'TUSSEA' THEN 'SEATUS' ELSE 
+             IF ORGDST EQ 'SLCLAX' THEN 'LAXSLC' ELSE
+             IF ORGDST EQ 'SLCSFO' THEN 'SFOSLC' ELSE
+             IF ORGDST EQ 'LAXBOS' THEN 'BOSLAX' ELSE
+             IF ORGDST EQ 'LAXCUN' THEN 'CUNLAX' ELSE
+             IF ORGDST EQ 'LAXLAS' THEN 'LASLAX' ELSE
+             IF ORGDST EQ 'MCOLAX' THEN 'LAXMCO' ELSE
+             IF ORGDST EQ 'PDXLAX' THEN 'LAXPDX' ELSE
+             IF ORGDST EQ 'SFOLAX' THEN 'LAXSFO' ELSE 
+             IF ORGDST EQ 'LASJFK' THEN 'JFKLAS' ELSE
+             IF ORGDST EQ 'LAXJFK' THEN 'JFKLAX' ELSE
+             IF ORGDST EQ 'SFOJFK' THEN 'JFKSFO' ELSE ORGDST;        
+             
+             
+             
+ORGA/A3 = EDIT(ORGDSTA, '999');
+DSTA/A3 = EDIT(ORGDSTA, '$$$999');
+ORGDST1/A7= ORGA||'-'||DSTA;
+
+                           
+TKT_PURCH/D8.2CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0; 
+-*ND_APTS/A7 = NDO_APT.ND_ORG|' '|NDD_APT.ND_DST;
+-*ND_APTS1/A6 = NDO_APT.ND_ORG||NDD_APT.ND_DST;
+ND_APTS/A7 = ND_ORG|' '|ND_DST;
+ND_APTS1/A6 = ND_ORG||ND_DST;
+
+-* DEFINES ON PREVIOUS DEFINES
+DL_CP/A1 = IF ORGDST EQ 'SEAANC' OR 'ANCSEA' OR 'SEABOI' OR 'BOISEA' OR 'SEABOS' OR 'BOSSEA' OR 'SEADEN' OR 'DENSEA' OR 'SEAGEG' OR 'GEGSEA' OR 'SEAHNL' OR 'HNLSEA' OR
+                         'SEAKOA' OR 'KOASEA' OR 'SEALAS' OR 'LASSEA' OR 'SEALAX' OR 'LAXSEA' OR 'SEAMCO' OR 'MCOSEA' OR 'SEAOGG' OR 'OGGSEA' OR 'SEAPDX' OR 'PDXSEA' OR
+                         'SEAPHX' OR 'PHXSEA' OR 'SEAPSP' OR 'PSPSEA' OR 'SEASAN' OR 'SANSEA' OR 'SEASFO' OR 'SFOSEA' OR 'SEASJC' OR 'SJCSEA' OR 'SEASMF' OR 'SMFSEA' OR
+                         'SEASNA' OR 'SNASEA' OR 'SEATUS' OR 'TUSSEA' OR 'SLCLAX' OR 'LAXSLC' OR 'SLCSFO' OR 'SFOSLC' OR 'LAXBOS' OR 'BOSLAX' OR 'LAXCUN' OR 'CUNLAX' OR
+                         'LAXLAS' OR 'LASLAX' OR 'LAXMCO' OR 'MCOLAX' OR 'LAXPDX' OR 'PDXLAX' OR 'LAXSFO' OR 'SFOLAX' OR 'JFKLAS' OR 'LASJFK' OR 'JFKLAX' OR 'LAXJFK' OR
+                         'JFKSFO' OR 'SFOJFK' THEN 'Y' ELSE 'N';
+                           
+
+END
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  AIRLINE
+  FARE_PAID
+  NET_TKT_CNT
+  MRK_TKT_CNT
+  REF_EXCH_CNT
+  TKT_PURCH  
+  VAL_AIRLINE
+  RESV_BRANCH
+  TICKET_BRANCH
+  ND_APTS
+  TICKET_AGENCY
+  TKT_NUM
+  TRN_DATE
+  ORGDST
+  ORGDST1
+  DL_CP
+  ND_APTS1
+  SEG_COUNT
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TCARESB
+END
+-RUN
+
+
+-IF &&SETF EQ 'TCDLINC' GOTO DLINC;
+
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACTED DATA FROM ABOVE
+-*========================================================================
+DEFINE FILE TCARESB
+ROLLCD/A8 = '&&ROLL';
+NMB/I5    = NMB + 1;
+END
+TABLE FILE TCARESB
+SUM FARE_PAID/D14.2CS
+    NET_TKT_CNT 
+    MRK_TKT_CNT
+    REF_EXCH_CNT
+    TKT_PURCH
+BY ROLLCD
+BY NMB
+BY TICKET_BRANCH
+BY RESV_BRANCH
+BY VAL_AIRLINE
+BY AIRLINE
+BY ND_APTS
+BY TICKET_AGENCY
+ON TABLE HOLD AS TCRBR
+END
+-RUN
+
+
+TABLE FILE TCRBR
+PRINT TICKET_AGENCY
+      TICKET_BRANCH
+      RESV_BRANCH
+      VAL_AIRLINE
+      AIRLINE
+      FARE_PAID
+      REF_EXCH_CNT
+      NET_TKT_CNT
+      MRK_TKT_CNT      
+      TKT_PURCH  
+      ND_APTS
+BY ROLLCD 
+BY NMB
+ON TABLE HOLD AS TCRBR1
+END
+-RUN
+
+
+MODIFY FILE TC_ARBR
+LOG DUPL MSG OFF
+FIXFORM FROM TCRBR1
+MATCH ROLLCD NMB
+ON NOMATCH INCLUDE
+ON MATCH REJECT
+DATA ON TCRBR1
+END
+-RUN
+
+
+-DLINC;
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACTED DATA FROM ABOVE
+-*========================================================================
+
+TABLE FILE TCARESB
+SUM SEG_COUNT/P12 NET_TKT_CNT ORGDST1
+BY TKT_NUM
+ON TABLE HOLD AS TCARESB1
+END
+-RUN
+
+TABLE FILE TCARESB1
+SUM SEG_COUNT/P12 NET_TKT_CNT
+BY ORGDST1 AS 'ND_APTS'
+BY TKT_NUM
+ON TABLE COLUMN-TOTAL
+WHERE SEG_COUNT NE 0
+ON TABLE HOLD AS TCARESB2
+END
+-RUN
+
+
+
+DEFINE FILE TCARESB2
+ROLLCD/A8 = '&&ROLL';
+END
+TABLE FILE TCARESB2
+SUM NET_TKT_CNT 
+BY ROLLCD
+BY ND_APTS
+BY TKT_NUM
+ON TABLE HOLD AS TCRBR
+END
+-RUN
+
+
+TABLE FILE TCRBR
+PRINT NET_TKT_CNT
+BY ROLLCD 
+BY ND_APTS
+BY TKT_NUM
+ON TABLE HOLD AS TCRBR1
+END
+-RUN
+
+
+MODIFY FILE TC_DLINC
+LOG DUPL MSG OFF
+FIXFORM FROM TCRBR1
+MATCH ROLLCD ND_APTS TKT_NUM
+ON NOMATCH INCLUDE
+ON MATCH REJECT
+DATA ON TCRBR1
+END
+-RUN
+
+
+
+
+
+
+
+-NEXTONE

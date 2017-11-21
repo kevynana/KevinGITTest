@@ -1,0 +1,111 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* ADDED TRANTYPE INCLUDE - JK 12/30/14 STORY ID S-06492
+
+-INCLUDE SETECHO
+-SET &&SCH_MAIN = &&WEB_PATH || 'SCH_MAIN.FOC';
+-RUN
+FILEDEF SCH_MAIN DISK &&SCH_MAIN
+-RUN
+
+CREATE FILE SCH_MAIN
+-RUN
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT
+LEVEL_DESC/A60 = &&LDESC;
+
+-* AIR VOLUME CALCULATION
+      AIR_VOL/D12.2 = IF (VOID_DATE EQ 0) THEN (SEG_AMT + SEG_TAX) ELSE 0;
+
+-* NET AMOUNT CALCULATION
+      NET_AMT/D12.2 = IF (VOID_DATE EQ 0) THEN SEG_AMT ELSE 0;
+
+-* TICKETS ISSUED CALCULATION
+        TKT_ISS/D12 = IF (SEG_NBR EQ '01') AND (SEG_AMT+SEG_TAX GE 0)
+                        AND (SEG_COUNT EQ 1) THEN 1 ELSE 0;
+
+-* NET TICKETS CALCULATION
+        NET_TKTS/D12 = IF (TICKET_CODE EQ '1') AND
+                            (VOID_DATE EQ 0) AND
+                            (SEG_NBR EQ '01') AND
+                            (SEG_AMT+SEG_TAX GE 0) AND
+                            (SEG_COUNT EQ 1) AND 
+                            (CONJ_REL EQ 1) THEN 1 ELSE 
+                         IF (TICKET_CODE EQ '1') AND
+                            (VOID_DATE EQ 0) AND
+                            (SEG_NBR EQ '01') AND 
+                            (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                         IF (TICKET_CODE EQ '1') AND
+                            (VOID_DATE EQ 0) AND
+                            (SEG_NBR EQ '01') AND
+                            (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+
+-* FULL REFUNDS ISSUED CALCULATION
+        REF_ISS/D12 = IF (VOID_DATE EQ 0) AND (RF_FLAG EQ 'F')
+                        AND (DOC_TYPE NE '1') AND (SEG_COUNT EQ -1)
+                        AND (SEG_NBR EQ '01') THEN 1 ELSE 0;
+
+-* LOST SAVINGS AMOUNT CALCULATION
+        LOS_AMT/D12.2 = IF (VOID_DATE EQ 0)
+                        THEN ((SEG_AMT + SEG_TAX) - SEG_LOWEST) ELSE 0;
+
+-*  VALUE ADDED SAVINGS AMOUNT CALCULATION
+        VAS_AMT/D12.2 = IF (VOID_DATE EQ 0) THEN 
+                        (SEG_DISCOUNT - SEG_AMT - SEG_TAX) ELSE 0;
+
+TRNM/MT = IF '&&DATETYPE.EVAL' EQ 'I' THEN TRN_DATE ELSE FST_DPT_DATE;
+TRNY/A3 = 'YTD';
+
+-* DEFINES ON PREVIOUS DEFINES
+DOM_VOL/D12.2 = IF (AIR_MAIN.INTL_DOM EQ 'D') THEN NET_AMT ELSE 0;
+DOM_TKTS/D12.2 = IF (AIR_MAIN.INTL_DOM EQ 'D') THEN NET_TKTS ELSE 0;
+INT_VOL/D12.2 = IF (AIR_MAIN.INTL_DOM EQ 'I') THEN NET_AMT ELSE 0;
+INT_TKTS/D12.2 = IF (AIR_MAIN.INTL_DOM EQ 'I') THEN NET_TKTS ELSE 0;
+
+ 
+-INCLUDE TRANTYPE               
+END
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  AIR_VOL	
+  DOM_TKTS
+  DOM_VOL
+  INT_TKTS
+  INT_VOL
+  NET_AMT
+  TKT_ISS
+  LEVEL_DESC	
+  NET_TKTS
+  REF_ISS
+  LOS_AMT	
+  TRNM	
+  TRNY
+-*  TRN_DATE
+  VAS_AMT	
+-INCLUDE &AIRDATES
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS SCHAHLD
+END
+-RUN
+
+

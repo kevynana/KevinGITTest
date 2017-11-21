@@ -1,0 +1,39 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File IRCHEAD.FEX
+-********************************************************************
+-* MODIFICATIONS:
+-* 5/22/1998 ADDED THE FOLLOWING SET COMMANDS - LP
+-* 8/28/1998 CHANGED BRANCH INFO TO ROLLUP INFO - LP
+-********************************************************************
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+
+-********************************************************************
+-*
+-* Standard Page Header Routine places client information, TandT
+-* branch information, report date, date range selection, etc.  
+-*
+-********************************************************************
+" "
+" "
+" "
+"                                <74 &&ROLLNME"
+"DEPARTURE DATES:             <74 &&AgencyName"
+"&FMM/&FMD/&FMY - &TOM/&TOD/&TOY <74 &&ROLLCS"
+"                                <74 &&ROLLCNCT"
+"                                <74 &&ROLLPHN"
+
+
+" "                           
+"                                <74 PAGE: <TABPAGENO"
+
+"<20 &&RPT_TTL1"
+"<20 &&RPT_TTL2"
+
+"</1"
+

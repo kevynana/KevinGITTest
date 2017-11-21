@@ -1,0 +1,600 @@
+
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*                     FOCEXEC: AIRRPT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+
+-*9/30/03        DEB                CARRIED THROUGHT EMB_APT_CD RTE_APT_CD 
+-*11/25/03       JOY                ADDED CLASS
+-*11/09/04       DEB                ADDED CODE FOR GLOBAL CURRENCY
+-* 07/03/2017 - RSB - S-35420 Report view to be updated with standard footer (part 3)
+-*                             Worked the view though there are NO current setfiles using AVI110.
+-* 09/13/2017   RSB  S-39793 Footer changes to be backed out of story S-35420
+-**************************************************************************
+-*
+SET ASNAMES = ON
+-RUN
+
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &FPAID_CUR = 'FARE,PAID, (' | &&CURRENCY || ')';
+-SET &&PRINT6='GFARE_AMT/D16.2CS AS ' | '''&FPAID_CUR.EVAL''';
+-SET &&PRINT8='TOTAL_KILO AS ''TOTAL,KLMTRS''';
+
+-NEXT;
+
+JOIN TOPDST.DST_APCX IN TOPDST TO AIRPORT.APCODEX IN AIRPORT AS J2
+END
+
+TABLE FILE TOPDST
+SUM AIRLINE
+    NET_TKT_CNT 
+    FARE_PAID
+    PAID_FAREX/D16.2CS
+    KILO 
+    NEW_SEG_MILES
+    DST_APC
+    NAMEC
+    AIRPORT_NAME
+    EMB_APT_CD     
+    EMB_APT_NM
+    DISSAVINGS
+    DST_APC 
+    SAVINGS
+    REFUSE_CODE
+    RTE_APT_CD 
+    RTE_APT_NM  
+    SEG_NBR
+    TKT_NUM     
+    TKT_SORT
+    TKT_TYPE
+    TRN_DATE
+    DPT_TIME
+    XDPT_DT
+    XTRAN_DT
+    XPSNGR_NM
+BY ORG_APC 
+BY DST_APC
+BY VAL_AIRLINE
+BY AIRLINE NOPRINT
+BY XPSNGR_NM NOPRINT
+BY TKT_SORT NOPRINT
+BY SEG_NBR NOPRINT
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+SUM NET_TKT_CNT AS 'ATKT'
+    FARE_PAID AS 'AFARE'
+    PAID_FAREX AS 'GAFARE'
+    KILO AS 'AKILO'
+    NEW_SEG_MILES AS 'AMILES'
+BY ORG_APC
+BY DST_APC
+BY VAL_AIRLINE
+ON TABLE HOLD AS AHOLD2
+END
+-RUN
+ 
+
+
+TABLE FILE AHOLD2
+PRINT AFARE
+      ATKT
+      AMILES
+      AKILO
+      GAFARE
+      VAL_AIRLINE
+BY ORG_APC
+BY DST_APC
+RANKED BY HIGHEST ATKT
+ON TABLE HOLD AS RNKHLD1
+END
+-RUN
+
+
+
+
+
+-SET &&RANK_LIMIT2= 15;
+
+DEFINE FILE RNKHLD1
+  DRANK/D5      = RANK ;
+  ARANKX/A6     = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5      = EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT2 ;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                 IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+
+
+TABLE FILE RNKHLD1
+PRINT AFARE
+      ATKT
+      AMILES
+      AKILO
+      GAFARE
+      VAL_AIRLINE
+BY ORG_APC
+BY DST_APC
+BY RANK_VALUE 
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+ 
+
+MATCH FILE HOLD1
+PRINT AIRLINE
+    NET_TKT_CNT 
+    FARE_PAID
+    PAID_FAREX 
+    KILO 
+    NEW_SEG_MILES
+    DST_APC
+    NAMEC
+    ORG_APC
+    AIRPORT_NAME
+    EMB_APT_CD     
+    EMB_APT_NM
+    DISSAVINGS
+    DST_APC 
+    SAVINGS
+    REFUSE_CODE
+    RTE_APT_CD 
+    RTE_APT_NM  
+    SEG_NBR
+    TKT_NUM     
+    TKT_SORT
+    TKT_TYPE
+    TRN_DATE
+    DPT_TIME
+    XDPT_DT
+    XTRAN_DT
+    XPSNGR_NM
+BY ORG_APC 
+BY DST_APC
+BY VAL_AIRLINE
+ON TABLE HOLD
+RUN
+FILE RNKHLD2
+SUM AFARE
+      ATKT
+      AMILES
+      AKILO
+      GAFARE
+      RANK_VALUE
+BY ORG_APC
+BY DST_APC
+BY VAL_AIRLINE
+AFTER MATCH HOLD AS HOLD3 OLD-OR-NEW
+END
+-RUN
+
+
+TABLE FILE HOLD1
+SUM NET_TKT_CNT AS 'TTKT'
+    FARE_PAID AS 'TFARE'
+    PAID_FAREX/D16.2CS AS 'TGFARE'
+    KILO AS 'TKILO'
+    NEW_SEG_MILES AS 'TMILE'
+    DISSAVINGS AS 'TLOSS'
+BY ORG_APC
+BY DST_APC
+BY VAL_AIRLINE
+BY XPSNGR_NM
+BY TKT_SORT
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+MATCH FILE HOLD3
+PRINT AIRLINE 
+    AIRPORT_NAME
+    FARE_PAID
+    PAID_FAREX 
+    KILO 
+    NEW_SEG_MILES
+    DST_APC
+    NAMEC
+    EMB_APT_CD     
+    EMB_APT_NM
+    DISSAVINGS
+    NET_TKT_CNT
+    SAVINGS
+    REFUSE_CODE
+    RTE_APT_CD 
+    RTE_APT_NM  
+    SEG_NBR
+    TKT_NUM     
+    TKT_TYPE
+    TRN_DATE
+    DPT_TIME
+    XDPT_DT
+    XTRAN_DT
+    RANK_VALUE
+    AFARE
+    ATKT
+    AMILES
+    AKILO
+    GAFARE
+BY ORG_APC
+BY DST_APC
+BY VAL_AIRLINE
+BY XPSNGR_NM
+BY TKT_SORT
+ON TABLE HOLD
+RUN
+FILE HOLD4
+SUM 
+    TTKT
+    TFARE
+    TLOSS
+    TMILE
+    TKILO
+    TGFARE
+BY ORG_APC
+BY DST_APC
+BY VAL_AIRLINE
+BY XPSNGR_NM
+BY TKT_SORT
+AFTER MATCH HOLD AS XONE OLD-OR-NEW
+END
+-RUN
+
+
+TABLE FILE XONE
+SUM &&RANK_METH
+BY ORG_APC
+BY DST_APC
+ON TABLE HOLD AS RHOLD1
+END
+-RUN
+
+
+TABLE FILE RHOLD1
+PRINT &&RANK_METH
+RANKED BY HIGHEST &&RANK_METH AS 'SEG_RANK'
+BY ORG_APC
+BY DST_APC
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+
+
+MATCH FILE XONE
+PRINT AIRLINE
+    AIRPORT_NAME
+    FARE_PAID
+    PAID_FAREX 
+    KILO 
+    NEW_SEG_MILES
+    DST_APC
+    NAMEC
+    EMB_APT_CD     
+    EMB_APT_NM
+    DISSAVINGS
+    DST_APC 
+    SAVINGS
+    REFUSE_CODE
+    RTE_APT_CD 
+    RTE_APT_NM  
+    SEG_NBR
+    TKT_NUM     
+    TKT_SORT
+    TKT_TYPE
+    TRN_DATE
+    DPT_TIME
+    XDPT_DT
+    XTRAN_DT
+    XPSNGR_NM
+    VAL_AIRLINE
+    TTKT
+    TFARE
+    TLOSS
+    TMILE
+    TKILO
+    TGFARE
+    RANK_VALUE
+    AFARE
+    ATKT
+    AMILES
+    AKILO
+    GAFARE
+BY ORG_APC
+BY DST_APC
+ON TABLE HOLD
+RUN 
+FILE RHOLD2
+SUM SEG_RANK
+BY ORG_APC
+BY DST_APC
+AFTER MATCH HOLD AS XTWO OLD-OR-NEW
+END
+-RUN
+
+
+
+
+
+TABLE FILE XTWO
+PRINT AIRLINE
+    AIRPORT_NAME
+    FARE_PAID
+    PAID_FAREX 
+    KILO 
+    NEW_SEG_MILES
+    DST_APC
+    NAMEC
+    EMB_APT_CD     
+    EMB_APT_NM
+    DISSAVINGS
+    DST_APC 
+    SAVINGS
+    REFUSE_CODE
+    RTE_APT_CD 
+    RTE_APT_NM  
+    SEG_NBR
+    TKT_NUM     
+    TKT_SORT
+    TKT_TYPE
+    TRN_DATE
+    DPT_TIME
+    XDPT_DT
+    XTRAN_DT
+    XPSNGR_NM
+    VAL_AIRLINE
+    TTKT
+    TFARE
+    TLOSS
+    TMILE
+    TKILO
+    TGFARE
+    ORG_APC
+    DST_APC
+    RANK_VALUE
+    AFARE
+    ATKT
+    AMILES
+    AKILO
+    GAFARE
+RANKED BY HIGHEST SEG_RANK
+ON TABLE HOLD AS HOLD6
+END
+-RUN
+
+
+-SET &&RANK_LIMIT = 25;
+
+DEFINE FILE HOLD6
+  ORG_LIMIT/I2 = &&RANK_LIMIT ;
+  OLIMIT/A2    = EDIT(ORG_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6 = IF DST_APC NE LAST DST_APC THEN (LAST LIST + 1) 
+    ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6  = EDIT(FRANKX,'$999999'); 
+  ORG_VALUE/A9 = IF ORG_LIMIT EQ 0 THEN BRANK ELSE
+               IF LIST GT ORG_LIMIT THEN 'ALL OTHER' ELSE FRANK;
+  RANK_LABEL1/A60 = IF ORG_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL1
+                     ELSE ' ';
+  RANK_LABEL2/A60 = IF ORG_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL2
+                      ELSE ' ';
+  RANK_LABEL3/A60 = IF ORG_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL3
+                      ELSE ' ';             
+END
+
+
+TABLE FILE HOLD6
+PRINT AIRLINE
+    AIRPORT_NAME
+    FARE_PAID
+    PAID_FAREX 
+    KILO 
+    NEW_SEG_MILES
+    DST_APC
+    NAMEC
+    EMB_APT_CD     
+    EMB_APT_NM
+    DISSAVINGS
+    DST_APC 
+    SAVINGS
+    REFUSE_CODE
+    RTE_APT_CD 
+    RTE_APT_NM  
+-*    SEG_NBR
+    TKT_NUM     
+-*     TKT_SORT
+    TKT_TYPE
+    TRN_DATE
+    DPT_TIME
+    VAL_AIRLINE
+    ORG_VALUE
+    RANK_VALUE
+    RANK_LABEL1
+    RANK_LABEL2
+    RANK_LABEL3
+    XDPT_DT
+    XTRAN_DT
+    XPSNGR_NM
+    TTKT
+    TFARE
+    TLOSS
+    TMILE
+    TKILO
+    TGFARE
+    ORG_APC
+    DST_APC
+    AFARE
+    ATKT
+    AMILES
+    AKILO
+    GAFARE
+-*BY ORG_VALUE
+-*BY RANK_VALUE
+-*BY RANK_LABEL1
+-*BY RANK_LABEL2
+-*BY RANK_LABEL3
+-*BY VAL_AIRLINE
+-*BY XPSNGR_NM NOPRINT
+BY TKT_SORT  
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD4
+END
+-RUN  
+
+
+DEFINE FILE AIRHOLD4
+NET_TKT_CNT/D9S = IF (SEG_NBR EQ '01') THEN  TTKT ELSE 0;
+PASNGR_NAME/A33 = IF TKT_NUM NE LAST TKT_NUM THEN XPSNGR_NM ELSE ' ';
+REASON_CD/A2 =  IF TKT_NUM NE LAST TKT_NUM THEN REFUSE_CODE ELSE ' ';
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+XT_DTE/A8 = EDIT(TRN_DATE);
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;
+
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A100 = TKT_SORT||XT_DTE||XPSNGR_NM;
+FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+GFARE_AMT/D16.2CS = IF SRT_DT NE LAST SRT_DT THEN TGFARE ELSE 0;
+FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+TOTAL_MILES/D8CS = IF TKT_SORT NE LAST TKT_SORT THEN TMILE ELSE 0;
+TOTAL_KILOS/D9CS = IF TKT_SORT NE LAST TKT_SORT THEN TKILO ELSE 0;
+NOWTOD/A8 WITH RANK_VALUE = HHMMSS (NOWTOD);
+XTS_FLAG/A1 = IF XTKT_SRT NE LAST XTKT_SRT THEN 'Y' ELSE 'N';
+
+END
+
+-RUN
+
+
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*7/31/00     IBISTL-KR             ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD4';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE AIRHOLD4
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+BY XTS_FLAG NOPRINT
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+
+-* REJ EX RESTART 
+-*-*-EXIT
+
+

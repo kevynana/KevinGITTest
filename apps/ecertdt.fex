@@ -1,0 +1,394 @@
+
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*                     FOCEXEC: AIRRPT
+-**************************************************************************
+-* 07/18/2017 - RSB - S-29908 - Webfocus Upgrade - Reports that do not run in ER5 Sandbox
+-*                               Needed to check for zero records from ECERTEX to eliminate the
+-*                                '*** Report Failed ***' message for RC reports.
+
+-INCLUDE SETECHO
+SET ASNAMES=ON
+-RUN
+
+TABLE FILE ECERT
+PRINT ISS_DTE
+      ENCI_NBR
+      ENCI_DTE
+      ENCI_AMT
+      ENCI_EXP_DT      
+BY TKTA
+ON TABLE HOLD AS EHLD1
+END
+-RUN
+
+
+TABLE FILE RPT_HOLD
+PRINT AIR_KEY   
+  AIRLINE   
+  AIRLINE_NAME 
+  ARR_TIME
+  DPT_TIME  
+  DOC_TYPE
+  EMB_APT_NM
+  FARE_PAID 
+  FLIGHT
+  FST_DPT_DATE
+  LEVEL_DESC    
+  LEVEL1    
+  LEVEL2    
+  LEVEL3    
+  NET_TKT_CNT   
+  NEW_ADV_PURCH 
+  PASSNGR_NAME 
+  REFUSE_CODE   
+  RTE_APT_NM
+  SEG_NBR
+  TKT_SORT  
+  TRN_DATE
+  XARR_DT   
+  XDPT_DT   
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT  
+BY TKT_NUM
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+MATCH FILE AIRHOLD1
+PRINT AIR_KEY   
+  AIRLINE   
+  AIRLINE_NAME 
+  ARR_TIME
+  DPT_TIME  
+  DOC_TYPE
+  EMB_APT_NM
+  FARE_PAID 
+  FLIGHT
+  FST_DPT_DATE
+  LEVEL_DESC    
+  LEVEL1    
+  LEVEL2    
+  LEVEL3    
+  NET_TKT_CNT   
+  NEW_ADV_PURCH 
+  PASSNGR_NAME 
+  REFUSE_CODE   
+  RTE_APT_NM
+  SEG_NBR
+  TKT_SORT  
+  TRN_DATE
+  XARR_DT   
+  XDPT_DT   
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT  
+BY TKT_NUM
+ON TABLE HOLD
+RUN
+FILE EHLD1
+PRINT ISS_DTE
+      ENCI_NBR
+      ENCI_DTE
+      ENCI_AMT
+      ENCI_EXP_DT
+BY TKTA
+AFTER MATCH HOLD AS AIRHOLD2 OLD-AND-NEW
+END
+-RUN
+
+
+-* -IF &RECORDS EQ 0 THEN GOTO XXIT ELSE GOTO CONTRPT;
+-IF &LINES EQ 0 THEN GOTO XXIT ELSE GOTO CONTRPT;
+-RUN
+
+
+-CONTRPT;
+
+TABLE FILE AIRHOLD2
+SUM FARE_PAID AS 'TFARE'
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLDA
+END
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT AIR_KEY   
+  AIRLINE   
+  AIRLINE_NAME 
+  ARR_TIME
+  DPT_TIME  
+  DOC_TYPE
+  EMB_APT_NM
+  FARE_PAID 
+  FLIGHT
+  FST_DPT_DATE
+  LEVEL_DESC    
+  LEVEL1    
+  LEVEL2    
+  LEVEL3    
+  NET_TKT_CNT   
+  NEW_ADV_PURCH 
+  PASSNGR_NAME 
+  REFUSE_CODE   
+  RTE_APT_NM
+  SEG_NBR
+  TKT_SORT  
+  TKT_NUM
+  TRN_DATE
+  XARR_DT   
+  XDPT_DT   
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT  
+  ISS_DTE
+  ENCI_NBR
+  ENCI_DTE
+  ENCI_AMT
+  ENCI_EXP_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+MATCH FILE XTWO
+PRINT AIR_KEY   
+  AIRLINE   
+  AIRLINE_NAME 
+  ARR_TIME
+  DPT_TIME  
+  DOC_TYPE
+  EMB_APT_NM
+  FARE_PAID 
+  FLIGHT
+  FST_DPT_DATE
+  LEVEL_DESC    
+  LEVEL1    
+  LEVEL2    
+  LEVEL3    
+  NET_TKT_CNT   
+  NEW_ADV_PURCH 
+  PASSNGR_NAME 
+  REFUSE_CODE   
+  RTE_APT_NM
+  SEG_NBR
+  TKT_SORT  
+  TKT_NUM
+  TRN_DATE
+  XARR_DT   
+  XDPT_DT   
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT  
+  ISS_DTE
+  ENCI_NBR
+  ENCI_DTE
+  ENCI_AMT
+  ENCI_EXP_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLDA
+PRINT TFARE
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD3 OLD-OR-NEW
+END
+-RUN
+
+
+
+TABLE FILE AIRHOLD3
+PRINT AIR_KEY   
+  AIRLINE   
+  AIRLINE_NAME 
+  ARR_TIME
+  DPT_TIME  
+  DOC_TYPE
+  EMB_APT_NM
+  FARE_PAID 
+  FLIGHT
+  FST_DPT_DATE
+  LEVEL_DESC    
+  LEVEL1    
+  LEVEL2    
+  LEVEL3    
+  NET_TKT_CNT   
+  NEW_ADV_PURCH 
+  PASSNGR_NAME 
+  REFUSE_CODE   
+  RTE_APT_NM
+  SEG_NBR
+  TKT_SORT  
+  TKT_NUM
+  TRN_DATE
+  TFARE
+  XARR_DT   
+  XDPT_DT   
+  XFST_DPT
+  XPSNGR_NM
+  XTRAN_DT  
+  ISS_DTE
+  ENCI_NBR
+  ENCI_DTE
+  ENCI_AMT
+  ENCI_EXP_DT
+BY LEVEL_DESC
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD4
+END
+-RUN
+
+-SET &&RPTSUF = 'DTL';
+
+-INCLUDE FDEFRPTS
+-RUN
+
+DEFINE FILE AIRHOLD4
+-INCLUDE STDTIME
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';
+XT_DTE/A8 = EDIT(TRN_DATE);
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');
+
+XFSTDPT/MDYY = IF DOC_TYPE EQ '1' THEN XTRAN_DT ELSE XFST_DPT;      
+
+ENCI_NBRX/A13 = IF TKT_NUM NE LAST TKT_NUM THEN ENCI_NBR ELSE ' ';
+ENCI_EXP_DTX/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN ENCI_EXP_DT ELSE ' ';
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A100 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+
+FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+ENCI_AMTX/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN ENCI_AMT ELSE 0;
+
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+END
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD4';
+-INCLUDE DRILWHRS
+-SKIP_DRIL
+-************************************************************
+
+TABLE FILE AIRHOLD4
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+-* &&BREAKOPTION
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+
+
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+
+
+
+-INCLUDE FOOTERDT
+-*
+
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT;
+
+
+
+
+-XXIT;
+
+
+

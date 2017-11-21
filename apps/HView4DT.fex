@@ -1,0 +1,1071 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: HVIEW2DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*9/20/04        Joy                Added Prop_name
+-*12/16/04       Joy                Added code for Kwtopha to run seperate
+-*12/30/04       Deb                Added code for global currency
+-*11/25/15  Joy    S-07987  Corrected for running Currency Enabled Version
+
+-**************************************************************************
+SET ASNAMES = ON
+-RUN
+-INCLUDE SETECHO
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = ' TOTAL,ROOM,AMOUNT, (' | &&CURRENCY || ')';
+-SET &CAVG_CUR = 'AVG,DAILY,RATE, (' | &&CURRENCY || ')';
+-SET &&PRINT2 ='GPTOTAL/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+-SET &&PRINT3='COMPUTE AVGDR/D12.2CS=IF (PTOTAL LT 0) AND (PNNROOMS LT 0)';
+-SET &&PRINT4='THEN ((GPTOTAL/PNNROOMS)*(-1)) ELSE IF ((PNNROOMS LT 1) AND';
+-SET &&PRINT5='(PNNROOMS GT (-1))) THEN 0 ELSE (GPTOTAL/PNNROOMS);';
+-SET &&PRINT6='AS ' | '''&CAVG_CUR.EVAL''';
+
+
+-NEXT;
+
+-IF &&SETF EQ 'ABTPGCHN' OR 'CGTPGCHN' THEN GOTO GROUP;
+-IF &&SETF EQ 'KWTOPHA' THEN GOTO PROP ELSE GOTO CHAIN;
+
+-CHAIN
+TABLE FILE HTLTOPCH
+SUM NNROOMS
+    NNROOMS AS 'NBR_DAYS'
+    NEW_ROOM_RATE AS 'ROOM_RATE'
+    TOTAL_ROOM_AMT AS 'TOTAL_AMT'
+    AMT_TOTALX/D16.2CS AS 'GTOTAL_AMT'
+    RATE_ROOMX/D16.2CS AS 'GROOM_RATE'
+    BOOKINGS
+    NAMEC
+BY CHAIN_NAME
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+PRINT NNROOMS
+      NBR_DAYS
+      ROOM_RATE
+      TOTAL_AMT
+      BOOKINGS
+      CHAIN_NAME
+      GTOTAL_AMT
+      GROOM_RATE
+      NAMEC  
+-*       PROP_NAME
+RANKED BY &&RANK_ORDER &&RANK_METH
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+
+
+
+DEFINE FILE RNKHLD2
+  DRANK/D9 = RANK;
+  ARANKX/A11 = FTOA(DRANK, '(D9)', 'A11');
+  ARANK/A9 = EDIT(ARANKX,'$$999999999');
+  RANK_VALUE/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE  
+                     IF RANK GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE 
+                        ARANK;
+  RANK_LABEL1/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL1
+                      ELSE ' ';
+  RANK_LABEL2/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL2
+                      ELSE ' ';
+  RANK_LABEL3/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL3
+                      ELSE ' ';
+
+END
+-RUN
+
+TABLE FILE RNKHLD2
+PRINT NNROOMS
+      NBR_DAYS
+      ROOM_RATE
+      TOTAL_AMT
+      BOOKINGS
+      RANK_VALUE
+      RANK_LABEL1
+      RANK_LABEL2
+      RANK_LABEL3
+      GTOTAL_AMT
+      GROOM_RATE
+      NAMEC
+BY CHAIN_NAME
+-* BY PROP_NAME
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+
+TABLE FILE HTLTOPCH
+PRINT BOOKINGS AS 'PBOOKING'
+   CITY_ST
+   CHAIN_CODE
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   NBR_DAYS AS 'PNBR_DAYS'
+   NBR_ROOMS AS 'PNBR_ROOMS'
+   NNROOMS AS 'PNNROOMS'
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   PROP_ZIP5
+   REFUSE_CD
+   ROOM_RATE AS 'PROOM_RATE'
+   RATE_ROOMX/D16.2CS AS 'GPROOM_RATE'
+   AMT_TOTALX/D16.2CS AS 'GPTOTAL'
+   NEW_TOTAL_AMT AS 'PTOTAL'
+   XPSNGR_NM
+BY CHAIN_NAME
+-* BY PROP_NAME
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+
+MATCH FILE HOLD4
+PRINT PBOOKING
+   CITY_ST
+   CHAIN_CODE
+   GPROOM_RATE
+   GPTOTAL
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   PNBR_DAYS
+   PNBR_ROOMS
+   PNNROOMS
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   PROP_ZIP5
+   PROOM_RATE
+   PTOTAL
+   REFUSE_CD
+   XPSNGR_NM
+BY CHAIN_NAME
+-* BY PROP_NAME
+ON TABLE HOLD
+RUN
+FILE RNKHLD2
+SUM NBR_DAYS
+      ROOM_RATE
+      TOTAL_AMT
+      BOOKINGS
+      RANK_VALUE
+      RANK_LABEL1
+      RANK_LABEL2
+      RANK_LABEL3
+      GROOM_RATE
+      GTOTAL_AMT
+      NAMEC
+BY CHAIN_NAME
+-* BY PROP_NAME
+AFTER MATCH HOLD AS XONE OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE XONE
+PRINT PBOOKING
+   CITY_ST
+   CHAIN_CODE
+   GROOM_RATE
+   GTOTAL_AMT
+   GPROOM_RATE
+   GPTOTAL
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   NAMEC
+   PNBR_DAYS
+   PNBR_ROOMS
+   PNNROOMS
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   PROP_ZIP5
+   PROOM_RATE
+   PTOTAL
+   NBR_DAYS
+   REFUSE_CD
+   ROOM_RATE
+   TOTAL_AMT
+   BOOKINGS
+   RANK_VALUE
+   RANK_LABEL1
+   RANK_LABEL2
+   RANK_LABEL3
+   XPSNGR_NM
+BY CHAIN_NAME
+BY PROP_NAME
+ON TABLE HOLD AS HOLD5
+END
+-RUN
+
+
+-GOTO Finrpt;
+
+-GROUP
+TABLE FILE HTLTOPCH
+SUM NNROOMS
+    NNROOMS AS 'NBR_DAYS'
+    NEW_ROOM_RATE AS 'ROOM_RATE'
+    TOTAL_ROOM_AMT AS 'TOTAL_AMT'
+    AMT_TOTALX/D16.2CS AS 'GTOTAL_AMT'
+    RATE_ROOMX/D16.2CS AS 'GROOM_RATE'
+    BOOKINGS AS 'TBOOKINGS'
+    CHAIN_CODE
+    NAMEC
+    PREF_NON
+BY CHAIN_GROUP
+BY CHAIN_NAME
+-IF '&&SETF.EVAL' EQ 'CGTPGCHN' THEN GOTO SKIPsort;
+BY PREF_NON
+-SKIPsort
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+
+JOIN CHAIN_GROUP IN HOLD1 TO CHAIN_GROUP IN HTL_CGRP AS J1
+-RUN
+
+DEFINE FILE HOLD1
+CHN_GRP/A3 = IF CHAIN_GROUP EQ ' ' THEN 'XX' ELSE CHAIN_GROUP;
+GRC_NAME/A30 = IF GCHN_NAME EQ ' ' THEN 'ALL OTHER' ELSE GCHN_NAME;
+GCHN_NM/A30 = LCWORD (30, GRC_NAME, GCHN_NM);
+END
+TABLE FILE HOLD1
+SUM 
+    NNROOMS
+    NBR_DAYS
+    ROOM_RATE
+    TOTAL_AMT
+    CHN_GRP
+    CHAIN_CODE
+    GCHN_NM
+    PREF_NON
+    TBOOKINGS
+BY CHAIN_NAME
+-IF '&&SETF.EVAL' EQ 'CGTPGCHN' THEN GOTO SKIPsort2;
+BY PREF_NON
+-SKIPsort2
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+
+
+TABLE FILE HOLD2
+SUM &&RANK_METH  
+BY GCHN_NM
+ON TABLE HOLD AS RHOLD1 
+END
+-RUN
+
+TABLE FILE RHOLD1
+PRINT &&RANK_METH
+RANKED BY HIGHEST &&RANK_METH AS 'DAYS_RANK'
+BY GCHN_NM
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+ MATCH FILE HOLD2
+ PRINT PREF_NON
+    NNROOMS
+    NBR_DAYS
+    ROOM_RATE
+    TOTAL_AMT
+    CHN_GRP
+    CHAIN_CODE
+    CHAIN_NAME
+    TBOOKINGS
+BY GCHN_NM
+ ON TABLE HOLD
+ RUN
+ FILE RHOLD2
+ SUM DAYS_RANK
+BY GCHN_NM
+ AFTER MATCH HOLD AS HOLD2 OLD-OR-NEW
+ END
+-RUN
+
+TABLE FILE HOLD2
+PRINT PREF_NON
+    NNROOMS
+    NBR_DAYS
+    ROOM_RATE
+    TOTAL_AMT
+    CHN_GRP
+    CHAIN_CODE
+    CHAIN_NAME
+    GCHN_NM
+    TBOOKINGS
+RANKED BY HIGHEST DAYS_RANK
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+
+DEFINE FILE RNKHLD2
+-*  ORG_LIMIT/I4 = &&RANK_LIMIT2 ;
+  ORG_LIMIT/I4 = 19;
+  OLIMIT/A4    = EDIT(ORG_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6 = IF GCHN_NM NE LAST GCHN_NM THEN (LAST LIST + 1) 
+    ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6  = EDIT(FRANKX,'$999999'); 
+  ORG_VALUE/A6 = IF ORG_LIMIT EQ 0 THEN BRANK ELSE
+               IF LIST GT ORG_LIMIT THEN 'OTHER' ELSE FRANK;
+ 
+END
+
+TABLE FILE RNKHLD2
+PRINT NNROOMS
+      NBR_DAYS
+      ROOM_RATE
+      TOTAL_AMT
+      CHAIN_CODE
+      CHAIN_NAME
+      PREF_NON
+      GCHN_NM
+      OLIMIT	
+      ORG_LIMIT
+      CHN_GRP
+      DAYS_RANK
+      TBOOKINGS
+BY ORG_VALUE
+BY GCHN_NM
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+TABLE FILE HOLD3
+SUM &&RANK_METH
+RANKED BY HIGHEST &&RANK_METH AS 'HTL_RANK'
+BY CHAIN_NAME
+ON TABLE HOLD AS RHOLD3
+END
+-RUN
+
+
+MATCH FILE HOLD3
+PRINT 
+    NBR_DAYS 
+    ROOM_RATE 
+    CHN_GRP 
+    NNROOMS
+    PREF_NON
+    ORG_VALUE
+    DAYS_RANK
+    OLIMIT
+    ORG_LIMIT
+    PREF_NON
+    GCHN_NM
+    CHAIN_CODE
+    CHN_GRP
+    TBOOKINGS
+BY CHAIN_NAME
+ON TABLE HOLD
+RUN
+FILE RHOLD3
+SUM HTL_RANK
+BY CHAIN_NAME
+AFTER MATCH HOLD AS XTWO OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE XTWO
+PRINT *
+BY GCHN_NM
+RANKED BY HIGHEST HTL_RANK
+BY CHAIN_NAME
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+DEFINE FILE HOLD3
+  DRANK/D5      = RANK ;
+  ARANKX/A6     = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5      = EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT ;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                 IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+  CHN_NM/A30 = IF RANK_VAL NE 'OTHER' THEN CHAIN_NAME ELSE 'All Other';                 
+  CHAIN_CD/A2 = IF RANK_VAL NE 'OTHER' THEN CHAIN_CODE ELSE ' ';
+END
+
+
+TABLE FILE HOLD3
+SUM
+    
+    NBR_DAYS 
+    ROOM_RATE 
+    CHN_GRP 
+    NNROOMS
+    DAYS_RANK
+    OLIMIT
+    ORG_LIMIT
+    PREF_NON
+    HTL_RANK
+    CHAIN_CD
+    CHAIN_NAME
+    TBOOKINGS
+BY ORG_VALUE
+BY GCHN_NM
+BY RANK_VALUE
+BY CHN_NM
+BY PREF_NON
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+
+TABLE FILE HOLD4
+PRINT     
+    NBR_DAYS 
+    ROOM_RATE 
+    CHN_GRP 
+    NNROOMS
+    DAYS_RANK
+    OLIMIT
+    ORG_LIMIT
+    PREF_NON
+    HTL_RANK
+    CHAIN_CD
+    ORG_VALUE
+    GCHN_NM
+    RANK_VALUE
+    CHAIN_NAME
+    TBOOKINGS
+BY CHN_NM
+RANKED BY HIGHEST &&RANK_METH
+BY PREF_NON
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+ 
+
+DEFINE FILE RNKHLD2
+  DRANK/D5      = RANK ;
+  ARANKX/A6     = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5      = EDIT(ARANKX,'$99999');
+  HTL_LIMIT/I5 = &&RANK_LIMIT ;
+  HTL_VAL/A5 = IF (HTL_LIMIT EQ 0) THEN (ARANK) ELSE
+                 IF RANK GT HTL_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+TABLE FILE RNKHLD2
+PRINT     
+    NBR_DAYS 
+    ROOM_RATE 
+    CHN_GRP 
+    NNROOMS
+    DAYS_RANK
+    ORG_LIMIT
+    HTL_RANK
+    CHAIN_CD
+    PREF_NON
+    TBOOKINGS
+BY ORG_VALUE
+BY GCHN_NM
+BY RANK_VALUE
+BY CHN_NM
+BY HTL_VAL
+-IF '&&SETF.EVAL' EQ 'CGTPGCHN' THEN GOTO SKIPthisSort;
+BY PREF_NON
+-SKIPthisSort
+ON TABLE HOLD AS RNKHLD3
+END
+-RUN
+
+
+
+TABLE FILE RNKHLD3
+PRINT     
+    NBR_DAYS 
+    ROOM_RATE 
+    CHN_GRP 
+    NNROOMS
+    DAYS_RANK
+    ORG_LIMIT
+    HTL_RANK
+    CHAIN_CD
+  ORG_VALUE
+  RANK_VALUE
+  CHN_NM
+  HTL_VAL
+  PREF_NON
+  TBOOKINGS
+BY GCHN_NM
+ON TABLE HOLD AS RNKHLD4 FORMAT FOCUS INDEX GCHN_NM
+END
+-RUN
+
+-* OLD CODE
+JOIN CHAIN_GROUP IN HTLTOPCH TO CHAIN_GROUP IN HTL_CGRP AS J2
+-RUN
+
+DEFINE FILE HTLTOPCH
+CHN_GRP/A3 = IF CHAIN_GROUP EQ ' ' THEN 'XX' ELSE CHAIN_GROUP;
+GRC_NAME/A30 = IF GCHN_NAME EQ ' ' THEN 'ALL OTHER' ELSE GCHN_NAME;
+GCHN_NM/A30 = LCWORD (30, GRC_NAME, GCHN_NM);
+END
+TABLE FILE HTLTOPCH
+PRINT BOOKINGS AS 'PBOOKING'
+   CITY_ST
+   CHAIN_CODE
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   NBR_DAYS AS 'PNBR_DAYS'
+   NBR_ROOMS AS 'PNBR_ROOMS'
+   NNROOMS AS 'PNNROOMS'
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   PROP_ZIP5
+   PREF_NON
+   REFUSE_CD
+   ROOM_RATE AS 'PROOM_RATE'
+   NEW_TOTAL_AMT AS 'PTOTAL'
+  CHAIN_NAME
+BY GCHN_NM  
+ON TABLE HOLD AS HOLD5 FORMAT FOCUS INDEX GCHN_NM
+END
+-RUN
+ 
+
+JOIN HOLD5.GCHN_NM IN HOLD5 TO RNKHLD4.GCHN_NM IN RNKHLD4
+-RUN
+
+
+-GOTO Finrpt
+
+MATCH FILE HOLD4
+PRINT PBOOKING
+   CITY_ST
+   CHAIN_CODE
+   CHAIN_NAME
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   PNBR_DAYS
+   PNBR_ROOMS
+   PNNROOMS
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   PROP_ZIP5
+   PROOM_RATE
+   PTOTAL
+   REFUSE_CD
+   PREF_NON
+BY CHAIN_NAME
+ON TABLE HOLD
+RUN
+FILE RNKHLD3
+SUM    NBR_DAYS 
+    ROOM_RATE 
+    CHN_GRP 
+    NNROOMS
+    DAYS_RANK
+    ORG_LIMIT
+    HTL_RANK
+    CHAIN_CD
+    CHAIN_NAME
+    ORG_VALUE
+    GCHN_NM
+    RANK_VALUE
+    CHN_NM
+    HTL_VAL
+BY CHAIN_NAME
+AFTER MATCH HOLD AS XONE OLD-OR-NEW
+END
+-RUN
+
+
+TABLE FILE XONE
+PRINT PBOOKING
+   CITY_ST
+   CHAIN_CODE
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   PNBR_DAYS
+   PNBR_ROOMS
+   PNNROOMS
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   PROP_ZIP5
+   PROOM_RATE
+   PTOTAL
+   REFUSE_CD
+   NBR_DAYS 
+    ROOM_RATE 
+    CHN_GRP 
+    NNROOMS
+    DAYS_RANK
+    ORG_LIMIT
+    HTL_RANK
+    CHAIN_CD
+    CHAIN_NAME
+    ORG_VALUE
+    GCHN_NM
+    RANK_VALUE
+    CHN_NM
+    HTL_VAL
+    GCHN_NM
+BY CHAIN_NAME
+BY PREF_NON 
+ON TABLE HOLD AS HOLD5
+END
+-RUN
+
+
+
+-Finrpt
+DEFINE FILE HOLD5
+PROP_ADD/A25 = EDIT(PROP_ADDRESS, '9999999999999999999999999$$$$$');
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH RANK_VALUE = HHMMSS (NOWTOD);	
+END
+-RUN
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD5';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HOLD5
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+
+-GOTO XXIT
+
+-SKIPTHIS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+
+
+-PROP
+TABLE FILE HTLTOPCH
+SUM NNROOMS
+    NNROOMS AS 'NBR_DAYS'
+    NEW_ROOM_RATE AS 'ROOM_RATE'
+    TOTAL_ROOM_AMT AS 'TOTAL_AMT'
+    BOOKINGS 
+BY PROP_NAME
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+PRINT NNROOMS
+      NBR_DAYS
+      ROOM_RATE
+      TOTAL_AMT
+      BOOKINGS
+      PROP_NAME
+RANKED BY &&RANK_ORDER &&RANK_METH
+ON TABLE HOLD AS RNKHLD2
+END
+-RUN
+
+
+
+DEFINE FILE RNKHLD2
+  DRANK/D9 = RANK;
+  ARANKX/A11 = FTOA(DRANK, '(D9)', 'A11');
+  ARANK/A9 = EDIT(ARANKX,'$$999999999');
+  RANK_VALUE/A9 = IF &&RANK_LIMIT EQ 0 THEN ARANK ELSE  
+                     IF RANK GT &&RANK_LIMIT THEN 'ALL OTHER' ELSE 
+                        ARANK;
+  RANK_LABEL1/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL1
+                      ELSE ' ';
+  RANK_LABEL2/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL2
+                      ELSE ' ';
+  RANK_LABEL3/A60 = IF RANK_VALUE NE 'ALL OTHER' THEN &&RANK_LABEL3
+                      ELSE ' ';
+
+END
+-RUN
+
+TABLE FILE RNKHLD2
+PRINT NNROOMS
+      NBR_DAYS
+      ROOM_RATE
+      TOTAL_AMT
+      BOOKINGS
+      RANK_VALUE
+      RANK_LABEL1
+      RANK_LABEL2
+      RANK_LABEL3
+BY PROP_NAME
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+
+TABLE FILE HTLTOPCH
+PRINT BOOKINGS AS 'PBOOKING'
+   CITY_ST
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   NBR_DAYS AS 'PNBR_DAYS'
+   NBR_ROOMS AS 'PNBR_ROOMS'
+   NNROOMS AS 'PNNROOMS'
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   ROOM_RATE AS 'PROOM_RATE'
+   NEW_TOTAL_AMT AS 'PTOTAL'
+BY PROP_NAME
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+
+MATCH FILE HOLD4
+PRINT PBOOKING
+   CITY_ST
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   PNBR_DAYS
+   PNBR_ROOMS
+   PNNROOMS
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   PROOM_RATE
+   PTOTAL
+BY PROP_NAME
+ON TABLE HOLD
+RUN
+FILE RNKHLD2
+SUM NBR_DAYS
+      ROOM_RATE
+      TOTAL_AMT
+      BOOKINGS
+      RANK_VALUE
+      RANK_LABEL1
+      RANK_LABEL2
+      RANK_LABEL3
+BY PROP_NAME
+AFTER MATCH HOLD AS XONE OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE XONE
+PRINT PBOOKING
+   CITY_ST
+   HOTEL_PHONE
+   IN_DATE
+   INVOICE_NUM
+   LEVEL_DESC
+   PNBR_DAYS
+   PNBR_ROOMS
+   PNNROOMS
+   OUT_DATE
+   PASSNGR_NAME
+   PROP_ADDRESS
+   PROP_NAME
+   PROOM_RATE
+   PTOTAL
+   NBR_DAYS
+   ROOM_RATE
+   TOTAL_AMT
+   BOOKINGS
+   RANK_VALUE
+   RANK_LABEL1
+   RANK_LABEL2
+   RANK_LABEL3
+BY PROP_NAME
+ON TABLE HOLD AS HOLD5
+END
+-RUN
+
+DEFINE FILE HOLD5
+PROP_ADD/A25 = EDIT(PROP_ADDRESS, '9999999999999999999999999$$$$$');
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH RANK_VALUE = HHMMSS (NOWTOD);	
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD5';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HOLD5
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+
+-GOTO XXIT
+
+-SKIPTHIS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+
+</HEAD>
+<BODY>
+
+
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER> 
+
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+
+
+-XXIT
+
+
+
+
+
+ 
+
+
+ 
+-* REJ EX RESTART 
+-*-EXIT

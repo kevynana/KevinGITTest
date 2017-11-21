@@ -1,0 +1,307 @@
+-INCLUDE SETECHO
+ 
+-* File RUN_DRIL.FEX
+-**********************************************************************
+-*  DATE        NAME         DESCRIPTION OF CHANGE
+-*  ----        ----         ---------------------
+-*  8/26/03     JK           CHANGED TO SET &BYFLD3 AND INCLUDE IN
+-*                           IF STATEMENT TO GET NOT DRILLABLE MESSAGE
+-*  6/23/06     SAC          ADDED 'ALL OTHER' TO BYFLD3 CHECK
+-* 05/30/2017   RSB  D-01501 HDRR-R Reports not tying
+-*                            Removed 'OTHER' from the &BYFLDn logic. 
+-*06/27/17   DLV     S-35283 Added INTDOMDD to SKIPFLAG routine
+-* 10/26/2017   RSB  D-01675 BUG FIX - ABTPHPN - error when drill down on OTHER. Should come up as this field not drillable
+-*                            Added 'OTHER' for &BYFLD2 comparison.
+-**********************************************************************
+-DEFAULT &FPARM = ' ';
+ 
+-DEFAULT &ELINKS='N';
+-DEFAULT &DSTSCHEDID='';
+-DEFAULT &PUSHNAME=''; 
+-DEFAULT &&GLO_CHK='N';
+-DEFAULT &COLNBR=0;
+ 
+-SET &&ELINKS=&ELINKS;
+-SET &&SCHED=&DSTSCHEDID;
+-SET &&PUSHNAME=&PUSHNAME;
+ 
+-SET &&ROLLUP = &ROLUP;
+-*-SET &&UNAME = &UID;
+-SET &&UNAME = &user;
+-SET &&WRRUN = 'Y';
+-SET &&DRILLED_RUN = 'Y';
+-SET &&FIPARM = &FPARM;
+-SET &&NOWDTTM = SUBSTR(23, &FPARM, 1, 15, 15, 'A15');
+ 
+-DEFAULT &BYFLD1 = ' ';
+-DEFAULT &BYFLD2 = ' ';
+-DEFAULT &BYFLD3 = ' ';
+-* -DEFAULT &BYFLD4 = ' ';
+ 
+-IF &BYFLD1 EQ 'ALL OTHER' OR 'GRAND' OR 'TOTAL' OR 'All Other' OR 'GRAND TOTAL'
+- OR &BYFLD2 EQ 'OTHER' OR 'GRAND' OR 'GRAND TOTAL' OR 'TOTAL' OR 'All Other'
+- OR &BYFLD3 EQ 'ALL OTHER' OR 'All Other' GOTO NODRILL;
+ 
+-* -IF &BYFLD1 EQ 'ALL OTHER' OR 'GRAND' OR 'OTHER' OR 'TOTAL' OR 'All Other' OR 'GRAND TOTAL'
+-* - OR &BYFLD2 EQ 'OTHER' OR 'GRAND' OR 'GRAND TOTAL' OR 'TOTAL' OR 'All Other'
+-* - OR &BYFLD3 EQ 'OTHER' OR 'ALL OTHER' OR 'All Other' GOTO NODRILL;
+ 
+ 
+-DRILL
+EX RPTRESET
+-RUN
+EX RESET
+-RUN
+ 
+-**********************************************************************
+-* CHECK FOR PRESENCE OF ORIGINAL SET FILE
+-*********************************************************************
+-*****  USE VALUE PASSED AS &SETFNM TO DETERMINE FILE NAME
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-SET &FILEXIST = &&LOCPATH || &SETFNM || '.FTM';
+-GOTO CHKFILE;
+ 
+-SETWEB
+-SET &FILEXIST = &&WEBPATH || &SETFNM || '.FTM';
+ 
+-CHKFILE
+STATE &FILEXIST
+-RUN
+ 
+-IF &RETCODE NE 0 GOTO NOFILE;
+ 
+-SET &&DTTMSTRM = &SETFNM;
+-*-SET &&DRILLED_RUN = 'Y';
+-SET &&NOW_CYC = 'NOW';
+-SET &&OUTTO = 'X';
+ 
+-*
+-*
+-***********************************************************
+-* MAKE DRILLABLE FIELDS GLOBAL VARIABLES
+-***********************************************************
+-SET &&COLNBR = &COLNBR;
+-IF &&COLNBR EQ 0 GOTO SETFLD
+- ELSE IF &&COLNBR EQ 1 GOTO SETFLD1
+- ELSE IF &&COLNBR EQ 2 GOTO SETFLD2
+- ELSE IF &&COLNBR EQ 3 GOTO SETFLD3
+- ELSE IF &&COLNBR EQ 4 GOTO SETFLD4
+- ELSE IF &&COLNBR EQ 5 GOTO SETFLD5
+- ELSE IF &&COLNBR EQ 6 GOTO SETFLD6
+- ELSE IF &&COLNBR EQ 7 GOTO SETFLD7
+- ELSE IF &&COLNBR EQ 8 GOTO SETFLD8;
+ 
+-SETFLD
+-SET &&SFLD1 = '';
+-SET &&BYFLD1 = '';
+-SET &&SFLD2 = '';
+-SET &&BYFLD2 = '';
+-SET &&SFLD3 = '';
+-SET &&BYFLD3 = '';
+-SET &&SFLD4 = '';
+-SET &&BYFLD4 = '';
+-SET &&SFLD5 = '';
+-SET &&BYFLD5 = '';
+-SET &&SFLD6 = '';
+-SET &&BYFLD6 = '';
+-SET &&SFLD7 = '';
+-SET &&BYFLD7 = '';
+-SET &&SFLD8 = '';
+-SET &&BYFLD8 = '';
+-GOTO ENDSET;
+ 
+-SETFLD1
+-SET &&SFLD1 = &SFLD1;
+-SET &&BYFLD1 = &BYFLD1;
+-GOTO ENDSET;
+ 
+-SETFLD2
+-SET &&SFLD1 = &SFLD1;
+-SET &&BYFLD1 = &BYFLD1;
+-SET &&SFLD2 = &SFLD2;
+-SET &&BYFLD2 = &BYFLD2;
+-GOTO ENDSET;
+ 
+-SETFLD3
+-SET &&SFLD1 = &SFLD1;
+-SET &&BYFLD1 = &BYFLD1;
+-SET &&SFLD2 = &SFLD2;
+-SET &&BYFLD2 = &BYFLD2;
+-SET &&SFLD3 = &SFLD3;
+-SET &&BYFLD3 = &BYFLD3;
+-GOTO ENDSET;
+ 
+-SETFLD4
+-SET &&SFLD1 = &SFLD1;
+-SET &&BYFLD1 = &BYFLD1;
+-SET &&SFLD2 = &SFLD2;
+-SET &&BYFLD2 = &BYFLD2;
+-SET &&SFLD3 = &SFLD3;
+-SET &&BYFLD3 = &BYFLD3;
+-SET &&SFLD4 = &SFLD4;
+-SET &&BYFLD4 = &BYFLD4;
+-GOTO ENDSET;
+ 
+-SETFLD5
+-SET &&SFLD1 = &SFLD1;
+-SET &&BYFLD1 = &BYFLD1;
+-SET &&SFLD2 = &SFLD2;
+-SET &&BYFLD2 = &BYFLD2;
+-SET &&SFLD3 = &SFLD3;
+-SET &&BYFLD3 = &BYFLD3;
+-SET &&SFLD4 = &SFLD4;
+-SET &&BYFLD4 = &BYFLD4;
+-SET &&SFLD5 = &SFLD5;
+-SET &&BYFLD5 = &BYFLD5;
+-GOTO ENDSET;
+ 
+-SETFLD6
+-SET &&SFLD1 = &SFLD1;
+-SET &&BYFLD1 = &BYFLD1;
+-SET &&SFLD2 = &SFLD2;
+-SET &&BYFLD2 = &BYFLD2;
+-SET &&SFLD3 = &SFLD3;
+-SET &&BYFLD3 = &BYFLD3;
+-SET &&SFLD4 = &SFLD4;
+-SET &&BYFLD4 = &BYFLD4;
+-SET &&SFLD5 = &SFLD5;
+-SET &&BYFLD5 = &BYFLD5;
+-SET &&SFLD6 = &SFLD6;
+-SET &&BYFLD6 = &BYFLD6;
+-GOTO ENDSET;
+ 
+-SETFLD7
+-SET &&SFLD1 = &SFLD1;
+-SET &&BYFLD1 = &BYFLD1;
+-SET &&SFLD2 = &SFLD2;
+-SET &&BYFLD2 = &BYFLD2;
+-SET &&SFLD3 = &SFLD3;
+-SET &&BYFLD3 = &BYFLD3;
+-SET &&SFLD4 = &SFLD4;
+-SET &&BYFLD4 = &BYFLD4;
+-SET &&SFLD5 = &SFLD5;
+-SET &&BYFLD5 = &BYFLD5;
+-SET &&SFLD6 = &SFLD6;
+-SET &&BYFLD6 = &BYFLD6;
+-SET &&SFLD7 = &SFLD7;
+-SET &&BYFLD7 = &BYFLD7;
+-GOTO ENDSET;
+ 
+-SETFLD8
+-SET &&SFLD1 = &SFLD1;
+-SET &&BYFLD1 = &BYFLD1;
+-SET &&SFLD2 = &SFLD2;
+-SET &&BYFLD2 = &BYFLD2;
+-SET &&SFLD3 = &SFLD3;
+-SET &&BYFLD3 = &BYFLD3;
+-SET &&SFLD4 = &SFLD4;
+-SET &&BYFLD4 = &BYFLD4;
+-SET &&SFLD5 = &SFLD5;
+-SET &&BYFLD5 = &BYFLD5;
+-SET &&SFLD6 = &SFLD6;
+-SET &&BYFLD6 = &BYFLD6;
+-SET &&SFLD7 = &SFLD7;
+-SET &&BYFLD7 = &BYFLD7;
+-SET &&SFLD8 = &SFLD8;
+-SET &&BYFLD8 = &BYFLD8;
+-GOTO ENDSET;
+ 
+-ENDSET
+ 
+
+-*
+-*
+-**********************************************************************
+-* PARSE SET FILE NAME TO DETERMINE THE STREAM TO EXECUTE
+-**********************************************************************
+-*LOOK FOR AIR_PLCY, CAR_PLCY, HTL_PLCY, AIR_HTL, TX_PLCY, TXT_PLCY
+-*
+-*
+-SET &STRM1=GETTOK (&SETFNM, &SETFNM.LENGTH, 3, '_', 8, 'A8');
+-SET &STRM2 = ' ';
+-SET &&STRMFEX = &STRM1;
+-IF &STRM1 EQ 'CPDEMO' OR 'CPDEMDD' OR 'INTDOMDD' THEN GOTO SKIPFLAG;
+ 
+ 
+-SET &STRM2=GETTOK (&SETFNM, &SETFNM.LENGTH, 4, '_', 8, 'A8');
+ 
+ 
+-SET &&STRMFEX = &STRM1 || '_' || &STRM2;
+ 
+-SKIPFLAG
+-SET &&RPTTYP = &STRM1;
+-*-SET &&INSTID = SUBSTR(52, &SETFNM, 28, 49, 'A22');
+-*COPY &FILEXIST &&WEB_PATH || 'TEMPDRIL.FEX'
+-SET &TMPDRIL = &&WEB_PATH || 'TEMPDRIL.FEX' ;
+COPY &FILEXIST &TMPDRIL
+-RUN
+ 
+-INCLUDE &TMPDRIL
+-RUN
+
+-IF &&FROMAVRP EQ '' GOTO :RDAVRP1;
+APP PREPENDPATH REVIEW_50_SHARED REVIEW_50_AVRP ttapps_sql
+-RUN
+-:RDAVRP1
+-SET &&SETF='TEMPDRIL';
+
+ 
+-INCLUDE GetForDrillDown
+-RUN
+ 
+-TYPE &&STRMFEX
+-RUN
+-**********************************************************************
+-* EXECUTE THE STREAM ROUTINE
+-**********************************************************************
+-STREAMNEXT
+-SET &&NOW_CYC = 'NOW';
+-TYPE Executing &&STRMFEX
+EX &&STRMFEX
+-RUN
+ 
+-**********************************************************************
+-*
+-**********************************************************************
+-GOTO XXIT;
+ 
+-NOFILE
+ 
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THE REPORT IS NO LONGER DRILLABLE!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT
+ 
+-NODRILL
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+ 
+-XXIT

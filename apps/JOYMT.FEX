@@ -1,0 +1,88 @@
+
+SET ASNAMES=ON
+
+
+USE ADD
+D:\TNT\TTRACKER\DATA\S9METX.FOC AS SR_50
+D:\TNT\TTRACKER\DATA\S0METX.FOC AS SR_50
+D:\TNT\TTRACKER\DATA\A9METX.FOC AS AIR_MAIN
+D:\TNT\TTRACKER\DATA\A0METX.FOC AS AIR_MAIN
+END
+-RUN
+
+DEFINE FILE SR_50
+ 
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+NET_TKT_CNT/D8CS    = IF (DOC_TYPE EQ '1') THEN 1 ELSE
+                      IF (TICKET_CODE EQ '1') AND
+                         (SEG_NBR EQ '01') AND
+                         (FARE_PAID GE 0) AND
+                         (SEG_COUNT EQ 1) AND 
+                         (CONJ_REL EQ 1) THEN 1 ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                         (SEG_NBR EQ '01') AND 
+                         (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                      IF (TICKET_CODE EQ '1') AND
+                         (SEG_NBR EQ '01') AND
+                         (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+                         
+TKT_CNT/D8CS = IF (SEG_NBR EQ '01') AND (FARE_PAID GE 0) AND (SEG_COUNT EQ 1) THEN 1 ELSE 0;   
+
+TKT_PURCH/D9      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+
+ORIG_SALE/D9 = IF (SEG_NBR EQ '01') AND (FARE_PAID GE 0) AND (SEG_COUNT EQ 1) AND (EXCHG_SALE EQ ' ') THEN 1 ELSE 
+               IF (DOC_TYPE EQ '1') AND (EX_FLAG EQ ' ') AND (EXCHG_SALE NE ' ') AND (RF_FLAG EQ ' ') THEN 1 ELSE 0;	
+
+                         
+MCO_CNT/D9 = IF (EX_FLAG EQ ' ') AND (DOC_TYPE EQ '1') AND
+                (EXCHG_SALE NE ' ') THEN 1 ELSE 
+             IF (EX_FLAG EQ ' ') AND (DOC_TYPE EQ '1') AND
+                (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+                
+                
+EXCHGS/D9 = IF (EX_FLAG EQ 'F' OR 'P') AND (SEG_COUNT LE 0) AND (EMBARK NE 'DT1' OR 'RF1' OR 'FP3') THEN TKT_CNT ELSE
+            IF (DOC_TYPE EQ '1') AND (EXCHG_SALE EQ 'E') THEN 0 ELSE
+            IF (SEG_COUNT GE 0) AND (EXCHG_SALE NE ' ') THEN TKT_CNT ELSE 0;                                                     
+                           
+
+TRAN/D9 = ORIG_SALE + EXCHGS - MCO_CNT;
+
+END
+
+TABLE FILE SR_50
+SUM ORIG_SALE EXCHGS MCO_CNT TRAN TKT_PURCH
+BY TKT_NUM
+-* BY SEG_NBR
+-* BY EX_FLAG
+-* BY RF_FLAG
+-* BY SEG_NBR
+-* BY AROLL_LEV1
+-* BY TKT_NUM
+-* BY SEG_NBR
+WHERE TRN_DATE GE 20120101 AND TRN_DATE LE 20120531
+WHERE CATEGORY EQ 'BUSINESS'
+WHERE TRAN NE TKT_PURCH
+-* WHERE CATEGORY NE 'GLOBAL'
+WHERE AROLL_LEV2 EQ 'METXBPM'
+ON TABLE COLUMN-TOTAL
+ON TABLE PCHOLD FORMAT EXL2K
+-* ON TABLE HOLD AS JOY
+END
+-RUN
+-QUIT
+
+DEFINE FILE JOY
+NET_TKT/D10 = CDY1TKT_ISS - CDY1VOD_ISS - CDY1EXG_ISS - CDY1REF_ISS;
+END
+TABLE FILE JOY
+SUM DNET NET_TKT
+BY TKT_NUM
+-* BY SEG_NBR
+ON TABLE COLUMN-TOTAL
+END
+-RUN
+-QUIT

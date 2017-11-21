@@ -1,0 +1,12 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*12/07/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+
+-* File AVIW26SM.FEX
+
+
+EX REPORT_3
+-*-EXIT
+
+
+
+

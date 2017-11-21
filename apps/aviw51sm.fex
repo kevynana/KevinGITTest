@@ -1,0 +1,212 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-INCLUDE SETECHO
+-* File ESMRY.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*11/05/04     TANDT-DV            ADDED CODE FOR GLOBAL CURRENCY
+-*11/24/15  Joy    S-07987  Corrected for running Currency Enabled Version
+-*12/08/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+
+-**********************************************************************
+
+SET ASNAMES = ON
+-RUN
+
+-IF &&CURRENCY EQ 'USD' THEN GOTO NEXT;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &FPAID_CUR = 'FARE,PAID, (' | &&CURRENCY || ')';
+-SET &FPPCT_CUR = '% OF,FARE, (' | &&CURRENCY || ')';
+-SET &SAV_CUR = 'SAVINGS, (' | &&CURRENCY || ')';
+-SET &LSAV_CUR = 'LOST,SAVINGS, (' | &&CURRENCY || ')';
+-SET &ATP_CUR = 'AVERAGE,TICKET,PRICE, (' | &&CURRENCY || ')';
+-SET &&S_SUBJ3=' ';
+-SET &&S_SUBJ4=' ';
+-SET &&S_SUBJ5='PAID_FARE1/D16.2CS AS ' | '''&FPAID_CUR.EVAL''' ;
+-SET &&S_SUBJ6='PCT.PAID_FARE1/D8.2 AS '| '''&FPPCT_CUR.EVAL''' ;
+-SET &&S_SUBJ7='SAVINGS1/D16.2CS AS ' | '''&SAV_CUR.EVAL''' ;
+-SET &&S_SUBJ8='COMPUTE AVG/D16.2S = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0 ELSE (FARE_PAID/NET_TKT_CNT); AS ' | '''&ATP_CUR.EVAL''' ;
+-SET &&S_SUBJ9='DISSAVE1/D16.2CS AS ' | '''&LSAV_CUR.EVAL''' ;
+-SET &&S_SUBJ10=' ';
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+-NEXT;
+DEFINE FILE REFNON ADD
+NOWTOD/A8 WITH AIR_KEY= HHMMSS (NOWTOD);
+END
+
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADER' ELSE 'HDREXLS'; 
+-SET &&PASTYS = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'SMEXL' ELSE &&SMSTY;
+-RUN
+
+TABLE FILE REFNON
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+&&BREAKOPTION
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYS
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+-TYPE Leaving for Report_3
+EX REPORT_3
+
+-SKIP_R3
+-GOTO XXIT;
+
+-********************************** NO COVER **********************************
+-NOCOVER
+-RUN
+
+TABLE FILE REFNON
+-INCLUDE HEADER
+"&&SUBHEAD"
+"</2"
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&SMSTY
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R4;
+
+-TYPE Leaving for Report_3
+EX REPORT_3
+
+-SKIP_R4
+-XXIT
+

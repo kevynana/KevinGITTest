@@ -1,0 +1,591 @@
+-* 9/23/13 Added code to be able to run by travel date - Deb
+-*8/8/14 - Added LEVEL2 LEVEL3 and LEVEL3 to drill down for CAMBIA-R DEB
+-* 08/04/2015  REJ  S-10079 Latest changes for ER5 Available Reports.  Added code so the footer
+-*                           page with the selection criteria would show.
+-* 8/5/2015     JEM  S-10694 Updated &aroll_dsc logic to be ge from gt 10 to correct drilldown error
+-*02/08/16 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-* 02/24/31/17 DLV S-22486 - updated position of header and footer NEW_HDR NEW_FTR
+ 
+-TYPE  drSMHTL
+-INCLUDE SETECHO
+ 
+ 
+ 
+-DEFAULT &&LSEL = 'XX';
+-SET &&TITLECK = 'N';
+-SET &&DTSTY = 'DT';
+ 
+-SET &&LSEL = &LSEL;
+-SET &&IDLEVELBREAK = &PARM2;
+
+ 
+-DEFAULT &FPARM = ' ';
+-SET &&FIPARM = &FPARM;
+-DEFAULT &DTTYPE = 'I';
+-SET &&DATETYPE = '&DTTYPE.EVAL'
+ 
+-SET &&DRILLED_RUN = 'Y';
+  
+ 
+ 
+ 
+-IF '&&LSEL.EVAL' EQ 'ALL OTHER' THEN GOTO FIRST;
+ 
+-**********************************************************************
+-* EX RPTRESET TO RESET PARAMS
+-**********************************************************************
+-SET &&ROLLUP = &ROLUP;
+-SET &&UNAME = &user;
+-SET &&FIPARM = &FPARM;
+-SET &&DRILLED_RUN = 'Y';
+-RUN
+ 
+ 
+ 
+ 
+EX RPTRESET
+-RUN
+EX RESET
+-RUN
+ 
+ 
+********************************************************************
+-* CHECK FOR PRESENCE OF ORIGINAL SET FILE
+-*********************************************************************
+-*****  USE VALUE PASSED AS &SETFNM TO DETERMINE FILE NAME
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-SET &&LOCPATH = '&&DATASRV.EVAL' || '\TT\ '|| &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&LOCPATH || &SETFNM || '.FTM';
+-GOTO CHKFILE;
+ 
+-SETWEB
+-SET &&WEBPATH = '&&WEBSRV.EVAL' || '\TTWEB\ ' || &&ROLLUP || '\ '||&&UNAME.EVAL||'\';
+-SET &FILEXIST = &&WEBPATH || &SETFNM || '.FTM';
+ 
+-CHKFILE
+STATE &FILEXIST
+-RUN
+-IF &RETCODE NE 0 GOTO NOFILE;
+-GOTO CONT;
+ 
+-**********************************************************************
+-*
+-**********************************************************************
+-CONT
+ 
+ 
+-SET &TMPDRIL = &&WEB_PATH || 'TEMPDRIL.FEX' ;
+COPY &FILEXIST &TMPDRIL
+-SET &&SETF='TEMPDRIL';
+-RUN
+ 
+EX SETDBLS SETFILE=&&SETF
+-RUN
+ 
+-* REJ added for er5
+-IF &&FROMAVRP NE 'Y' GOTO :AVRP1;
+APP PREPENDPATH REVIEW_50_SHARED REVIEW_50_AVRP ttapps_sql
+-RUN
+-:AVRP1
+ 
+-INCLUDE GetForDrillDown
+-RUN
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-SET &&RPTTYP = ' ';
+ 
+EX TS_JAMS2
+-RUN
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :DDTA1;
+-SET &&RPTGRP_OVERRIDE='HTL';
+EX CODEGEN
+-RUN
+-:DDTA1
+ 
+-INCLUDE SELCATQT
+-RUN
+ 
+ 
+-SET &&OUTLINE1 = 'ON TABLE SET ONLINE-FMT';
+-SET &&OUTLINE2 = IF &&OUTLINE2 CONTAINS 'PDF' THEN 'PDF' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXCEL' THEN 'EXCEL' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXL2K' THEN 'EXL2K' ELSE 'PDF';
+ 
+-IF &&LSEL NE 'TOTAL' THEN GOTO NotTotal;
+ 
+-SET &LCHK= ' ';
+-SET &&TITLECK = 'Y';
+-GOTO Next;
+ 
+-NotTotal;
+-SET &&RPT_TTL2 = '&LSEL.EVAL';
+ 
+ 
+-SET &LCHK = 'WHERE LEVEL_DESC EQ ''&&LSEL.EVAL''';
+
+ 
+-SET &WHATDATEH = IF '&&DATETYPE.EVAL' EQ 'I' THEN 'INVOICE_DATE' ELSE 'CHKIN_DATE';
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :EXA1;
+-SET &&DCHK='WHERE &WHATDATEH.EVAL GE ' | &&FROMDT | ' AND &WHATDATEH.EVAL LE ' | &&TODT;
+-GOTO :EXA1_CONT;
+-:EXA1
+-SET &&DCHK='WHERE &WHATDATEH.EVAL GE '&&FROMDT.EVAL' AND &WHATDATEH.EVAL LE '&&TODT.EVAL'';
+-:EXA1_CONT
+ 
+ 
+-SET &&RPT_TTL1 = '                             HOTEL DETAIL     ';
+ 
+ 
+ 
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+ 
+ 
+ 
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+ 
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+ 
+EX HTLUSE
+-RUN
+ 
+EX SELDESC2
+-RUN
+ 
+-SET &&RPTGRP = 'HTL';
+EX UDIDGEN
+-RUN
+ 
+-INCLUDE RESETHPM
+-RUN
+ 
+ 
+-TYPE Before Extract
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+ 
+DEFINE FILE &&EXTRACT
+CITY_ST/A35 = PROP_CITY||(', '| PROP_STATE);
+IN_DATE/MDYY = CHKIN_DATE;
+INV_DT/YYMD = INVOICE_DATE;
+TRNM/MT = IF '&&DATETYPE.EVAL' EQ 'I' THEN INVOICE_DATE ELSE CHKIN_DATE;
+TRNY/A3 = 'YTD';
+LEVEL_DESC1/A80 = &&LDESC;
+
+NBR_ROOMS/D12 = NUM_ROOMS;
+NBR_DAYS/D12 = NUM_DAYS;
+NEW_ROOM_RATE/D12.2C = ROOM_RATE;
+NEW_TOTAL_AMT/D12.2C = TOTAL_AMT;
+NNROOMS/D12 = IF NBR_DAYS LT 0 AND NUM_ROOMS LT 0 THEN
+              ((NBR_DAYS*NUM_ROOMS) * (-1)) ELSE NBR_DAYS*NUM_ROOMS;
+OUT_DATE/MDYY = CHKOUT_DATE;
+-INCLUDE IDLEVDEFINE 
+ 
+END
+-RUN
+ 
+TABLEF FILE &&EXTRACT
+PRINT
+  CITY_ST
+  HTL_KEY
+  IN_DATE
+  INV_DT
+  INVOICE_DATE
+  LEVEL1
+  LEVEL2
+  LEVEL3
+  NBR_DAYS
+  NBR_ROOMS
+  NEW_ROOM_RATE
+  NEW_TOTAL_AMT
+  NNROOMS
+  OUT_DATE
+  PASSNGR_NAME
+  PROP_NAME
+  REFUSE_KEY
+-***************************************************************
+-* Where statements to select data specified in user profile
+-***************************************************************
+ 
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&LCHK
+&&DCHK
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS RPTHOLD
+END
+-RUN
+ 
+ 
+ 
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-RUN
+ 
+ 
+ 
+ 
+JOIN ROLL WITH OUT_DATE IN RPTHOLD TO ROLLUP_CODE IN ROLLUP AS J1.
+-RUN
+ 
+-IF &&FROMAVRP EQ 'Y' GOTO :HDA1;
+-SET &FMM=EDIT(&&FROMDT,'$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'9999');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$99');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$99');
+-SET &FXMY=EDIT(&&FXDATE,'9999');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$99');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$99');
+-SET &TXOY=EDIT(&&TXDATE,'9999');
+-GOTO :HDA1_CONT;
+-:HDA1
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$$99');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$$99');
+-SET &FXMY=EDIT(&&FXDATE,'$9999');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$$99');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$$99');
+-SET &TXOY=EDIT(&&TXDATE,'$9999');
+-:HDA1_CONT
+ 
+-SET &&SP = '|';
+-SET &&SP1A = IF &&ROLLNME EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP1 = IF &&ROLLCS EQ ' ' THEN ' ' ELSE &&SP1A;
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLPA = IF &&RCNCT.EVAL GE 10 OR &&CSL.EVAL GE 10 THEN 60 ELSE 68;
+-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN 78 ELSE &&CSLPA;
+-SET &&ROLLCS11 = TRUNCATE(&&ROLLCS);
+-SET &&RCNCT1 = TRUNCATE(&&ROLLCNCT);
+-SET &&BLANK = ' ';
+-RUN
+ 
+ 
+-SET &&RPT_TTL1 = 'HOTEL DETAIL                           ';
+-SET &&RPT_TTL2 = IF '&LSEL.EVAL' NE 'TOTAL' THEN '&LSEL.EVAL' ELSE '&&RPT_TTL2.EVAL';
+-* Optional sort field
+-*-SET &OPTIONsort= IF '&&SETF.EVAL' NE 'SHSMHIER' THEN ' ' ELSE 'BY LVL1 AS ''Assoc,Code'' ';
+-SET &OPTIONsort= IF '&&ROLLUP.EVAL' EQ 'CAMBIA-R' THEN 'BY LEVEL3 AS ''Department'' ' ELSE
+-                 IF '&&SETF.EVAL' NE 'SHSMHIER' THEN ' ' ELSE 'BY LVL1 AS ''Assoc,Code'' ';
+ 
+ 
+ 
+-* Center report title 1
+-SET &LEN1=
+- ARGLEN(60, '&&RPT_TTL1.EVAL', 'I2');
+-SET &&RPT_TTL1 = IF &LEN1 EQ 0 THEN ' ' ELSE
+- SUBSTR(60,'&&RPT_TTL1.EVAL',1,&LEN1, &LEN1, 'A&LEN1.EVAL');
+ 
+ 
+-SET &BK = '';
+-IF &LEN1 EQ 0 THEN GOTO AddSpH;
+-SET &Spaces = IF &LEN1 LT 60 THEN INT((60-&LEN1)/2) ELSE 0;
+-REPEAT AddSpH &Spaces TIMES
+-SET &BK1 = ' ' | '&BK.EVAL';
+-AddSpH
+-SET &&RPT_TTL1 = &BK1 | '&&RPT_TTL1.EVAL';
+ 
+ 
+-* Center report title 2
+ 
+-SET &LEN2=
+- ARGLEN(60, '&&RPT_TTL2.EVAL', 'I2');
+-SET &&RPT_TTL2 = IF &LEN2 EQ 0 THEN ' ' ELSE
+- SUBSTR(60,'&&RPT_TTL2.EVAL',1,&LEN2, &LEN2, 'A&LEN2.EVAL');
+ 
+ 
+-SET &BK = '';
+-IF &LEN2 EQ 0 THEN GOTO AddSpH2;
+-SET &Spaces = IF &LEN2 LT 60 THEN INT((60-&LEN2)/2) ELSE 0;
+-REPEAT AddSpH2 &Spaces TIMES
+-SET &BK = ' ' | '&BK.EVAL';
+-AddSpH2
+-SET &&RPT_TTL2 = &BK | '&&RPT_TTL2.EVAL';
+ 
+-TYPE After Extract
+DEFINE FILE RPTHOLD
+NOWTOD/A8 WITH OUT_DATE = HHMMSS (NOWTOD);
+ROLL/A8='&&ROLLUP.EVAL';
+RPHONE/A15=EDIT(ROLL_PHONE,'9-999-999-9999');
+RN/A60=TRIM('B', '&&RPT_TTL1.EVAL', 60, ' ', 1, 'A60');
+RN1/A60=TRIM('B', '&&RPT_TTL2.EVAL', 60, ' ', 1, 'A60');
+LVL/A60=   '&&RPT_TTL2.EVAL' ;
+ 
+TDATE1/A8MDYY='&MDYY';
+TDATE2/A10=EDIT(TDATE1,'99/99/9999');
+TIME1/A8=HHMMSS('A8');
+TIME2/A8=EDIT(TIME1,'99$:99$:99');
+RD/A10 = 'Run Date:';
+RT/A10 = 'Run Time:';
+CUR/A15='Current Period:';
+PRI/A15='Prior Period:';
+END
+-RUN
+-TYPE Before Report
+ 
+-IF &&FROMAVRP NE 'Y' GOTO :AVSF0;
+-INCLUDE AVRP_SUBFOOT
+-:AVSF0
+ 
+TABLE FILE RPTHOLD
+HEADING
+-IF '&&OUTFMT.EVAL' EQ 'PDF' THEN GOTO HEAD2;
+ 
+"&&ROLLNME &&SP1 &&ROLLCS11 &&SP3 &&RCNCT1 &&SP4 &&ROLLPHN"
+"&&DTDESC  Period1: &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  Period2: &FXMM/&FXMD/&FXMY - &TXOM/&TXOD/&TXOY"
+"&&RPT_TTL1"
+"&&RPT_TTL2"
+-* "Hierarchy:<LVL "
+ 
+-GOTO SkipHead
+ 
+-HEAD2
+ 
+"<86 &&DTDESC"
+"<83 <CUR  &FMM/&FMD/&FMY - &TOM/&TOD/&TOY"
+"<83 <PRI  &FMM/&FMD/&FMY - &TOM/&TOD/&TOY"
+"<72 &&ROLLNME <+0> &&SP <+0> &&ROLLCS <+0> &&SP3 <+0> &&ROLLCNCT <+0> &&SP4 <+0> &&ROLLPHN"
+"<86 Page:<TABPAGENO"
+" "
+"<42 <RN"
+"<42 <RN1 "  
+
+" "
+
+-SkipHead;
+"&&SUBHEAD"
+" "
+-*******************************************************************
+-* Sum statement with fields passed from the user profile database
+-*******************************************************************
+-*
+SUM
+ 
+NNROOMS AS 'NUMBER,NIGHTS'
+NBR_ROOMS AS 'NUMBER,ROOMS'
+NEW_TOTAL_AMT AS 'TOTAL,AMOUNT'
+COMPUTE AVGDR/D12.2CS = IF NEW_TOTAL_AMT LT 0 AND NNROOMS LT 0
+ THEN ((NEW_TOTAL_AMT/NNROOMS) * (-1))
+ ELSE NEW_TOTAL_AMT/NNROOMS; AS 'AVERAGE,DAILY,RATE'
+-*
+-******************************************************************
+-* By statements (one per field)
+-******************************************************************
+-*
+BY PASSNGR_NAME AS 'PASSENGER NAME'
+&OPTIONsort.EVAL
+BY PROP_NAME AS 'HOTEL'
+BY CITY_ST AS 'CITY/STATE'
+BY IN_DATE AS 'CHECKIN,DATE'
+BY OUT_DATE AS 'CHECKOUT,DATE'
+-*
+-******************************************************************
+-* On Table statements for code appropriate to On Table commands
+-******************************************************************
+-*
+ON PASSNGR_NAME RECOMPUTE MULTILINES AS 'TOTAL FOR'
+ON TABLE COLUMN-TOTAL
+ 
+ON TABLE SET PAGE-NUM OFF
+ 
+FOOTING BOTTOM
+-INCLUDE CRIGHT_FOOTER
+"</2"
+"<60 &M1.EVAL"
+ 
+ON TABLE PAGE-BREAK AND SUBFOOT
+" "
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-IF '&&OUTFMT.EVAL' NE 'PDF' THEN GOTO XLSTY;
+ 
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.100000, RIGHTMARGIN=0.030000,
+    TOPMARGIN=0.030000, BOTTOMMARGIN=0.050000, SQUEEZE=ON,
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=7, BACKCOLOR=NONE, STYLE=NORMAL, $
+ 
+ 
+TYPE=HEADING,
+     SIZE=8,
+     JUSTIFY=LEFT,
+     COLOR=RGB(70 136 177),
+     STYLE=BOLD,
+     FONT='ARIAL',
+$
+ 
+TYPE=HEADING,
+     SIZE=9,
+     LINE=2,
+     ITEM=1,
+     JUSTIFY=LEFT,
+     COLOR=RGB(70 136 177),
+     STYLE=BOLD,
+     FONT='ARIAL',
+$
+ 
+TYPE=HEADING,
+     SIZE=9,
+     LINE=3,
+     ITEM=1,
+     JUSTIFY=LEFT,
+     COLOR=RGB(70 136 177),
+     STYLE=BOLD,
+     FONT='ARIAL',
+$
+ 
+TYPE=SUBHEAD, SIZE=7, STYLE=BOLD, FONT='ARIAL', COLOR=RGB(70 136 177),$
+ 
+TYPE=FOOTING, SIZE=7, FONT='ARIAL', COLOR=RGB(70 136 177), $
+TYPE=TABFOOTING, SIZE=7, FONT='ARIAL', COLOR=RGB(70 136 177),$
+ 
+TYPE=TITLE, STYLE=BOLD, $
+TYPE=SUBTOTAL, SIZE=7, STYLE=BOLD, $
+TYPE=GRANDTOTAL, SIZE=7, STYLE=BOLD, $
+TYPE=REPORT, IMAGE=NEW_HDR.jpg, POSITION=(0 0), SIZE=(2.8 .37),PRESERVERATIO=ON, $ 
+TYPE=REPORT, IMAGE=NEW_FTR.jpg, POSITION=(0 8.0), SIZE=(10.5 .58), PRESERVERATIO=ON, $ 
+-* TYPE=REPORT, IMAGE=&&ROLLPIC, POSITION=(&&TNTDTPOS), SIZE=(&&ROLDTSIZ), $
+ 
+-GOTO PDFFMT; 
+ 
+-DIFFFMT
+TYPE=HEADING,
+     SIZE=9,
+     JUSTIFY=LEFT,
+     FONT='TIMES NEW ROMAN',
+     STYLE=BOLD,
+$
+TYPE=TITLE,
+     FONT='TIMES NEW ROMAN',
+     STYLE=BOLD,
+$
+ 
+TYPE=GRANDTOTAL,
+     SIZE=8,
+     STYLE=BOLD,
+ 
+$
+-PDFFMT
+ENDSTYLE
+ 
+ 
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+-TYPE After Report
+-GOTO XXIT;
+ 
+-XLSTY;
+-XLSTY;
+-INCLUDE DTEXL
+ENDSTYLE
+ 
+ 
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-GOTO XXIT;
+ 
+ 
+-FIRST
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THIS FIELD IS NOT DRILLABLE!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+ 
+-NOFILE
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>THE REPORT IS NO LONGER DRILLABLE!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO XXIT;
+ 
+ 
+-NORECORDS
+-HTMLFORM BEGIN
+<HTML>
+<HEAD>
+ 
+</HEAD>
+<BODY>
+ 
+ 
+<TITLE> TRAVEL & TRANSPORT</TITLE>
+<CENTER><H2>NO RECORDS FOUND FOR THIS SELECTION!!!</H2></CENTER>
+ 
+<CENTER><H4>PLEASE GO BACK TO THE PREVIOUS PAGE USING </H4></CENTER>
+<CENTER><H3>BACK BUTTON OF THE BROWSER</H3></CENTER>
+ 
+</BODY>
+</HTML>
+-HTMLFORM END
+ 
+-XXIT
+ 

@@ -1,0 +1,440 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-*                     FOCEXEC: HVIEW3DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*
+-*----           ----               ---------------------
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*
+-*
+-**************************************************************************
+SET ASNAMES=ON 
+-RUN
+
+
+TABLE FILE &&RPT_HOLD
+SUM CNT.NUM_DAYS AS 'BOOKINGS'	
+    NEW_ROOM_RATE
+    NEW_STD_RATE
+    NEW_TOTAL_AMT
+    NNROOMS	
+    NNROOMS/D8 AS 'NMBR_DAYS'	
+    SAVINGS	
+    TOTAL_AMT/D12.2 AS 'ROOM_AMT'	
+    TOTAL_STD
+    TOTAL_SLSAV	
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY CHAIN_NAME
+BY PROP_NAME
+BY PROP_ZIP5
+BY PROP_ADDRESS
+BY HOTEL_PHONE
+BY CHAIN_CODE
+BY IBOOK
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+
+TABLE FILE HOLD1
+PRINT 
+  BOOKINGS	
+  CHAIN_CODE	
+  CHAIN_NAME	
+  HOTEL_PHONE	
+  IBOOK
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  PROP_ADDRESS	
+  PROP_NAME	
+  PROP_ZIP5	
+  ROOM_AMT/D12.2	
+  SAVINGS
+  TOTAL_STD	
+  TOTAL_SLSAV
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+RANKED BY HIGHEST NMBR_DAYS NOPRINT
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+DEFINE FILE HOLD2
+ RANK_LIMIT/I5 = &&HTL_LMT;
+ DRANK/D5      = RANK;
+ ARANKX/A6 = FTOA(DRANK, '(D5)', 'A6');
+ ARANK/A5  = EDIT(ARANKX,'$99999'); 
+ RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                IF RANK GT RANK_LIMIT THEN ARANK ELSE ARANK;
+-*                 IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+-RUN
+
+TABLE FILE HOLD2
+PRINT 
+  BOOKINGS	
+  CHAIN_CODE	
+  CHAIN_NAME	
+  HOTEL_PHONE
+  IBOOK	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT	
+  NMBR_DAYS	
+  NNROOMS	
+  PROP_ADDRESS	
+  PROP_NAME	
+  PROP_ZIP5	
+  ROOM_AMT	
+  SAVINGS
+  TOTAL_STD
+  TOTAL_SLSAV
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY RANK_VALUE
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+DEFINE FILE HOLD3
+  CHAIN_CD/A2= IF RANK_VALUE LE '&&HTL_LMT' THEN CHAIN_CODE ELSE ' ';	
+  CHAIN_NM/A35= IF RANK_VALUE LE '&&HTL_LMT' THEN CHAIN_NAME ELSE ' ';	
+  HTL_ADDRESS/A35= IF RANK_VALUE LE '&&HTL_LMT' THEN PROP_ADDRESS ELSE ' ';	
+  HTL_NAME/A30 = IF RANK_VALUE LE '&&HTL_LMT' THEN PROP_NAME ELSE ' ';	
+  PROP_PHONE/A15= IF RANK_VALUE LE '&&HTL_LMT' THEN HOTEL_PHONE ELSE ' ';	
+  ZIP5/A5 = IF RANK_VALUE LE '&&HTL_LMT' THEN PROP_ZIP5 ELSE ' ';	
+END
+-RUN
+
+TABLE FILE HOLD3
+SUM 
+  BOOKINGS	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  ROOM_AMT	
+  SAVINGS	
+  TOTAL_STD
+  TOTAL_SLSAV
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY RANK_VALUE
+BY HTL_NAME
+BY ZIP5
+BY HTL_ADDRESS
+BY PROP_PHONE
+BY CHAIN_CD
+BY CHAIN_NM
+BY IBOOK
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+TABLE FILE HOLD1
+SUM 
+  BOOKINGS	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  ROOM_AMT	
+  SAVINGS
+  TOTAL_STD
+  TOTAL_SLSAV
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+ON TABLE HOLD AS RHOLD1
+END
+-RUN
+
+TABLE FILE RHOLD1
+PRINT BOOKINGS	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  ROOM_AMT	
+  SAVINGS
+  TOTAL_STD
+  TOTAL_SLSAV
+  CITY_ST
+  PROP_CITY
+  PROP_STATE_CD
+RANKED BY HIGHEST NMBR_DAYS AS 'DAYS_RANK'
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+MATCH FILE HOLD4
+PRINT BOOKINGS	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  ROOM_AMT	
+  SAVINGS	
+  TOTAL_STD
+  TOTAL_SLSAV
+  PROP_CITY
+  PROP_STATE_CD
+  RANK_VALUE
+  HTL_NAME
+  ZIP5
+  HTL_ADDRESS
+  PROP_PHONE
+  CHAIN_CD
+  CHAIN_NM
+  IBOOK
+BY CITY_ST
+ON TABLE HOLD
+RUN
+FILE RHOLD2
+SUM DAYS_RANK
+BY CITY_ST
+AFTER MATCH HOLD AS HOLD5 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE HOLD5
+PRINT BOOKINGS
+  DAYS_RANK	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  ROOM_AMT	
+  SAVINGS	
+  TOTAL_STD
+  TOTAL_SLSAV
+  PROP_CITY
+  PROP_STATE_CD
+  RANK_VALUE
+  HTL_NAME
+  ZIP5
+  HTL_ADDRESS
+  PROP_PHONE
+  CHAIN_CD
+  CHAIN_NM
+  IBOOK
+  CITY_ST
+RANKED BY HIGHEST DAYS_RANK
+ON TABLE HOLD AS HOLD6
+END
+-RUN
+
+DEFINE FILE HOLD6
+  CTY_LIMIT/I2 = &&CTY_LMT;
+  CLIMIT/A2    = EDIT(CTY_LIMIT) ;
+  CRANK/D5     = RANK;    
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6 = IF CITY_ST NE LAST CITY_ST THEN (LAST LIST + 1) ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6  = EDIT(FRANKX,'$999999');
+  CTY_VALUE/A6 = IF CTY_LIMIT EQ 0 THEN BRANK ELSE
+                 IF RANK GT CTY_LIMIT THEN BRANK ELSE BRANK;
+-*                 IF RANK GT CTY_LIMIT THEN 'OTHER' ELSE BRANK;
+  JN6KEY/A80 = CITY_ST||HTL_NAME||IBOOK;
+END
+-RUN
+
+TABLE FILE HOLD6
+PRINT 
+  BOOKINGS	
+  CLIMIT	
+  CTY_LIMIT	
+  DAYS_RANK 	
+  NEW_ROOM_RATE
+  NEW_STD_RATE
+  NEW_TOTAL_AMT
+  NMBR_DAYS	
+  NNROOMS	
+  ROOM_AMT	
+  SAVINGS	
+  TOTAL_STD
+BY JN6KEY
+BY CTY_VALUE
+BY CITY_ST
+BY PROP_CITY
+BY PROP_STATE_CD
+BY CHAIN_CD
+BY CHAIN_NM
+BY RANK_VALUE
+BY HTL_NAME
+BY ZIP5
+BY HTL_ADDRESS
+BY PROP_PHONE
+BY IBOOK
+ON TABLE HOLD AS HOLD7 FORMAT FOCUS INDEX JN6KEY
+END
+-RUN
+
+DEFINE FILE &&RPT_HOLD
+  JN8KEY/A80 = CITY_ST||PROP_NAME||IBOOK;
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM CNT.NUM_DAYS AS 'PBOOKINGS'
+    NEW_ROOM_RATE AS 'PNEW_ROOM_RATE'
+    NEW_STD_RATE AS 'PNEW_STD_RATE'
+    NEW_TOTAL_AMT AS 'PNEW_TOTAL_AMT'
+    NNROOMS AS 'PNNROOMS'
+    NNROOMS/D8 AS 'PNMBR_DAYS'
+    SAVINGS AS 'PSAVINGS'
+    TOTAL_AMT/D12.2 AS 'PROOM_AMT'
+    TOTAL_STD AS 'PTOTAL_STD'
+    TOTAL_SLSAV AS 'PTOTAL_SLSAV'
+BY JN8KEY
+BY CITY_ST
+BY CHAIN_NAME
+BY PASSNGR_NAME
+BY IN_DATE
+BY OUT_DATE
+ON TABLE HOLD AS HOLD8 FORMAT FOCUS INDEX JN8KEY
+END
+-RUN
+
+-TYPE JOIN 7 AND 8
+JOIN HOLD8.JN8KEY IN HOLD8 TO ALL HOLD7.JN6KEY IN HOLD7 AS MYJOIN
+-RUN
+
+DEFINE FILE HOLD8
+  ADDRESS/A35 = IF CTY_VALUE NE 'OTHER' THEN HTL_ADDRESS ELSE ' ';	
+  CHAIN_NAME/A35 = IF CTY_VALUE NE 'OTHER' THEN CHAIN_NM ELSE ' ';	
+  CHAIN_PRNT/A2 = IF CTY_VALUE NE 'OTHER' THEN CHAIN_CD ELSE ' ';	
+  CITY_PRNT/A35 = IF CTY_VALUE NE 'OTHER' THEN PROP_CITY ELSE ' ';	
+  CTY_PRINT/A35 = IF CTY_VALUE NE 'OTHER' THEN CITY_ST ELSE ' ';	
+  HTL_PHONE/A15 = IF CTY_VALUE NE 'OTHER' THEN PROP_PHONE ELSE ' ';	
+  HTL_PRINT/A35 = IF CTY_VALUE NE 'OTHER' THEN HTL_NAME ELSE ' ';	
+  HTL_RANK/A5 = IF CTY_VALUE NE 'OTHER' THEN RANK_VALUE ELSE ' ';	
+  STATE_PRNT/A35 = IF CTY_VALUE NE 'OTHER' THEN PROP_STATE_CD 
+    ELSE ' ';	
+  ZIP_PRINT/A5 = IF CTY_VALUE NE 'OTHER' THEN ZIP5 ELSE ' ';	
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH CTY_PRINT = HHMMSS (NOWTOD);	
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'HOLD8';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+TABLE FILE HOLD8
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&DTSTY     
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+
+JOIN CLEAR MYJOIN
+-RUN

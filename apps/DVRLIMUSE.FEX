@@ -1,0 +1,56 @@
+-*******************************************************************************
+-INCLUDE SETECHO
+-* File DVRCARUSE.FEX
+-* To join pro fee file to CR_50 to get required information
+-*3/21/2017 REJ S-31975 Added the UDID file into the USE statements
+-*******************************************************************************
+USE CLEAR *
+-RUN
+
+-SET &DATAPATH = 'D:\TNT\TTRACKER\DATA\';
+
+-IF (&&QTRENAB NE 'X') THEN GOTO USELSingle;
+
+-SET &Q0  = &DATAPATH | 'L0' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q1  = &DATAPATH | 'L1' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q2  = &DATAPATH | 'L2' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q3  = &DATAPATH | 'L3' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q4  = &DATAPATH | 'L4' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q5  = &DATAPATH | 'L5' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q6  = &DATAPATH | 'L6' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q7  = &DATAPATH | 'L7' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q8  = &DATAPATH | 'L8' || &&COMPNY || '.FOC AS LR_50';
+-SET &Q9  = &DATAPATH | 'L9' || &&COMPNY || '.FOC AS LR_50';
+-SET &QY  = &DATAPATH | 'LY' || &&COMPNY || '.FOC AS LR_50';
+-SET &QZ  = &DATAPATH | 'LZ' || &&COMPNY || '.FOC AS LR_50';
+-SET &UF1  = &DATAPATH | 'UL' || &&COMPNY || '.FOC AS LIMUDID';
+
+USE 
+&Q0
+&Q1
+&Q2
+&Q3
+&Q4
+&Q5
+&Q6
+&Q7
+&Q8
+&Q9
+&QY
+&QZ
+&UF1
+END
+-RUN
+-GOTO DVRLUSEEXIT;
+
+-USELSingle
+-SET &DB  = &DATAPATH | 'L_' || &&COMPNY || '.FOC AS LR_50';
+-SET &UF1  = &DATAPATH | 'UL' || &&COMPNY || '.FOC AS LIMUDID';
+
+USE
+&DB
+&UF1
+END
+-RUN
+
+-DVRLUSEEXIT

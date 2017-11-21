@@ -1,0 +1,121 @@
+-****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* 
+-* File REPORT_2.FEX
+-***************** M O D I F I C A T I O N S *******************
+-********************************************************************** 
+-* Continuation of REPORT following COVERPG
+-*********************************************************************
+-*
+-* 
+-* 10/19/15 - DLV - S-11791 - Added routine for ABHPCITY
+
+-**********************************************************************
+-* Produce a summary report if the user has requested
+-**********************************************************************
+-*
+-INCLUDE SETECHO
+-TYPE IN REPORT_2
+-* SUMMARY_RPT
+-*
+-IF &&SUMFLAG EQ 'N' THEN GOTO DETAIL_RPT;
+-*
+-* 
+-SET &&RPTSUF = 'SMY';
+-INCLUDE FDEFRPTS 
+-RUN
+
+-IF &&REPTTYPE EQ 'AIR' THEN GOTO SMRYAIR;
+-IF &&REPTTYPE EQ 'CAR' THEN GOTO SMRYCAR;
+-IF &&REPTTYPE EQ 'HTL' THEN GOTO SMRYHTL;
+-RUN
+
+-SMRYAIR
+
+EX &&SMPARM
+
+-GOTO XXIT;
+
+-SMRYCAR
+EX &&SMPARM
+-GOTO XXIT;
+
+-SMRYHTL
+EX &&SMPARM
+-GOTO XXIT;
+
+-SUMFLAG
+-IF &&SUMONLY EQ 'Y' THEN GOTO XXIT;
+
+-IF &&UNAME EQ 'sample' GOTO XXIT; 
+
+-IF &&SUMONLY EQ 'N' THEN GOTO DETAIL_RPT;
+-* 
+-*
+-**********************************************************************
+-* Produce a detail report if the user has requested
+-**********************************************************************
+-*
+-DETAIL_RPT
+
+-*
+-INCLUDE SetParmtime
+-RUN
+-IF '&&SETF.EVAL' EQ 'ABHPCITY' THEN GOTO HTL;
+-SET &&RPTSUF = 'DTL';
+-IF '&&SETF.EVAL' EQ 'MXAFILE' GOTO OTRFDEF;
+-INCLUDE FDEFRPTS
+-RUN
+-GOTO NXON;
+-OTRFDEF;
+-INCLUDE FDEFRPTSP2P
+-GOTO NXON;
+
+-NXON;
+-IF &&REPTTYPE EQ 'AIR' THEN GOTO AIR;
+-IF &&REPTTYPE EQ 'CAR' THEN GOTO CAR;
+-IF &&REPTTYPE EQ 'HTL' THEN GOTO HTL;
+-IF &&REPTTYPE EQ 'CP'  THEN GOTO CP;
+-GOTO XXIT;
+-*
+-AIR
+
+EX &&DTPARM
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&DTPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO XXIT;
+-*
+-CAR
+EX &&DTPARM
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&DTPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO XXIT;
+-*
+-HTL
+EX &&DTPARM
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='&&DTPARM.EVAL';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO XXIT;
+-*
+-CP
+EX CPRPT
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='CPRPT';
+-INCLUDE ERRORCHK
+-* REJ ADDED TO TRAP ERRORS
+-GOTO XXIT;
+-*
+-XXIT
+
+-* -QUIT
+
+-*-EXIT

@@ -1,0 +1,45 @@
+-INCLUDE CLASSPATH
+-SET &&WPATH1=TEMPPATH(50,'A50');
+-SET &&JPATH=STRREP(50,'&&WPATH1.EVAL',1,'\',2,'\\',150,'A150');
+-*
+-* SCHEDULEID S13bd6ssb10v is the Push Report Job.
+-*
+DEFINE FILE BOTSCHED
+SID/A12=SCHEDULEID;
+END
+TABLE FILE BOTSCHED
+PRINT SID
+BY SCHEDULEID NOPRINT
+-*WHERE SCHEDULEID EQ 'S13bd6ssb10v' OR 'S16i062rjk16'
+WHERE SCHEDULEID EQ 'S13bd6ssb10v'
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE SAVE AS RCPARMS
+END
+ 
+-SET &IFILE='&&JPATH.EVAL' || 'rcparms.ftm';
+-RUN
+ 
+-DOS java -cp "&CP.EVAL" com.tandt.rcaster.schedule.RunSchedule "&IFILE.EVAL"
+-RUN
+-IF &RETCODE NE 0 GOTO :ERROR;
+ 
+-HTMLFORM BEGIN
+<HTML>
+<BODY>
+<h2>Successful</h2><br>
+The eTTek Push Review Reports job has been submitted to ReportCaster.
+</BODY>
+</HTML>
+-HTMLFORM END
+-GOTO :DONE;
+ 
+-:ERROR
+-HTMLFORM BEGIN
+<HTML>
+<BODY>
+<h2>Error</h2><br>
+The eTTek Push Review Reports job failed to submit to ReportCaster.
+</BODY>
+</HTML>
+-HTMLFORM END
+-:DONE

@@ -1,0 +1,104 @@
+SET ASNAMES=ON
+-*SET TEMPERASE = OFF
+
+
+DEFINE FILE HYMETX
+  NBR_DAYS/D12 =  NUM_DAYS;
+  NNROOMS/D12 = IF ((NBR_DAYS LT 0) AND (NUM_ROOMS LT 0)) THEN 
+                ((NBR_DAYS*NUM_ROOMS) * (-1)) ELSE NBR_DAYS*NUM_ROOMS;
+  REFUSE_CD/A2 = EDIT(REFUSE_KEY,'$$$$$$$$99');
+  
+  
+  BOOKINGS/D8 = IF TOTAL_AMT GE 0 THEN 1 ELSE (-1);
+  PREF_NON/A15 = IF REFUSE_CD EQ 'A' OR 'T' OR 'R' THEN 'Preferred'
+                  ELSE 'Non-Preferred';  
+END
+-RUN
+
+TABLE FILE HYMETX
+SUM TOTAL_AMT NNROOMS
+COMPUTE AVGR/D12.2CS = TOTAL_AMT/NNROOMS;
+BY PREF_NON
+ON TABLE HOLD
+END
+-RUN
+
+GRAPH FILE HOLD
+SUM NNROOMS AS 'Number Nights'  AVGR AS 'Average Rate'
+ACROSS PREF_NON AS ' '
+ON GRAPH SET GRAPHEDIT SERVER
+ON GRAPH SET LOOKGRAPH VBAR2AX
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID ON
+ON GRAPH SET GRAPHSTYLE *
+setO1LabelRotate(0);
+setAutofit(getO1Label(),false);
+setFontSizeAbsolute(getO1Label(),true); 
+setFontStyle(getO1Label(),2);
+setFontSize(getDataText(),12);
+setFillColor(getSeries(0), new Color, 0 64 128));
+setFillColor(getSeries(1), new Color, 145 207 255));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setConnectScatterMarkers(true);
+setO1LabelDisplay(true);
+setO1LabelRotate(0);
+setAxisAssignment(0,1);
+setSeriesType(0,0);
+setAxisAssignment(1,0);
+setSeriesType(1,2);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setSubtitleString(" ");
+setY1LabelDisplay(true);
+setY1LabelFormat(6);
+setAutofit(getY1Label(),true);
+setFontSizeAbsolute(getY1Label(),true); 
+setY2LabelDisplay(true);
+setY2LabelFormat(1);
+setAutofit(getY2Label(),true);
+setFontSizeAbsolute(getY2Label(),true); 
+setAutofit(getTitle(),true);
+setTextJustHoriz(getTitle(),1);
+setFontSizeAbsolute(getTitle(),true); 
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),12);
+setPlace(true);
+setDataTextDisplay(false);
+ENDSTYLE
+-* ON TABLE HOLD AS STEVE FORMAT SVG
+-* ON TABLE ONLINE-FMT PDF
+ON GRAPH SET STYLE *
+     PAGESIZE='Letter',
+     LEFTMARGIN=0.250000,
+     RIGHTMARGIN=0.250000,
+     TOPMARGIN=0.250000,
+     BOTTOMMARGIN=0.250000,
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+     BACKCOLOR='NONE',
+     STYLE=NORMAL,
+$
+TYPE=DATA,
+     ACROSSCOLUMN=N1,
+     FOCEXEC=DRILLTOREP7(PREF_NON=A1),
+$
+TYPE=DATA,
+     ACROSSCOLUMN=N2,
+     FOCEXEC=DRILLTOREP7(PREF_NON=A1),
+$
+ENDSTYLE
+END

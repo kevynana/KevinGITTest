@@ -1,0 +1,82 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-**************************************************************************
+-*THIS WAS CREATED FOR THE BLACK AND VEATCH FLAT FILE
+-* 5/13/02 JK 
+-* ADDED TRANTYPE INCLUDE - JK 12/15/14 STORY ID S-06492
+
+-**************************************************************************
+-********************************************************************
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT
+-INCLUDE TRANTYPE
+END
+-RUN
+
+TABLE FILE &&EXTRACT
+PRINT 
+  AIR_KEY
+  AIRLINE
+  CLASS	
+  CONJ_REL	
+  DOC_TYPE	
+  DPT_DATE	
+  EMBARK	
+  EX_FLAG	
+  EXCHG_SALE
+  INT_CODE
+  AIR_MAIN.INTL_DOM AS 'INTL_DOM'	
+  INVOICE_NUM	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3	
+  PASSNGR_NAME	
+  REFUSE_KEY	
+  RESV_DATE	
+  RF_FLAG
+  ROUTE	
+  SEG_AMT	
+  SEG_NBR	
+  SEG_TAX	
+  TICKET_AMT
+  TAX_AMT
+  TOT_TNT_FEE
+  TRN_DATE
+  TRVL_AUTH
+  VOID_DATE
+BY TKT_NUM
+BY SEG_COUNT
+
+-INCLUDE &AIRDATES
+
+WHERE VOID_DATE EQ 0
+WHERE RF_FLAG EQ ' '
+WHERE EX_FLAG EQ ' '
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+
+-*-EXIT
+
+

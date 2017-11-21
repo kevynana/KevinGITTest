@@ -1,0 +1,141 @@
+SET ASNAMES=ON
+
+-*SET TEMPERASE = OFF
+-INCLUDE SETECHO
+
+-GOTO JOYGRAPH;
+GRAPH FILE E1CONG
+SUM BOOKINGS AS ''
+BY TRAVELBY AS ''
+ON TABLE SET GRAPHSTYLE *
+setGraphType(55);
+setMarkerDisplay(true);
+setConnectLineMarkers(false);
+setConnectScatterMarkers(false);
+setO1LabelDisplay(true);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+
+setTitleString("Bookings");
+setLegendPosition(0);
+setPieLabelDisplay(0);
+setPieFeelerTextFormat(1);
+setPieFeelerTextDisplay(2);
+setPieDepth(50);
+setPieTilt(30);
+
+setTextJustHoriz(getTitle(),1);
+setFontSizeAbsolute(getTitle(),true); 
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),12);
+
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(2, new Color, 115 160 247));
+setPlace(true);
+ENDSTYLE
+END
+-RUN
+-EXIT
+
+-JOYGRAPH;
+GRAPH FILE E1CONG
+SUM BOOKINGS AS ''
+BY TRAVELBY AS ''
+ON GRAPH SET LOOKGRAPH PIE
+ON GRAPH SET GRAPHEDIT SERVER
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D ON
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET VAXIS 140
+ON GRAPH SET HAXIS 450
+
+ON GRAPH SET GRAPHSTYLE *
+setMarkerDisplay(true);
+setConnectLineMarkers(false);
+setConnectScatterMarkers(false);
+setO1LabelDisplay(true);
+setO1AxisSide(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setAxisAssignment(0,0);
+setY1LabelDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setTextFormatPreset(getY1Label(),6);
+setPieFeelerTextDisplay(2);
+setPieFeelerTextFormat(1);
+setPieLabelDisplay(0);
+setFontSizeAbsolute(getPieSliceLabel(),true);
+setFontSize(getPieSliceLabel(),9);
+setFontStyle(getPieSliceLabel(),2);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setTitleString("Bookings");
+setTextJustHoriz(getTitle(),1);
+setFontSizeAbsolute(getTitle(),true);
+setFontSize(getTitle(),12);
+setFontStyle(getTitle(),2);
+setTextRotation(getTitle(),0);
+setTextWrap(getTitle(),false);
+setTextJustHoriz(getLegendText(),2);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSize(getLegendText(),10);
+setFontStyle(getLegendText(),0);
+setTextRotation(getLegendText(),0);
+setTextWrap(getLegendText(),false);
+setTextJustHoriz(getY1Title(),1);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSize(getY1Title(),12);
+setTextRotation(getY1Title(),1);
+setTextWrap(getY1Title(),false);
+setTextJustHoriz(getY1Label(),2);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSize(getY1Label(),16);
+setTextRotation(getY1Label(),0);
+setTextWrap(getY1Label(),false);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlaceResize(getTitle(),0);
+setPlaceRotate(getTitle(),0);
+setPlaceAlign(getTitle(),0);
+setPlaceWordWrap(getTitle(),0);
+setPlaceResize(getPieSliceLabel(),0);
+setPlaceRotate(getPieSliceLabel(),0);
+setPlaceAlign(getPieSliceLabel(),0);
+setPlaceWordWrap(getPieSliceLabel(),0);
+setPlaceResize(getLegendText(),0);
+setPlaceRotate(getLegendText(),0);
+setPlaceAlign(getLegendText(),0);
+setPlaceWordWrap(getLegendText(),0);
+setPlaceResize(getY1Title(),0);
+setPlaceRotate(getY1Title(),0);
+setPlaceAlign(getY1Title(),0);
+setPlaceWordWrap(getY1Title(),0);
+setPlaceResize(getY1Label(),0);
+setPlaceRotate(getY1Label(),0);
+setPlaceAlign(getY1Label(),0);
+setPlaceWordWrap(getY1Label(),0);
+setPlace(true);
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(2, new Color, 115 160 247));
+setPieDepth(50);
+setPieTilt(50);
+ENDSTYLE
+ON GRAPH HOLD AS 'DBGRAPH2' FORMAT PNG
+ON GRAPH SET STYLE *
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+     TITLETEXT='Total Expense',
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+$
+ENDSTYLE
+END

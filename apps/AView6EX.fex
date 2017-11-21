@@ -1,0 +1,786 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File TKTLIST.FEX
+-********************************************************************
+-* MODIFICAIONS:
+-* 5/22/1998 ADDED TRN_DATE CRITERIA TO WHERE STATEMENTS - LP
+-* 7/09/1998 ADDED A DEFINE FOR TICKETLESS MIR TRANSACTIONS - LP
+-*11/20/01  CHANGED DEFINE ON NEW_SEG_DISC FROM SEG_DISC TO SEG_DISCOUNT -DB 
+-*11/28/01  ADDED TOUR_CODE JK 
+-*12/03/01 ADDED DEFINE FOR DISSAVINGS  - DB
+-* 7/26/02  CHANGED TO USE VALIDATING AIRLINE_NAME - jk
+-* 8/22/02  ADDED NEW_ADV_PURCH - DB
+-* 10/14/02 ADDED FARE_BAS - JK
+-*3/17/03   ADDED PNR_LOCATOR - DV
+-*07/16/03  ADDED LEVEL2 - DV
+-*07/30/03  ADDED MXEXC1 DEFINE - DV
+-*2/23/04   ADDED CLASS1 CLASS 2DEFINE - DEB
+-*8/23/04   ADDED ND_CP_NM DEFINE - JK
+-*8/23/04   ADDED CITY_FLAG DEFINE - JK
+-*10/18/04  ADDED CODE FOR GLOBAL CURRENCY - DV
+-*04/08/04  ADDED MXEXC2 DEFINE -DV
+-*1/10/07        DEB                CARRIED THROUGH ARLN_NAME
+-*6/26/08   ADDED Fields for CH2M UA/LH request JK 
+-*03/07/13  CHANGED CLASS_CAT CLASS_1 DEFINE DUE TO CLASS CATEGORY CHANGES - DV
+-*8/7/13    Updated Agency Discount/Contract Savings to use new database field - JK
+-*5/22/14   UPDATED EX_RF_FLAG TO INCLUDE EX5 - DEB
+-*10/22/14  ADDED FLT_TYPE FLAG FOR BOOZ REQUEST - JOY
+-* ADDED TRANTYPE INCLUDE - JK 12/9/14 STORY ID S-06492
+-*6/29/15 - JEK - STORY ID - S-09964 - updated programs/created new routine for add collects and airline fees for request and to balance to other reports
+-*11/23/15  Joy    S-07987  Corrected for running Currency Enabled Version
+-*12/02/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+-*11/7/16-JEM-S-24567-Added defines for specific airline fare paids for AMNALNSP (new report)
+
+-********************************************************************
+-*
+-* This program extracts data for the series of basic ticket listing
+-* reports.  Based on the user profile selected, one of many report
+-* formats will be produced.  
+-*
+-********************************************************************
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-INCLUDE SETECHO
+
+-SET &&IDLEVELBREAK = '';
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+DEFINE FILE &&EXTRACT
+ ALN_NAME/A10 = IF VAL_AIR.VAL_AIRLINE EQ 'UA' OR 'LH' THEN 'UA/LH' ELSE 'OTHER';
+-* CLASS_CAT/A8 = DECODE CL_CAT ('F' 'FIRST'     'C' 'COACH'    ' ' 'OTHER');
+-*                              'D' 'DISCOUNT'  'B' 'BUSINESS'
+ CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+			        'D' 'DEFAULT'   'B' 'BUSINESS'
+			        'E' 'ECONOMY'   'U'  'UPGRADE' 
+                                ' ' 'DEFAULT'); 
+                            
+-*   CLASS1/A8 = IF CLASS EQ '        ' THEN 'ZZ OTHER' ELSE CLASS;
+-*  CLASS1/A25 = IF CDIR_ALL CONTAINS '*F' THEN 'FIRST' ELSE
+-*               IF CDIR_ALL CONTAINS '*B' THEN 'BUSINESS' ELSE
+-*               IF CDIR_ALL CONTAINS '*C' THEN 'COACH' ELSE
+-*               IF CDIR_ALL CONTAINS '*D' THEN 'DISCOUNTED COACH' ELSE 'OTHER';
+
+  CLASS1/A25 = IF TKT_CL_CAT CONTAINS 'F' THEN 'FIRST' ELSE
+               IF TKT_CL_CAT CONTAINS 'B' THEN 'BUSINESS' ELSE
+               IF TKT_CL_CAT CONTAINS 'P' THEN 'PREMIUM ECONOMY' ELSE
+               IF TKT_CL_CAT CONTAINS 'E' THEN 'ECONOMY' ELSE
+               IF TKT_CL_CAT CONTAINS 'U' THEN 'UPGRADE' ELSE 'DEFAULT';
+              
+               
+  COMM_SEG/D12.2S = SEG_COM;
+  CITY/A6 = SUBSTR (176, CNON_STP, 1, 6, 6, CITY);
+  DCTRY/A65 = EDIT(TKT_MAIN.CTRY_COD,'$$$9999999999999999999999999999999999999999999999999999999999999999');
+  DGZONE/A64 = EDIT(TKT_MAIN.GEO_ZONE,'$$$$9999999999999999999999999999999999999999999999999999999999999999');
+  FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+  FARE_PAID1/D12.2CS   = SEG_AMT + SEG_TAX;
+  FARE_PAID2/D12.CS = TICKET_AMT + TAX_AMT;
+
+  LEVEL_DESC1/A80      = &&LDESC;
+  FLT_TYPE/A50 = IF DOC_TYPE EQ '1' THEN 'DOMESTIC FLIGHT' ELSE
+                 IF ORG_GEO_CODE EQ 'USA' AND FNL_DEST_GEO_ZONE EQ 'USA' THEN 'DOMESTIC FLIGHT' ELSE
+                 IF ORG_GEO_CODE EQ 'LAM' OR 'CAN' THEN 'SHORT HAUL FLIGHT' ELSE
+                 IF FNL_DEST_GEO_ZONE EQ 'LAM' OR 'CAN' THEN 'SHORT HAUL FLIGHT' ELSE
+                 IF ORG_GEO_CODE NE 'USA' OR 'LAM' OR 'CAN' THEN 'LONG HAUL FLIGHT' ELSE
+                 IF FNL_DEST_GEO_ZONE NE 'LAM' OR 'CAN' THEN 'LONG HAUL FLIGHT' ELSE ' ';
+-*                 IF ORG_GEO_CODE EQ 'USA' AND FNL_DEST_GEO_ZONE EQ 'LAM' OR 'CAN' THEN 'SHORT HAUL FLIGHT' ELSE
+-*                 IF AIR_MAIN.INTL_DOM EQ 'I' AND ORG_GEO_CODE EQ 'USA' AND FNL_DEST_GEO_ZONE NE 'LAM' OR 'CAN' THEN 'LONG HAUL FLIGHTS' ELSE ' ';
+  MXEXC1/A1 = IF (ORG_DST EQ 'BOSLGA') OR (ORG_DST EQ 'DCALGA') OR
+                 (ORG_DST EQ 'BOSDCA') OR (ORG_DST EQ 'LGAPVD') OR
+                 (ORG_DST EQ 'BOSEWR') THEN 'N' ELSE 'Y';
+  MXEXC2/A1 = IF (ORG_DST EQ 'BOSLGA') OR (ORG_DST EQ 'DCALGA') OR
+                 (ORG_DST EQ 'BOSDCA') THEN 'Y' ELSE 'N';               
+  MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NET_FARE/D12.2S  = IF (EX_FLAG EQ ' ') AND (RF_FLAG EQ ' ')
+                         THEN SEG_AMT - SEG_COM ELSE 0;
+  NEW_ADV_PURCH/D9    = ADV_PURCH;
+  NEW_AP/D9 = IF TKT_NUM NE LAST TKT_NUM THEN NEW_ADV_PURCH ELSE 0;
+  NEW_SEG_DISC/D12.2CS = SEG_DISCOUNT;
+  OCTRY/A2 = EDIT(TKT_MAIN.CTRY_COD, '99');
+  OGZONE/A3 = EDIT(TKT_MAIN.GEO_ZONE, '999');
+  ORG_SALE/D12.2CS    = PARENT_FARE + PARENT_TAX;
+
+  REF_EXCH_CNT/D8.2CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  TAX/D12.2S = SEG_TAX;
+  TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TRAN_MONTH/MT        = TRN_DATE;
+  VASAVINGS/D12.2CS    = NEW_SEG_DISC - FARE_PAID;
+  XDPT_DOW/W           = DPT_DATE;
+  XDPT_DT/MDYY         = DPT_DATE;
+  XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XTRAN_DT/MDYY        = TRN_DATE;
+
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+  AFLAG/A1 = IF ALN_NAME EQ 'OTHER' THEN '2' ELSE '1';
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+-*Added for AMNALNSP Report
+AA_SPEND/D12.2CSM=IF VAL_AIRLINE EQ 'AA' THEN FARE_PAID ELSE 0;
+UA_SPEND/D12.2CSM=IF VAL_AIRLINE EQ 'UA' THEN FARE_PAID ELSE 0;
+                         
+-* Added for new AD reason code to split out the value added savings
+-*   ADVSV/D12.2CS = IF REFUSE_CODE EQ 'AD' THEN VASAVINGS ELSE 0;
+ADVSV/D12.2CS = SEG_AGENCY_DISC - FARE_PAID;
+-*  NFVSV/D12.2CS = IF REFUSE_CODE NE 'AD' THEN VASAVINGS ELSE 0; 
+NFVSV/D12.2CS = VASAVINGS;
+
+-*The following 2 defined fields are only used for saving/lost saving reports
+-*02/04/2003
+  SAVING1/P12.2CS = (STD_FARE - (TICKET_AMT + TAX_AMT));
+  LSTSAVE1/P12.2CS = ((TICKET_AMT + TAX_AMT) - LOWEST_AMT); 
+-***** Added for Kiewit exchange by Validating airline Report
+ ADDCOLLECT/D12.2CS = EXCH_NET_FARE + EXCH_NET_TAX;
+-* AC_AMT/D12.2 = IF TKT_SORT NE LAST TKT_SORT THEN ADDCOLLECT ELSE 0;
+AIRLINE_FEE/D12.2CSM = IF EMBARK EQ 'FP2' OR 'FP3' THEN FARE_PAID ELSE 0;
+EXG_ISS/D12CS = IF (EX_FLAG EQ 'F') AND (SEG_COUNT EQ -1) AND (SEG_NBR EQ '01') THEN 1 ELSE 0;
+PEXG_ISS/D12CS = IF (EX_FLAG EQ 'P') AND (TKT_NUM NE LAST TKT_NUM) THEN 1 ELSE 0;
+FEXG_AMT/D12.2CSM = IF (EX_FLAG EQ 'F') THEN FARE_PAID ELSE 0;
+NET_AMT/D12.2CSM = IF EX_FLAG EQ 'F' THEN FARE_PAID ELSE 0;
+-* Added for Booz-r flight type report
+DOM_TKT/P12CS = IF FLT_TYPE EQ 'DOMESTIC FLIGHT' THEN NET_TKT_CNT ELSE 0;
+SHORT_TKT/P12CS = IF FLT_TYPE EQ 'SHORT HAUL FLIGHT' THEN NET_TKT_CNT ELSE 0;
+LONG_TKT/P12CS = IF FLT_TYPE EQ 'LONG HAUL FLIGHT' THEN NET_TKT_CNT ELSE 0;
+-* CONG REPORT
+EX_RF_FLAG/A1 = IF (((RF_FLAG EQ 'F' OR 'P') AND (EMBARK NE 'EX1' OR 'FP2' OR 'EX5') AND 
+                     (SEG_COUNT LE 0)) OR (EMBARK EQ 'RF1')) THEN 'R' ELSE 
+                  IF (((EXSALE NE ' ') AND (SEG_COUNT GE 0)) OR ((EMBARK NE 'DT1') AND 
+                      (EX_FLAG EQ 'F' OR 'P') AND (SEG_COUNT LE 0) AND (RF_FLAG EQ ' ')))  THEN 'E'  ELSE ' ';
+TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' '; 
+-INCLUDE TRANTYPE
+-INCLUDE IDLEVDEFINE 
+
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT 
+    ADV_PURCH
+    ADVSV
+    AFLAG
+    AIR_KEY	
+    AIR_MAIN.INTL_DOM
+    AIRLINE
+    AIRLINE.AIRLINE_NAME AS 'ARLN_NAME'
+    ALN_NAME
+    ARR_TIME
+    AROLL_DSC6
+    BR_CL_IDX
+    CITY
+    CITYPAIR.EMBARK AS 'EMB_APT_CD'
+    CITYPAIR.ROUTE  AS 'RTE_APT_CD'
+    CLASS
+    CLASS1
+    CLASS_CAT
+    COMM_SEG
+    CONJ_REL
+    DGZONE
+    DCTRY
+    DISSAVINGS	
+    DOC_TYPE	
+    DOC_NUMBER
+    DPT_TIME
+    EMBARK
+    EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'	
+    EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'	
+    EMB_CTY.EMB_CITY     AS 'EMB_CTY_CD'
+    EX_FLAG
+    EXCHG_SALE
+    EX_RF_FLAG
+    EXCH_NET_FARE
+    EXCH_NET_TAX
+    FARE_PAID	
+    FARE_PAID1
+    FARE_PAID2
+    FARE_BAS	
+    FLT_TYPE
+    FST_DPT_DATE
+    INT_CODE	
+    LEVEL_DESC
+    LEVEL4
+    LEVEL2
+    MXEXC1
+    MXEXC2
+    MRK_TKT_CNT
+    NET_FARE
+    NET_TKT_CNT
+    NEW_AP
+    NEW_ADV_PURCH	
+    NEW_SEG_DISC
+    NFVSV
+    OCTRY
+    OGZONE
+    ORG_SALE
+    PNR_LOCATOR	
+    REF_EXCH_CNT	
+    REFUSE_KEY        	
+    REFUSE_CODE        	
+    RESV_BRANCH	
+    RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'	
+    RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'	
+    RTE_CTY.RTE_CITY     AS 'RTE_CTY_CD'
+    SEG_DESIG
+    SEG_LOWEST
+    SEG_NBR	
+    TAX
+    TKT_MAIN.GEO_ZONE AS 'GEO_ZONE'
+    TKT_MAIN.CTRY_COD AS 'CNTRY_CODE'
+    TKT_DATE
+    TKT_NUM
+    TKT_PURCH
+    TKT_SORT
+    TKT_TYPE
+    TOUR_CODE
+    TRN_DATE
+    VAL_AIR.AIRLINE_NAME 	
+    VAL_AIRLINE	
+    VASAVINGS	
+    XDPT_DT	
+    XTRAN_DT	
+    XPSNGR_NM
+-* Kiewit Defines
+    ADDCOLLECT
+    AIRLINE_FEE
+    EXG_ISS
+    FEXG_AMT
+    NET_AMT
+    PEXG_ISS
+    EX_RF_FLAG
+    TKT_TYPE
+-*BOOZ FLIGHT TYPE
+    DOM_TKT
+    SHORT_TKT
+    LONG_TKT
+-*AMN SPEND
+    AA_SPEND
+    UA_SPEND
+-INCLUDE &AIRDATES
+
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+-*-INCLUDE &RPARM
+ON TABLE HOLD AS VSVHOLD
+END
+
+TABLE FILE VSVHOLD
+PRINT 
+    ADV_PURCH   
+    ADVSV
+    AFLAG
+    AIR_KEY    
+    AIRLINE
+    AIRLINE_NAME
+    ALN_NAME
+    ARLN_NAME
+    ARR_TIME
+    AROLL_DSC6
+    BR_CL_IDX
+    CITY    
+    CLASS
+    CLASS1
+    CLASS_CAT
+    COMM_SEG
+    CONJ_REL
+    DISSAVINGS	
+    DOC_TYPE	
+    DOC_NUMBER
+    DPT_TIME
+    EMB_APT_CD
+    EMB_APT_NM	
+    EMB_CTY_NM	
+    EMB_CTY_CD
+    EX_FLAG
+    FARE_PAID	
+    FARE_PAID1
+    FARE_PAID2
+    FARE_BAS	
+    FLT_TYPE
+    FST_DPT_DATE
+    INT_CODE
+    INTL_DOM	
+    LEVEL_DESC
+    LEVEL2
+    LEVEL4
+    MXEXC1
+    MXEXC2
+    MRK_TKT_CNT
+    NET_FARE
+    NET_TKT_CNT
+    NEW_AP
+    NEW_ADV_PURCH	
+    NEW_SEG_DISC	
+    NFVSV
+    ORG_SALE
+    PNR_LOCATOR	
+    REF_EXCH_CNT	
+    REFUSE_KEY        	
+    REFUSE_CODE        	
+    RESV_BRANCH
+    RTE_APT_CD	
+    RTE_APT_NM	
+    RTE_CTY_NM	
+    RTE_CTY_CD
+    SEG_DESIG
+    SEG_LOWEST
+    SEG_NBR	
+    TAX
+    TKT_NUM
+    TKT_PURCH
+    TKT_SORT
+    TKT_TYPE
+    TOUR_CODE
+    TRN_DATE     	
+    VAL_AIRLINE	
+    VASAVINGS	
+    XDPT_DT	
+    XTRAN_DT	
+    XPSNGR_NM
+    ADDCOLLECT
+    AIRLINE_FEE
+    EXG_ISS
+    FEXG_AMT
+    NET_AMT
+    PEXG_ISS
+    EX_RF_FLAG
+    TKT_TYPE
+-*BOOZ FLIGHT TYPE
+    DOM_TKT
+    SHORT_TKT
+    LONG_TKT  
+-*AMN SPEND
+    AA_SPEND
+    UA_SPEND    
+BY TKT_DATE
+ON TABLE HOLD AS VASAV FORMAT FOCUS INDEX TKT_DATE
+END
+-RUN
+
+
+-* Global Reporting JOIN
+JOIN VASAV.TKT_DATE IN VASAV TO GLOBAL.DATE IN GLOBAL AS J1
+END
+
+DEFINE FILE VASAV
+NAMEC/A30 = CNAME;
+
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+CURR1X/D20.6 = 1 / USDPU ;
+
+-* DEFINES ON PREVIOUS DEFINES
+PAID_FAREX/D20.6 = FARE_PAID * CURR1X;
+PAID_FARE1/D20.6C = PAID_FAREX;
+DISSAVEX/D20.6 = DISSAVINGS * CURR1X;
+DISSAVE1/D20.6 = DISSAVEX;
+VASAVINGX/D20.6 = VASAVINGS * CURR1X;
+VASAVE1/D20.6 = VASAVINGX;
+NEW_SEGDX/D20.6 = NEW_SEG_DISC * CURR1X;
+NEW_SEGD1/D20.6 = NEW_SEGDX;
+ADVSVX/D20.6 = ADVSV*CURR1X;
+NFVSVX/D20.6 = NFVSV*CURR1X;
+
+END
+
+
+TABLE FILE VASAV
+PRINT 
+    ADV_PURCH  
+    ADVSVX
+    AFLAG
+    AIR_KEY    
+    AIRLINE
+    AIRLINE_NAME 
+    ALN_NAME
+    ARLN_NAME
+    ARR_TIME
+    AROLL_DSC6
+    BR_CL_IDX
+    CITY    
+    CLASS
+    CLASS1
+    CLASS_CAT
+    COMM_SEG
+    CONJ_REL
+    DISSAVINGS	
+    DOC_TYPE	
+    DOC_NUMBER
+    DPT_TIME
+    EMB_APT_CD
+    EMB_APT_NM	
+    EMB_CTY_NM	
+    EMB_CTY_CD
+    EX_FLAG
+    FARE_PAID	
+    FARE_PAID1
+    FARE_PAID2
+    FARE_BAS	
+    FLT_TYPE
+    FST_DPT_DATE
+    INT_CODE
+    INTL_DOM	
+    LEVEL_DESC
+    LEVEL2
+    LEVEL4
+    MXEXC1
+    MXEXC2
+    MRK_TKT_CNT
+    NET_FARE
+    NET_TKT_CNT
+    NEW_AP
+    NEW_ADV_PURCH	
+    NEW_SEG_DISC	
+    NFVSVX
+    ORG_SALE
+    PNR_LOCATOR	
+    REF_EXCH_CNT	
+    REFUSE_KEY        	
+    REFUSE_CODE        	
+    RESV_BRANCH
+    RTE_APT_CD	
+    RTE_APT_NM	
+    RTE_CTY_NM	
+    RTE_CTY_CD
+    SEG_DESIG
+    SEG_LOWEST
+    SEG_NBR	
+    TAX
+    TKT_DATE
+    TKT_NUM
+    TKT_PURCH
+    TKT_SORT
+    TKT_TYPE
+    TOUR_CODE
+    TRN_DATE     	
+    VAL_AIRLINE	
+    VASAVINGS	
+    XDPT_DT	
+    XTRAN_DT	
+    XPSNGR_NM
+    NAMEC
+    PAID_FARE1
+    VASAVE1
+    NEW_SEGD1
+    DISSAVE1
+    ADDCOLLECT
+    AIRLINE_FEE
+    EXG_ISS
+    FEXG_AMT
+    NET_AMT
+    PEXG_ISS
+    EX_RF_FLAG
+    TKT_TYPE
+-*BOOZ FLIGHT TYPE
+    DOM_TKT
+    SHORT_TKT
+    LONG_TKT  
+-*AMN SPEND
+    AA_SPEND
+    UA_SPEND    
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS VASAV1A
+END
+-RUN
+
+-IF &&SETF NE 'KWEXSM' OR 'CGEXSM1' THEN GOTO NOMATCH;
+
+DEFINE FILE VSVHOLD
+CG_PCNT/D12CS = IF TKT_NUM NE LAST TKT_NUM THEN 1 ELSE 0;
+END
+-RUN
+TABLE FILE VSVHOLD
+SUM CG_PCNT
+BY LEVEL_DESC
+WHERE EX_RF_FLAG EQ 'E'
+WHERE TKT_TYPE EQ 'P-EX'
+ON TABLE HOLD AS CGHOLD
+END
+-RUN
+
+-IF &RECORDS EQ 0 GOTO NOMATCH;
+
+
+MATCH FILE VASAV1A
+PRINT 
+    ADV_PURCH  
+    ADVSV
+    AFLAG
+    AIR_KEY    
+    AIRLINE
+    AIRLINE_NAME 
+    ALN_NAME
+    ARLN_NAME
+    ARR_TIME
+    AROLL_DSC6
+    BR_CL_IDX
+    CITY    
+    CLASS
+    CLASS1
+    CLASS_CAT
+    COMM_SEG
+    CONJ_REL
+    DISSAVINGS	
+    DOC_TYPE	
+    DOC_NUMBER
+    DPT_TIME
+    EMB_APT_CD
+    EMB_APT_NM	
+    EMB_CTY_NM	
+    EMB_CTY_CD
+    EX_FLAG
+    FARE_PAID	
+    FARE_PAID1
+    FARE_PAID2
+    FARE_BAS	
+    FLT_TYPE
+    FST_DPT_DATE
+    INT_CODE
+    INTL_DOM	
+    LEVEL_DESC
+    LEVEL2
+    LEVEL4
+    MXEXC1
+    MXEXC2
+    MRK_TKT_CNT
+    NET_FARE
+    NET_TKT_CNT
+    NEW_AP
+    NEW_ADV_PURCH	
+    NEW_SEG_DISC	
+    NFVSV
+    ORG_SALE
+    PNR_LOCATOR	
+    REF_EXCH_CNT	
+    REFUSE_KEY        	
+    REFUSE_CODE        	
+    RESV_BRANCH
+    RTE_APT_CD	
+    RTE_APT_NM	
+    RTE_CTY_NM	
+    RTE_CTY_CD
+    SEG_DESIG
+    SEG_LOWEST
+    SEG_NBR	
+    TAX
+    TKT_DATE
+    TKT_NUM
+    TKT_PURCH
+    TKT_SORT
+    TKT_TYPE
+    TOUR_CODE
+    TRN_DATE     	
+    VAL_AIRLINE	
+    VASAVINGS	
+    XDPT_DT	
+    XTRAN_DT	
+    XPSNGR_NM
+    NAMEC
+    PAID_FARE1
+    VASAVE1
+    NEW_SEGD1
+    DISSAVE1
+    ADDCOLLECT
+    AIRLINE_FEE
+    EXG_ISS
+    FEXG_AMT
+    NET_AMT
+    PEXG_ISS
+    EX_RF_FLAG
+    TKT_TYPE
+-*BOOZ FLIGHT TYPE
+    DOM_TKT
+    SHORT_TKT
+    LONG_TKT    
+-*AMN SPEND
+    AA_SPEND
+    UA_SPEND    
+BY LEVEL_DESC    
+ON TABLE HOLD
+RUN
+FILE CGHOLD
+PRINT CG_PCNT
+BY LEVEL_DESC
+AFTER MATCH HOLD AS VASAV1 OLD-OR-NEW
+END
+-RUN
+
+
+
+-GOTO XXIT;
+
+
+-NOMATCH;
+DEFINE FILE VASAV1A
+CG_PCNT/D12CS = 0;
+ADVSV/D16.2 = ADVSVX;
+NFVSVX/D16.2 = NFVSVX;
+END
+TABLE FILE VASAV1A
+PRINT 
+    ADV_PURCH  
+    ADVSV
+    AFLAG
+    AIR_KEY    
+    AIRLINE
+    AIRLINE_NAME 
+    ALN_NAME
+    ARLN_NAME
+    ARR_TIME
+    AROLL_DSC6
+    BR_CL_IDX
+    CITY    
+    CLASS
+    CLASS1
+    CLASS_CAT
+    COMM_SEG
+    CONJ_REL
+    DISSAVINGS	
+    DOC_TYPE	
+    DOC_NUMBER
+    DPT_TIME
+    EMB_APT_CD
+    EMB_APT_NM	
+    EMB_CTY_NM	
+    EMB_CTY_CD
+    EX_FLAG
+    FARE_PAID	
+    FARE_PAID1
+    FARE_PAID2
+    FARE_BAS	
+    FLT_TYPE
+    FST_DPT_DATE
+    INT_CODE
+    INTL_DOM	
+    LEVEL_DESC
+    LEVEL2
+    LEVEL4
+    MXEXC1
+    MXEXC2
+    MRK_TKT_CNT
+    NET_FARE
+    NET_TKT_CNT
+    NEW_ADV_PURCH	
+    NEW_SEG_DISC
+    NEW_AP
+    NFVSV
+    ORG_SALE
+    PNR_LOCATOR	
+    REF_EXCH_CNT	
+    REFUSE_KEY        	
+    REFUSE_CODE        	
+    RESV_BRANCH
+    RTE_APT_CD	
+    RTE_APT_NM	
+    RTE_CTY_NM	
+    RTE_CTY_CD
+    SEG_DESIG
+    SEG_LOWEST
+    SEG_NBR	
+    TAX
+    TKT_DATE
+    TKT_NUM
+    TKT_PURCH
+    TKT_SORT
+    TKT_TYPE
+    TOUR_CODE
+    TRN_DATE     	
+    VAL_AIRLINE	
+    VASAVINGS	
+    XDPT_DT	
+    XTRAN_DT	
+    XPSNGR_NM
+    NAMEC
+    PAID_FARE1
+    VASAVE1
+    NEW_SEGD1
+    DISSAVE1
+    ADDCOLLECT
+    AIRLINE_FEE
+    EXG_ISS
+    FEXG_AMT
+    NET_AMT
+    PEXG_ISS
+    EX_RF_FLAG
+    TKT_TYPE
+    CG_PCNT
+-*BOOZ FLIGHT TYPE
+    DOM_TKT
+    SHORT_TKT
+    LONG_TKT    
+-*AMN SPEND
+    AA_SPEND
+    UA_SPEND    
+BY LEVEL_DESC    
+ON TABLE HOLD AS VASAV1
+END
+-RUN
+
+
+
+-XXIT;
+

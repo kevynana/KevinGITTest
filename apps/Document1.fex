@@ -1,0 +1,61 @@
+Dim sSheetName As String
+
+'Store the sheet name in a variable
+sSheetName = Expense.Range("A10").Value
+
+
+'then activate the sheet
+Application.Sheets(sSheetName).Activate
+
+
+
+Sub ActivateASheet()
+Dim SShtName As String
+Dim Wbk As Workbook
+Dim Ssheet As Worksheet
+
+'''''''''''''''''''''''''''''''''''
+' Activates a sheet in another workbook
+''''''''''''''''''''''''''''''''''
+
+SShtName = Sheet1.Range("A10")
+
+For Each Wbk In Application.Workbooks
+On Error GoTo Done
+Wbk.Activate
+On Error Resume Next
+Set Ssheet = Sheets(SShtName)
+If Not Ssheet Is Nothing Then
+Ssheet.Activate
+Exit Sub
+End If
+Next Wbk
+
+Done:
+ThisWorkbook.Activate
+End Sub
+
+
+Range("A10:O10").Select
+Selection.AutoFilter
+
+
+
+Private filtered As Boolean
+Private Sub cmdFilter_Click()
+    Range("A10:Q10").Select
+    Selection.AutoFilter
+    If filtered Then
+      cmdFilter.Caption = "Filter"
+      filtered = False
+    Else
+      cmdFilter.Caption = "UnFilter"
+      filtered = True
+    End If
+End Sub
+
+Private Sub cmdSort_Click()
+  Range("A11").Select
+  Application.Dialogs(xlDialogSort).Show
+End Sub
+

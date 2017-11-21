@@ -1,0 +1,128 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* ********************************************************************
+-* MODIFICAIONS:
+-* 12/30/04 - DEB - ADDED CODE FOR GLOBAL CURRENCY
+-********************************************************************
+
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE &&EXTRACT
+  CITY_ST/A35 = PROP_CITY||(', '| PROP_STATE);
+  LEVEL_DESC/A60  = &&LDESC;
+  IN_DATE/MDYY = CHKIN_DATE;
+  NMBR_DAYS/D12 =  NUM_DAYS;
+  NBR_ROOMS/D12 = NUM_ROOMS;
+  OUT_DATE/MDYY = CHKOUT_DATE;
+-* ****DEFINES ON PREVIOUS DEFINES****
+   NNROOMS/D12 = IF ((NMBR_DAYS LT 0) AND (NBR_ROOMS LT 0)) THEN 
+                ((NMBR_DAYS*NBR_ROOMS) * (-1)) ELSE NMBR_DAYS*NBR_ROOMS;
+   BOOKINGS/D8 = IF ROOM_RATE GE 0 THEN 1 ELSE (-1);
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT BOOKINGS
+  CITY_ST
+  CURR_DATE	
+  HOTEL_PHONE 	
+  IN_DATE 	
+  LEVEL_DESC	
+  NMBR_DAYS	
+  NBR_ROOMS
+  NNROOMS	
+  NBR_ROOMS	
+  OUT_DATE 	
+  PASSNGR_NAME 	
+  PROP_ADDRESS 	
+  PROP_NAME 	
+  ROOM_RATE 	
+  TOTAL_AMT 	
+  
+WHERE INVOICE_DATE GE &&FROMDT.EVAL AND INVOICE_DATE LE &&TODT.EVAL
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS TPHTLPX
+
+END
+-RUN
+
+TABLE FILE TPHTLPX
+PRINT BOOKINGS
+  CITY_ST
+  HOTEL_PHONE 	
+  IN_DATE 	
+  LEVEL_DESC	
+  NMBR_DAYS	
+  NBR_ROOMS
+  NNROOMS	
+  NBR_ROOMS	
+  OUT_DATE 	
+  PASSNGR_NAME 	
+  PROP_ADDRESS 	
+  PROP_NAME 	
+  ROOM_RATE 	
+  TOTAL_AMT 
+BY CURR_DATE
+ON TABLE HOLD AS TOPHTLP FORMAT FOCUS INDEX CURR_DATE
+END
+-RUN	
+
+-* Global Reporting JOIN
+JOIN TOPHTLP.CURR_DATE IN TOPHTLP TO GLOBAL.DATE IN GLOBAL AS J1
+END
+
+DEFINE FILE TOPHTLP
+NAMEC/A30 = CNAME;
+
+
+-******************************************************************************
+-*                         Global Currency Conversion Defines
+-******************************************************************************
+CURR1X/D20.6 = 1 / USDPU ;
+
+-* DEFINES ON PREVIOUS DEFINES
+AMT_TOTALX/D20.6 = TOTAL_AMT * CURR1X;
+
+END
+
+TABLE FILE TOPHTLP
+PRINT BOOKINGS
+  CITY_ST
+  CURR_DATE
+  HOTEL_PHONE 	
+  IN_DATE 	
+  LEVEL_DESC	
+  NMBR_DAYS	
+  NBR_ROOMS
+  NNROOMS	
+  NBR_ROOMS	
+  OUT_DATE 	
+  PASSNGR_NAME 	
+  PROP_ADDRESS 	
+  PROP_NAME 	
+  ROOM_RATE 	
+  TOTAL_AMT
+  NAMEC
+  AMT_TOTALX
+WHERE GLOBAL.COUNTRYCODE EQ '&&CURRENCY'
+ON TABLE HOLD AS TOPHTLPX
+END
+-RUN
+ 

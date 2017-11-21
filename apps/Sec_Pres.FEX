@@ -1,0 +1,222 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-INCLUDE SETECHO
+-* File AIR_PLCY.FEX
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*----           ----                 ---------------------
+-*6/2/98         JK                   SR10USE TO SR12USE
+-*
+-*6/2/98         JK                   AIREXTRT TO AIREXT1
+-*
+-*6/19/98        LP                   EX AIRUSE FOR DYNAMIC RPTS
+-*9/13/00      IBISTL-KR              ADDED CODE FOR DRILLABLE REPORTS.
+-*5/21/01      TANDT-SS               ADDED DEFINE TO NORECORDS SO MESSAGE
+-*                                    "NO RECORDS FOUNDS FOR THIS SELECTION" 
+-*                                    WILL APPEAR IN EXCEL 97
+-*****************************************************************
+
+EX SETDBLS1 SETFILE=&&SETF
+-RUN
+-*****************************************************************
+-*DATE           NAME       DESCRIPTION OF CHANGE
+-*10/25/00      IBISTL-RJ   CHANGE &&OUTLINE1 TO 'ONLINE-FMT' IF
+-*                          &&DRILLED_RUN = 'Y'.  THIS IS NEEDED
+-*                          FOR REPORTS THAT WERE EXECUTED AND SAVED
+-*                          TO FILES, THE SAVED SETFILE WILL CONTAIN
+-*                          'ON TABLE SAVE AS SAVREP'.
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*****************************************************************
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_OL1;
+EX WRBATCH
+-RUN
+
+-SET &&OUTLINE1 = 'ON TABLE SET ONLINE-FMT';
+-SET &&OUTLINE2 = IF &&OUTLINE2 CONTAINS 'PDF' THEN 'PDF' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXCEL' THEN 'EXCEL' ELSE
+-          IF &&OUTLINE2 CONTAINS 'EXL2K' THEN 'EXL2K' ELSE 'PDF';
+-SKIP_OL1
+
+EX LOADBINS
+-RUN
+
+-*EX CODEGEN
+-*-RUN
+-*-INCLUDE OTHPARMS
+
+EX GETFPARM
+-RUN
+
+-TYPE &&OUTPUTDEST
+-IF &&OUTLINE2 EQ 'OFFLINE' THEN GOTO XOFFLINE ELSE GOTO XONLINE;
+-RUN
+
+-XONLINE
+-TYPE Before ONLINE
+ONLINE
+-TYPE After ONLINE
+-RUN
+-GOTO CONT
+
+-XOFFLINE
+-SET &&OUTLINE2 = '';
+-TYPE Before OFFLINE
+OFFLINE
+-TYPE After OFFLINE
+-RUN
+-GOTO CONT
+
+-CONT
+-SET &&RPT_HOLD = 'RPTHOLD';
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              ADDED NEW DRILLABLE PARAMETERS
+-*****************************************************************
+-SET &&DRILLSTREAM = 'Y';
+
+-SET &&DRILLABLE = IF (&&SUMFLAG EQ 'Y') AND 
+- (&&OUTLINE2 CONTAINS 'PDF' OR 'EXL2K') 
+- THEN 'Y' ELSE 'N';
+
+-* CODE ADDED TO PREVENT AVIW23SM REPORTS FROM BEING DRILLABLE
+-SET &&DRILLABLE = IF &&USEPARM CONTAINS 'AVIW23' THEN 'N' ELSE &&DRILLABLE;
+-SET &&DRILLABLE = IF &&USEPARM CONTAINS 'AVIW39' THEN 'N' ELSE &&DRILLABLE;
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              Drill Down functionality
+-*****************************************************************
+-INCLUDE SELCATQT
+-RUN
+
+-*EX CATQTR
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+
+EX AIRUSE
+-RUN
+
+-*EX SELDESC2
+-*-RUN
+
+-TYPE Before Extract
+EX &&EXPARM
+
+-RUN
+-TYPE After Extract
+
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              DETERMINE WHICH DRILL ROUTINE
+-*                                     TO RUN.
+-*****************************************************************
+
+-TYPE Before Report
+EX REPORT
+
+-TYPE REPORT
+
+-RUN
+-TYPE After Report
+
+-IF &&DRILLABLE EQ 'Y' AND &&DRILLED_RUN EQ 'N' GOTO EX_DRILLRPT;
+-IF &&DRILLABLE EQ 'Y' AND &&DRILLED_RUN EQ 'Y' GOTO EX_DRILRPT2;
+
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              EX DRILLRPT
+-*****************************************************************
+-EX_DRILLRPT
+
+-TYPE Before Drill Report
+EX DRILLRPT
+
+-TYPE DRILLRPT
+
+-RUN
+-TYPE After Drill Report
+
+-*****************************************************************
+-*DATE           NAME                 DESCRIPTION OF CHANGE
+-*9/13/00      IBISTL-KR              EX DRILRPT2
+-*****************************************************************
+-EX_DRILRPT2
+-TYPE Before Drill Report2
+
+EX DRILRPT2
+
+-TYPE DRILLRPT2
+
+-RUN
+-TYPE After Drill Report2
+
+-GOTO XXIT
+
+-NORECORDS
+-SET &&RPTSUF = 'MSG';
+-INCLUDE FDEFRPTS
+-RUN
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE HEADAIR
+PRINT EMPTY AS 'REPORT,MESSAGE' 
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT
+
+-RUN
+-* REJ EX RESTART 
+-*-EXIT
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

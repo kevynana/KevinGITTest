@@ -1,0 +1,181 @@
+-*getSelectedMembers.fex
+-*-SET &ECHO=ALL;
+-DEFAULT &1='ABCD-R';
+-DEFAULT &2='03'; 
+-DEFAULT &3=''; 
+-DEFAULT &nbrSelected = 0;
+
+TABLE FILE CONTROL
+PRINT ROLLUP_CODE
+BY USER_ID
+ON TABLE SAVE AS HCTL001
+END
+-RUN
+
+-READ HCTL001 &3.20, &1.8
+
+DEFINE FILE USERCNTL
+  RL/A17 = '''' | ROLL_LEV | ''''; 
+END
+
+TABLE FILE USERCNTL
+PRINT RL AS 'ROLL_LEV'
+WHERE USER_NAME EQ '&3.EVAL' AND ROLLUP_CODE EQ '&1.EVAL' AND LEVEL EQ '&2.EVAL'
+ON TABLE SAVE AS TUSERCNTL
+END
+-RUN
+-SET &SEC = IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+DEFINE FILE HIERORG
+CNT/I5 WITH ROLL_LEV = CNT + 1;
+IMD/I5 WITH ROLL_LEV = IMOD(CNT, 2, IMD);
+-*OPTS/A200 WITH ROLL_LEV =IF IMD NE 0 THEN '<option>' || DEPTNAME | ' - ' | ROLL_LEV
+-*  ELSE '<option style="background-color:#dcdcdc;" >' || DEPTNAME | ' - ' | ROLL_LEV ;
+
+OPTS/A200 WITH ROLL_LEV =IF IMD NE 0 THEN '<option value="' || ROLL_LEV || '">' || DEPTNAME || ''
+  ELSE '<option style="background-color:#dcdcdc;" value="' || ROLL_LEV || '">' || DEPTNAME || '';
+END
+
+TABLE FILE HIERORG
+PRINT OPTS
+BY ROLL_LEV NOPRINT
+WHERE ROLLUP_CODE EQ '&1.EVAL' AND LEVEL EQ '&2.EVAL'
+-IF &SEC EQ 'N' THEN GOTO NOSECLIMIT;
+WHERE ROLL_LEV IN FILE TUSERCNTL
+-NOSECLIMIT
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE HOLD AS HOLDMEM
+END
+
+-HTMLFORM BEGIN
+<html>
+<head>Select Hierarchy Members
+</head>
+<body>
+<form name="hierorg">
+
+<table border="0" width="90%">
+<tr>
+<td>
+<select name="members" size="6" multiple>!IBI.FIL.HOLDMEM;</select>
+</br>
+</tr>
+</table>
+
+<table border="0" width="50%">
+  <tr>
+    <td width="50%">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="button" value="Select" name="B1" onclick="moveItems();">
+    </td>
+    <td width="50%">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="button" value="Close" name="B2" onclick="closeWindow();">
+    </td>
+  </tr>
+</table>
+<font size="3">___________________________________________________________________</font><br>
+<font size="2" color="#800000">Enter Exact Code or Partial Name to Search      </font>
+
+<table border="0" width="80%">
+<tr>
+<td width="40%">Member Code:</td>
+<td width="40%"><input type="text" name="MCODE" size="20" maxlength="20"></td>
+<td width="20%"><input type="button" value="Find" name="GO" onclick="checkNum();"></td>
+</tr>
+<tr>
+    <td width="50%">Member Name: </td>
+    <td width="30%"><input type="text" name="MemName" size="35" maxlength="60">  </td>
+    <td width="20%"><input type="button" value="Find" name="GO2" onclick="checkName();"> </td>
+  </tr>
+</table>
+
+
+<SCRIPT TYPE='text/javascript' LANGUAGE='JavaScript'>
+
+function moveItems() {
+ from=document.hierorg.members;
+ var len=0;
+ 
+  for (i=0; i<from.options.length;i++) {
+     if (from.options[i].selected) { 
+         txt = from.options[i].text; 
+         val = from.options[i].value; 
+         len = window.opener.pasteOrgMembers(txt,val); 
+         if (len>=50) {i=9999;}
+     }
+ }
+ window.close();
+ window.opener.UpdSUdatabases();
+}
+
+function checkName() {
+ if ((document.hierorg.MemName.value == '') || (document.hierorg.MemName.value == ' ')) {
+   alert("Please enter an Organizational Member Name");
+   return false;
+  }
+  unSelectAll();
+  searchMemberName();
+}
+
+function searchMemberName() {
+ var i;
+ var val, len, name;
+ var fund=false;
+ for (i=0; i < document.hierorg.members.length; i++) {
+   val = document.hierorg.members.options[i].text;
+
+   len = val.indexOf(")") + 1;
+   name=val.substring(len, val.length);
+   //get all members which contains that search string
+   if (name.indexOf(document.hierorg.MemName.value.toUpperCase()) > -1) {
+     document.hierorg.members.options[i].selected = true;
+     if (!fund) { fund = true; }
+   }
+ }
+ if (!fund) { alert("Member Name Not Found!!"); }
+}
+
+function unSelectAll() {
+  for (i=0; i < document.hierorg.members.length; i++) { document.hierorg.members.options[i].selected = false;}
+}
+
+function checkNum() {
+ if ((document.hierorg.MCODE.value == '') || (document.hierorg.MCODE.value == ' ')) {
+   alert("Please enter an Organizational Member Code");
+   return false;
+  }
+  unSelectAll();
+  searchMembers();
+}
+
+function searchMembers() {
+ var i;
+ var val, len, mcode;
+ var fund=false;
+ for (i=0; i < document.hierorg.members.length; i++) {
+   val = document.hierorg.members.options[i].text;
+   len = val.indexOf(")");
+   mcode=val.substring(1,len);
+   if (mcode == document.hierorg.MCODE.value.toUpperCase()) {
+     document.hierorg.members.options[i].selected = true;
+     fund=true;
+     break;
+   }
+ }
+ if (!fund) {
+   alert("Member Code Not Found!!");
+ }
+}
+
+function closeWindow() {
+  window.close();
+}
+
+</script>
+
+</form>
+
+</body>
+</html>
+-HTMLFORM END

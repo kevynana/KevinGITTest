@@ -1,0 +1,180 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+SET ASNAMES=ON
+
+
+DEFINE FILE OVSTSHLD
+FARE_PAID/D12.2 = SEG_AMT + SEG_TAX ;
+
+CY/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PY/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+NON_FLAG/A15 = IF NONREF_FLAG EQ 'N' THEN 'Non-Refundable' ELSE 
+               'Refundable';
+NET_TKT_CNT/D12      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+
+CYTTL_TKT/D12 = IF (NON_FLAG EQ 'Refundable' OR 'Non-Refundable') AND
+                   (CY EQ 'Y') THEN NET_TKT_CNT ELSE 0;
+PYTTL_TKT/D12 = IF (NON_FLAG EQ 'Refundable' OR 'Non-Refundable') AND
+                   (PY EQ 'Y') THEN NET_TKT_CNT ELSE 0;
+CYTTL_FAR/D12 = IF (NON_FLAG EQ 'Refundable' OR 'Non-Refundable') AND
+                   (CY EQ 'Y') THEN FARE_PAID ELSE 0;
+PYTTL_FAR/D12 = IF (NON_FLAG EQ 'Refundable' OR 'Non-Refundable') AND
+                   (PY EQ 'Y') THEN FARE_PAID ELSE 0;
+END
+-RUN
+
+
+TABLE FILE OVSTSHLD
+SUM CYTTL_TKT 
+    PYTTL_TKT
+    CYTTL_FAR
+    PYTTL_FAR 
+    PCT.CYTTL_TKT AS 'CYTTL_PCT'
+    PCT.PYTTL_TKT AS 'PYTTL_PCT'
+BY NON_FLAG
+ON TABLE HOLD AS OVREF1 
+END
+-RUN
+
+-* -GOTO SKIP_GRAPH
+-SET &RECFOUND = &RECORDS;
+
+-IF &RECFOUND EQ 0 GOTO SKIP_GRAPH;
+
+
+GRAPH FILE OVREF1
+SUM CYTTL_PCT AS 'Current'
+    PYTTL_PCT AS 'Prior'
+BY NON_FLAG AS ' '
+ON TABLE SET GRAPHSTYLE *
+setGraphType(24);
+setLegendDisplay(true);
+setLegendTextAutofit(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(true);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Ref/Non-Ref");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setDataTextDisplay(false);
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(1, new Color, 115 160 247));
+ENDSTYLE
+ON GRAPH SAVE AS REFNON FORMAT SVG
+END
+-RUN
+
+-SKIP_GRAPH
+-SET &&REF_SVG=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+-INCLUDE DTRANGE
+-RUN
+
+
+DEFINE FILE OVREF1
+CATEGORY/A30 = 'Ref-NonRef';
+CAT_ORDER/I2 = 2;
+END
+-RUN
+
+TABLE FILE OVREF1
+PRINT CATEGORY/A30 AND NON_FLAG/A30 AS 'ROW_LABEL' AND
+CAT_ORDER/I2 AND CYTTL_TKT/D15 AS 'TKT_CURR' AND 
+CYTTL_FAR/D15 AS 'VOL_CURR' AND CYTTL_PCT/D15 AS 'PCT_CURR' AND
+PYTTL_TKT/D15 AS 'TKT_PRIOR' AND PYTTL_FAR/D15 AS 'VOL_PRIOR' AND 
+PYTTL_PCT/D15 AS 'PCT_PRIOR' AND
+COMPUTE ROW_ORDER/I2 = ROW_ORDER + 1;    
+WHERE NON_FLAG EQ 'Refundable';
+ON TABLE HOLD AS OVREF2
+END
+-RUN
+
+TABLE FILE OVREF2
+PRINT CATEGORY AND ROW_LABEL AND CAT_ORDER
+      AND ROW_ORDER AND VOL_CURR AND TKT_CURR PCT_CURR
+      AND VOL_PRIOR AND TKT_PRIOR PCT_PRIOR
+ON TABLE HOLD AS OVREF3
+END
+MODIFY FILE OV_STAP
+FIXFORM FROM OVREF3
+MATCH CATEGORY ROW_LABEL
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON OVREF3
+END
+-RUN
+
+DEFINE FILE OVREF1
+CATEGORY/A30 = 'Ref-NonRef';
+CAT_ORDER/I2 = 2;
+END
+-RUN
+
+TABLE FILE OVREF1
+PRINT CATEGORY/A30 AND NON_FLAG/A30 AS 'ROW_LABEL' AND
+CAT_ORDER/I2 AND CYTTL_TKT/D15 AS 'TKT_CURR' AND 
+CYTTL_FAR/D15 AS 'VOL_CURR' AND CYTTL_PCT/D15 AS 'PCT_CURR' AND
+PYTTL_TKT/D15 AS 'TKT_PRIOR' AND PYTTL_FAR/D15 AS 'VOL_PRIOR' AND 
+PYTTL_PCT/D15 AS 'PCT_PRIOR' AND
+COMPUTE ROW_ORDER/I2 = ROW_ORDER + 1;    
+WHERE NON_FLAG EQ 'Non-Refundable';
+ON TABLE HOLD AS OVREF2
+END
+-RUN
+
+TABLE FILE OVREF2
+PRINT CATEGORY AND ROW_LABEL AND CAT_ORDER
+      AND ROW_ORDER AND VOL_CURR AND TKT_CURR PCT_CURR
+      AND VOL_PRIOR AND TKT_PRIOR PCT_PRIOR
+ON TABLE HOLD AS OVREF3
+END
+MODIFY FILE OV_STAP
+FIXFORM FROM OVREF3
+MATCH CATEGORY ROW_LABEL
+ON MATCH REJECT
+ON NOMATCH INCLUDE
+DATA ON OVREF3
+END
+-RUN
+
+
+
+
+
+
+
+

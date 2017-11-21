@@ -1,0 +1,492 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-*12/28/04 - DEB - ADDED ADDT'L DOD_TYPES TO BOOKING TYPE DEFINES
+-*10/21/05 - DEB - ADDED DOD_TYPE  'H' TO BOOKING TYPE DEFINES
+-* Changed AUTO_REPORT to NONREF_FLAG - TRX issue - SAC - 06/22/07
+-*1/30/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE &&EXTRACT
+ CTRY1/A2 =  EDIT(CTRY_COD, 
+'99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY2/A2 =  EDIT(CTRY_COD, 
+'$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY3/A2 =  EDIT(CTRY_COD, 
+'$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY4/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY5/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY6/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY7/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY8/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY9/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY10/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY11/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY12/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY13/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY14/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY15/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$$$$');
+CTRY16/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$$$$');
+CTRY17/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$$$$');
+CTRY18/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$$$$');
+CTRY19/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$$$$');
+CTRY20/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$$$$');
+CTRY21/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$$$$');
+CTRY22/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99$$$');
+CTRY23/A2 =  EDIT(CTRY_COD, 
+'$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$99');
+
+ 
+ FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+ IBOOK/A42 = DOD_DESC; 
+LEVEL_DESC/A60 = &&LDESC;
+MXEXC/A1 = IF (ORG_DST EQ 'BOSLGA') AND (AIRLINE EQ 'DL' OR 'US') OR
+                (ORG_DST EQ 'DCALGA') AND (AIRLINE EQ 'DL' OR 'US') OR 
+                (ORG_DST EQ 'BOSDCA') AND (AIRLINE EQ 'DL' OR 'US') OR
+                (ORG_DST EQ 'LGAPVD') AND (AIRLINE EQ 'US') OR                    
+                (ORG_DST EQ 'BOSEWR') AND (AIRLINE EQ 'CO') THEN 'N' 
+                ELSE 'Y';    
+NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+NON_REF/A15 = DECODE NONREF_FLAG ('N' 'NON-REFUNDABLE'
+                                  'R' 'REFUNDABLE'
+                                  ' ' 'REFUNDABLE');
+MNON_REF/A15 = DECODE NONREF_FLAG ('N' 'NON-REFUNDABLE'
+                                   'R' 'REFUNDABLE'
+                                   ' ' 'REFUNDABLE');
+MC_ADV_BOOK/A8    = IF ADV_BOOK LT 7 THEN '0 - 6' ELSE
+                      IF ADV_BOOK GE 7 AND ADV_BOOK LE 13 THEN '07 - 13' ELSE
+                      IF ADV_BOOK GE 14 AND ADV_BOOK LE 20 THEN '14 - 20' ELSE
+                      IF ADV_BOOK GT 20 THEN '21 +';
+MX_ADV_PUR/A8       = IF (ADV_PURCH LT 7) THEN '0 - 6' ELSE
+                        IF (ADV_PURCH LT 14) THEN '07 - 13' ELSE
+                        IF (ADV_PURCH LT 21) THEN '14 - 20' ELSE '21 +';
+SORTA/A1 = 'A';
+TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+UP_ADV_PUR/A8    = IF ADV_PURCH LT 8 THEN '0 - 7' ELSE
+                      IF ADV_PURCH GE 8 AND ADV_PURCH LE 14 THEN 
+                      '08 - 14' ELSE
+                      IF ADV_PURCH GE 15 AND ADV_PURCH LE 21 THEN
+                      '15 - 21' ELSE
+                      IF ADV_PURCH GT 21 THEN '22 +';
+XDPT_DT/MDYY         = DPT_DATE;
+XDPT_DOW/W           = DPT_DATE;
+XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+XTRAN_DT/MDYY        = TRN_DATE;
+ XAP/A8 = EDIT(ADV_PURCH);
+ XAB/A8 = EDIT(ADV_BOOK);
+
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+
+  ABOOK_CNT/D8CS = IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' THEN NET_TKT_CNT ELSE 0;
+  ABOOK_FARE/D12.2CS = IF ONLINE_TRADITIONAL EQ 'TRADITIONAL' THEN FARE_PAID ELSE 0;
+  IBOOK_CNT/D8CS = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN NET_TKT_CNT ELSE 0;
+  IBOOK_FARE/D12.2CS = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN FARE_PAID ELSE 0;
+  IEBOOK_CNT/D8CS = IF IBOOK CONTAINS 'EXCHANGE' THEN NET_TKT_CNT ELSE 0;
+  IEBOOK_FARE/D12.2CS = IF IBOOK CONTAINS 'EXCHANGE' THEN FARE_PAID ELSE 0;
+  SIBOOK_CNT/D8CS = IF IBOOK CONTAINS 'WEB' THEN NET_TKT_CNT ELSE 0;
+-*   AIBOOK_CNT/D8CS = ABOOK_CNT + IBOOK_CNT;
+  AIBOOK_CNT/D8CS = NET_TKT_CNT - IEBOOK_CNT;
+  NONREF_CNT/D8CS = IF NONREF_FLAG EQ 'N' THEN NET_TKT_CNT ELSE 0;
+  MNONREF_CNT/D8CS = IF NONREF_FLAG EQ 'N' THEN NET_TKT_CNT ELSE 0;
+  NONREF_FARE/D12.2CS = IF NONREF_FLAG EQ 'N' THEN FARE_PAID ELSE 0;
+  MNONREF_FARE/D12.2CS = IF NONREF_FLAG EQ 'N' THEN FARE_PAID ELSE 0;
+  REF_CNT/D8CS    = IF NONREF_FLAG NE 'N' THEN NET_TKT_CNT ELSE 0;
+  MREF_CNT/D8CS    = IF NONREF_FLAG NE 'N' THEN NET_TKT_CNT ELSE 0;
+  REF_FARE/D12.2CS = IF NONREF_FLAG NE 'N' THEN FARE_PAID ELSE 0;
+  MREF_FARE/D12.2CS = IF NONREF_FLAG NE 'N' THEN FARE_PAID ELSE 0;
+
+  CTRY_FLAG/A1 = IF (CTRY1 EQ 'US' OR 'CA') AND 
+  (CTRY2 EQ 'US' OR 'CA' OR ' ') AND 
+  (CTRY3 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY4 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY5 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY6 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY7 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY8 EQ 'US' OR 'CA' OR ' ') AND 
+  (CTRY9 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY10 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY11 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY12 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY13 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY14 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY15 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY16 EQ 'US' OR 'CA' OR ' ') AND 
+  (CTRY17 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY18 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY19 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY20 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY21 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY22 EQ 'US' OR 'CA' OR ' ') AND
+  (CTRY23 EQ 'US' OR 'CA' OR ' ') THEN 'Y' ELSE 'N';
+  
+
+CTRY_FLAG1/A1 = IF (CTRY1 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND 
+  (CTRY2 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND 
+  (CTRY3 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY4 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY5 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY6 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY7 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY8 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND 
+  (CTRY9 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY10 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY11 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY12 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY13 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY14 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY15 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY16 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND 
+  (CTRY17 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY18 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY19 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY20 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY21 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY22 EQ 'US' OR 'CA' OR 'MX' OR ' ') AND
+  (CTRY23 EQ 'US' OR 'CA' OR 'MX' OR ' ') THEN 'Y' ELSE 'N';
+
+  DISSAVINGS/D11.2CS  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  DPT_DAY/A3          = DECODE XDPT_DOW (1 'MON' 2 'TUE' 3 'WED'
+                                 4 'THU' 5 'FRI' 6 'SAT' 7 'SUN');
+  MX_DAYS/A8 =  IF ADV_PURCH LT 21 THEN XAP ELSE MX_ADV_PUR;
+  UP_DAYS/A8 =  IF ADV_PURCH LT 22 THEN XAP ELSE UP_ADV_PUR;
+  MC_DAYS/A8 =  IF ADV_BOOK LT 21 THEN XAB ELSE MC_ADV_BOOK;
+                    
+-INCLUDE TRANTYPE               
+END
+TABLEF FILE &&EXTRACT
+PRINT 
+  ABOOK_CNT
+  ABOOK_FARE
+  AIBOOK_CNT
+  AIRLINE	
+  ARR_TIME
+  NONREF_FLAG
+  BR_CL_IDX
+  CLIENT_NAME
+  DOD_TYPE
+  DPT_TIME	
+  EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'
+  FARE_BAS	
+  FARE_PAID	
+  IBOOK
+  IBOOK_CNT
+  IBOOK_FARE
+  IEBOOK_CNT
+  IEBOOK_FARE
+  LEVEL_DESC	
+  NET_TKT_CNT
+  NONREF_FLAG
+  NON_REF
+  MNON_REF
+  NONREF_CNT
+  MNONREF_CNT
+  NONREF_FARE
+  MNONREF_FARE
+  REF_CNT
+  MREF_CNT
+  REF_FARE
+  MREF_FARE
+  REFUSE_CODE
+  REFUSAL_DESC	
+  RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'
+  SEG_COUNT	
+  SEG_NBR	
+  SIBOOK_CNT
+  SORTA
+  TKT_NUM
+  TKT_TYPE
+  TKT_SORT	
+  TRN_DATE	
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT	
+WHERE AIRLINE NE '2V' OR 'XA'
+WHERE CTRY_FLAG EQ 'Y' 
+WHERE MXEXC EQ 'Y' 
+WHERE (TRN_DATE GE &&FROMDT.EVAL) AND (TRN_DATE LE &&TODT.EVAL) OR
+      (TRN_DATE GE &&FXDATE.EVAL) AND (TRN_DATE LE &&TXDATE.EVAL)
+WHERE VOID_DATE EQ 0
+
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS &&RPT_HOLD
+
+END
+-RUN
+
+DEFINE FILE &&RPT_HOLD
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+CURFARE/D12.2CS = IF CURRENT EQ 'Y' THEN FARE_PAID ELSE 0;
+CURNTKT/P8CS = IF CURRENT EQ 'Y' THEN NET_TKT_CNT ELSE 0;
+PRFARE/D12.2CS = IF PRIOR EQ 'Y' THEN FARE_PAID ELSE 0;
+PRNTKT/P8CS = IF PRIOR EQ 'Y' THEN NET_TKT_CNT ELSE 0;
+-* DEFINES ON PREVIOUS DEFINES
+
+
+CNONREF_CNT/D8CS = IF NONREF_FLAG EQ 'N' THEN CURNTKT ELSE 0;
+PNONREF_CNT/D8CS = IF NONREF_FLAG EQ 'N' THEN PRNTKT ELSE 0;
+CMNONREF_CNT/D8CS = IF NONREF_FLAG EQ 'N' THEN CURNTKT ELSE 0;
+PMNONREF_CNT/D8CS = IF NONREF_FLAG EQ 'N' THEN PRNTKT ELSE 0;
+CNONREF_FARE/D12.2CS = IF NONREF_FLAG EQ 'N' THEN CURFARE ELSE 0;
+PNONREF_FARE/D12.2CS = IF NONREF_FLAG EQ 'N' THEN PRFARE ELSE 0;
+CMNONREF_FARE/D12.2CS = IF NONREF_FLAG EQ 'N' THEN CURFARE ELSE 0;
+PMNONREF_FARE/D12.2CS = IF NONREF_FLAG EQ 'N' THEN PRFARE ELSE 0;
+CREF_CNT/D8CS = IF NONREF_FLAG NE 'N' THEN CURNTKT ELSE 0;
+PREF_CNT/D8CS = IF NONREF_FLAG NE 'N' THEN PRNTKT ELSE 0;
+CMREF_CNT/D8CS    = IF NONREF_FLAG NE 'N' THEN CURNTKT ELSE 0;
+PMREF_CNT/D8CS    = IF NONREF_FLAG NE 'N' THEN PRNTKT ELSE 0;
+CREF_FARE/D12.2CS = IF NONREF_FLAG NE 'N' THEN CURFARE ELSE 0;
+PREF_FARE/D12.2CS = IF NONREF_FLAG NE 'N' THEN PRFARE ELSE 0;
+CMREF_FARE/D12.2CS = IF NONREF_FLAG NE 'N' THEN CURFARE ELSE 0;
+PMREF_FARE/D12.2CS = IF NONREF_FLAG NE 'N' THEN PRFARE ELSE 0;
+END
+-RUN
+
+
+TABLE FILE &&RPT_HOLD
+SUM CURFARE/D12.2CS AS 'CFARE'	
+    PRFARE/D12.2CS AS 'PFARE'
+    CURNTKT AS 'CNTKT'
+    PRNTKT AS 'PNTKT'
+    CNONREF_CNT AS 'CNRTKT'
+    PNONREF_CNT AS 'PNRTKT'
+    CMNONREF_CNT AS 'CMNRTKT'
+    PMNONREF_CNT AS 'PMNRTKT'
+    CNONREF_FARE AS 'CNRFARE'
+    PNONREF_FARE AS 'PNRFARE'
+    CMNONREF_FARE AS 'CMNRFARE'
+    PMNONREF_FARE AS 'PMNRFARE'
+    CREF_CNT AS 'CRTKT'
+    PREF_CNT AS 'PRTKT'
+    CMREF_CNT AS 'CMRTKT'
+    PMREF_CNT AS 'PMRTKT'
+    CREF_FARE AS 'CRFARE'
+    PREF_FARE AS 'PRFARE'
+    CMREF_FARE AS 'CMRFARE'
+    PMREF_FARE AS 'PMRFARE'	
+BY LEVEL_DESC    
+ON TABLE HOLD AS HOLDONE FORMAT FOCUS
+END
+-RUN
+
+
+TABLE FILE &&RPT_HOLD
+PRINT 
+-*  AIRLINE	
+-*  ARR_TIME	
+  NONREF_FLAG	
+  BR_CL_IDX
+  CLIENT_NAME	
+  CMNONREF_CNT	
+  CMNONREF_FARE	
+  CMREF_CNT	
+  CMREF_FARE	
+  CNONREF_CNT	
+  CNONREF_FARE	
+  CREF_CNT	
+  CREF_FARE	
+  CURNTKT	
+  CURRENT	
+  DOD_TYPE	
+-*  DPT_TIME	
+-*  EMB_CTY_NM	
+-*  FARE_BAS	
+  FARE_PAID	
+  IBOOK	
+  LEVEL_DESC	
+  MNON_REF	
+  NET_TKT_CNT	
+  NON_REF	
+  NONREF_FLAG	
+  PMNONREF_FARE	
+  PMNONREF_CNT	
+  PMREF_CNT	
+  PMREF_FARE	
+  PNONREF_CNT	
+  PNONREF_FARE	
+  PREF_CNT	
+  PREF_FARE	
+  PRIOR	
+  PRNTKT	
+-*  REFUSAL_DESC	
+-*  REFUSE_CODE	
+-*  RTE_CTY_NM	
+-*  SEG_COUNT	
+-*  SEG_NBR	
+  SORTA	
+-*  TKT_NUM	
+-*  TKT_SORT	
+-*  TKT_TYPE	
+-*  TRN_DATE	
+-*  XDPT_DT	
+-*  XPSNGR_NM	
+-*  XTRAN_DT	
+BY LEVEL_DESC
+ON TABLE HOLD AS XTWO FORMAT FOCUS
+END
+-RUN
+
+MATCH FILE XTWO 
+PRINT
+-*  AIRLINE	
+-*  ARR_TIME	
+  NONREF_FLAG	
+  BR_CL_IDX
+  CLIENT_NAME	
+  CMNONREF_CNT	
+  CMNONREF_FARE	
+  CMREF_CNT	
+  CMREF_FARE	
+  CNONREF_CNT	
+  CNONREF_FARE	
+  CREF_CNT	
+  CREF_FARE	
+  CURNTKT	
+  CURRENT	
+  DOD_TYPE	
+-*  DPT_TIME	
+-*  EMB_CTY_NM	
+-*  FARE_BAS	
+  FARE_PAID	
+  IBOOK	
+  LEVEL_DESC	
+  MNON_REF	
+  NET_TKT_CNT	
+  NON_REF	
+  NONREF_FLAG	
+  PMNONREF_FARE	
+  PMNONREF_CNT	
+  PMREF_CNT	
+  PMREF_FARE	
+  PNONREF_CNT	
+  PNONREF_FARE	
+  PREF_CNT	
+  PREF_FARE	
+  PRIOR	
+  PRNTKT	
+-*  REFUSAL_DESC	
+-*  REFUSE_CODE	
+-*   RTE_CTY_NM	
+-*   SEG_COUNT	
+-*   SEG_NBR	
+  SORTA	
+-*   TKT_NUM	
+-*   TKT_SORT	
+-*   TKT_TYPE	
+-*   TRN_DATE	
+-*   XDPT_DT	
+-*   XPSNGR_NM	
+-*   XTRAN_DT	
+BY LEVEL_DESC
+ON TABLE HOLD
+RUN
+FILE HOLDONE
+SUM CFARE
+    PFARE
+    CNTKT
+    PNTKT
+    CMNRTKT
+    PMNRTKT
+    CNRFARE
+    PNRFARE
+    CMNRFARE
+    PMNRFARE
+    CRTKT
+    PRTKT
+    CMRTKT
+    PMRTKT
+    CRFARE
+    PRFARE
+    CMRFARE
+    PMRFARE
+BY LEVEL_DESC
+AFTER MATCH HOLD AS XTHREE OLD-OR-NEW
+END
+-RUN
+
+
+DEFINE FILE XTHREE
+
+PCTCNRFAR/D8.1S=   IF ((CFARE LT 1) AND (CFARE GT (-1))) THEN 0
+                   ELSE ((CNONREF_FARE/CFARE)*100);
+PCTCNRTKT/D8.1S=   IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                   ELSE ((CNONREF_CNT/CNTKT)*100);
+END
+
+
+TABLE FILE XTHREE
+SUM 
+    CNONREF_CNT 
+    PNONREF_CNT 
+    CMNONREF_CNT 
+    PMNONREF_CNT 
+    CNONREF_FARE 
+    PNONREF_FARE 
+    CMNONREF_FARE
+    PMNONREF_FARE
+    PCTCNRTKT
+BY LEVEL_DESC
+ON TABLE HOLD AS HOLDNREF
+END
+
+-RUN 
+

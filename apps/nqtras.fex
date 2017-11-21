@@ -1,0 +1,1943 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Created for the new quarterly review - JK 8/2/05
+-******************************************************************************
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+
+-GOTO NEXTPART
+-IF &&OUTLINE1 CONTAINS 'ONLINE-FMT' OR 'PCHOLD' GOTO ONFMT;
+-IF &&OUTFMT EQ 'PDF' THEN GOTO CFMT ELSE GOTO OFMT;
+-RUN
+
+-CFMT
+-SET &&OUTLINE1 = 'ON TABLE SAVE AS SAVREP';
+-SET &&OUTLINE2 = 'FORMAT PDF OPEN';
+-SET &&RPTSUF = ' ';
+-INCLUDE FDEFRPTS
+-RUN
+-GOTO NEXTPART
+
+-OFMT
+-SET &&RPTSUF = 'NEWQREV';
+-INCLUDE FDEFRPTS
+-RUN
+-GOTO NEXTPART
+
+-ONFMT
+-IF &&OUTFMT NE 'PDF' GOTO ONFMT1;
+-SET &&OUTLINE1 = 'ON TABLE PCHOLD';
+-SET &&OUTLINE2 = 'FORMAT PDF OPEN';
+-SET &&RPTSUF = '';
+-RUN
+-GOTO NEXTPART
+
+-ONFMT1
+-SET &&RPTSUF = '';
+-RUN
+-GOTO NEXTPART
+
+-NEXTPART
+
+
+-SET &&RPTSUF = 'NEWQREV';
+-INCLUDE FDEFRPTS
+-RUN
+
+-SET &POS0=0;
+-SET &INC = 11;
+-SET &POS1T = &POS0 + 1 * &INC;
+
+-SET &POS1 = &POS1T + 0;
+-SET &POS2 = &POS1T + 6;
+-SET &POS3 = &POS1T + 12;
+-SET &POS4 = &POS1T + 18;
+-SET &POS5 = &POS1T + 24;
+-SET &POS6 = &POS1T + 30;
+-SET &POS7 = &POS1T + 36;
+-SET &POS8 = &POS1T + 42;
+
+-SET &POS1A = &POS1 - 1;
+-SET &POS2A = &POS2 - 1;
+-SET &POS3A = &POS3 - 1;
+-SET &POS4A = &POS4 - 1;
+-SET &POS5A = &POS5 - 1;
+-SET &POS6A = &POS6 - 1;
+-SET &POS7A = &POS7 - 1;
+-SET &POS8A = &POS8 - 1;
+
+-SET &POSI1 = &POS0 + 69;
+-SET &POSI2 = &POSI1 + 6;
+-SET &POSI3 = &POSI2 + 6;
+-SET &POSI4 = &POSI3 + 6;
+-SET &POSI5 = &POSI4 + 6;
+-SET &POSI6 = &POSI5 + 6;
+-SET &POSI7 = &POSI6 + 6;
+-SET &POSI8 = &POSI7 + 6;
+
+-SET &POSI1A = &POSI1 - 1;
+-SET &POSI2A = &POSI2 - 1;
+-SET &POSI3A = &POSI3 - 1;
+-SET &POSI4A = &POSI4 - 1;
+-SET &POSI5A = &POSI5 - 1;
+-SET &POSI6A = &POSI6 - 1;
+-SET &POSI7A = &POSI7 - 1;
+-SET &POSI8A = &POSI8 - 1;
+
+
+-* YTD
+
+-SET &POSYD1 = &POS0 + 82;
+-SET &POSYD2 = &POSYD1 + 7;
+-SET &POSYD3 = &POSYD2 + 7;
+-SET &POSYD4 = &POSYD3 + 7;
+-SET &POSYD5 = &POSYD4 + 6;
+-SET &POSYD6 = &POSYD5 + 8;
+-SET &POSYD7 = &POSYD6 + 6;
+-SET &POSYD8 = &POSYD7 + 6;
+
+
+-SET &POSYD1A = &POSYD1 - 1;
+-SET &POSYD2A = &POSYD2 - 1;
+-SET &POSYD3A = &POSYD3 - 1;
+-SET &POSYD4A = &POSYD4 - 1;
+-SET &POSYD5A = &POSYD5 - 1;
+-SET &POSYD6A = &POSYD6 - 1;
+-SET &POSYD7A = &POSYD7 - 1;
+-SET &POSYD8A = &POSYD8 - 1;
+
+
+DEFINE FILE SR_50  
+  LEVEL_DESC/A60 = &&LDESC;
+  FARE_PAID/D12 = SEG_AMT + SEG_TAX;
+  NET_TKT_CNT/D10  =   IF (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) THEN 1 ELSE 
+                        IF (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') AND (SEG_COUNT EQ -1)
+				   THEN (-1) ELSE 
+                        IF (DOC_TYPE NE '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') AND
+				   (SEG_COUNT EQ -1)
+				   THEN (-1) ELSE 0;
+
+TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                             (SEG_NBR EQ '01') AND
+                             (FARE_PAID GE 0) AND
+                             (SEG_COUNT EQ 1) AND 
+                             (CONJ_REL EQ 1) THEN 1 ELSE 0;
+TRAN/QY = TRN_DATE;
+YEAR/YY = TRN_DATE;
+
+-* Defines on Previous Defines
+  DISSAVINGS/D12 = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;
+  VASAVINGS/D12 = SEG_DISCOUNT - FARE_PAID;
+-* Defines on Previously Defined Defines
+ 
+END
+-RUN
+
+TABLEF FILE SR_50
+PRINT AIR_MAIN.INTL_DOM AS 'INTL_DOM'
+  DISSAVINGS
+  DOC_TYPE	
+  DOD_TYPE
+  DPT_DATE	
+  EMBARK	
+  EX_FLAG	
+  EXCHG_SALE
+  FARE_PAID	
+  LEVEL_DESC
+  NET_TKT_CNT
+  REFUSE_CODE
+  RF_FLAG
+  SEG_AMT	
+  SEG_COM	
+  SEG_COUNT
+  SEG_NBR 	
+  SEG_TAX 
+  TKT_NUM
+  TKT_PURCH	
+  TRAN
+  TRN_DATE
+  YEAR
+  VASAVINGS
+  VOID_DATE 	
+  VOID_STATUS 	
+
+WHERE (TRN_DATE GE &&FROMDT.EVAL) AND (TRN_DATE LE &&TODT.EVAL) OR
+      (TRN_DATE GE &&FXDATE.EVAL) AND (TRN_DATE LE &&TXDATE.EVAL)
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+
+
+DEFINE FILE &&RPT_HOLD
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+CPFLAG/A1 = IF CURRENT EQ 'Y' THEN '1' ELSE '2';
+QTR/A1 = IF TRAN EQ ' ' THEN ' ' ELSE 'Q';
+END
+
+-* Domestic
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+BY QTR
+BY TRAN
+WHERE INTL_DOM EQ 'D'
+ON TABLE SAVE AS DAIRS1 FORMAT ALPHA
+END
+-RUN
+
+
+-* -GOTO AROUNDG
+-*  Domestic Graph
+DEFINE FILE &&RPT_HOLD
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+CPFLAG/A1 = IF CURRENT EQ 'Y' THEN '1' ELSE '2';
+QTR/A1 = IF TRAN EQ ' ' THEN ' ' ELSE 'Q';
+END
+
+-* -GOTO AROUNDG
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+WHERE INTL_DOM EQ 'D'
+BY QTR
+BY TRAN
+ON TABLE HOLD AS DGHOLD
+END
+-RUN
+
+GRAPH FILE DGHOLD
+SUM FARE_PAID AS 'Volume'
+    NET_TKT_CNT AS 'Net Tickets'
+ACROSS TRAN AS ' '
+ON GRAPH SET LOOKGRAPH VBAR2AX
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET GRAPHSTYLE *
+-* setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(0, new Color, 145 207 255));
+setSeriesFillColor(1, new Color, 125 0 0));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setConnectScatterMarkers(true);
+setO1LabelDisplay(true);
+setO1LabelRotate(0);
+setAxisAssignment(0,0);
+setSeriesType(0,1);
+setAxisAssignment(1,1);
+setSeriesType(1,2);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setY2MajorGridDisplay(false);
+setY2MinorGridDisplay(false);
+setTextFormatPreset(getY1Label(),6);
+setTextFormatPreset(getY2Label(),-1);
+setTextFormatPattern(getY2Label(),"#,###");
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setLegendPosition(1);
+setTitleString("Domestic");
+setTextJustHoriz(getTitle(), 1);
+setFontSizeAbsolute(getTitle(),true);
+setFontStyle(getTitle(),0);
+setFontSizeAbsolute(getTitle(),true);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH HOLD AS DOMAT FORMAT SVG
+END
+-RUN
+
+-AROUNDG
+
+
+-SET &&G_DOMAT=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+
+-SET &Q1 = ' ';
+-SET &Q2 = ' ';
+-SET &Q3 = ' ';
+-SET &Q4 = ' ';
+-SET &Q5 = ' ';
+-SET &Q6 = ' ';
+-SET &Q7 = ' ';
+-SET &Q8 = ' ';
+-SET &TD1 = ' ';
+-SET &TD2 = ' ';
+-SET &TD3 = ' ';
+-SET &TD4 = ' ';
+-SET &TD5 = ' ';
+-SET &TD6 = ' ';
+-SET &TD7 = ' ';
+-SET &TD8 = ' ';
+-SET &FPD1 = ' ';
+-SET &FPD2 = ' ';
+-SET &FPD3 = ' ';
+-SET &FPD4 = ' ';
+-SET &FPD5 = ' ';
+-SET &FPD6 = ' ';
+-SET &FPD7 = ' ';
+-SET &FPD8 = ' ';
+-SET &TPD1 = ' ';
+-SET &TPD2 = ' ';
+-SET &TPD3 = ' ';
+-SET &TPD4 = ' ';
+-SET &TPD5 = ' ';
+-SET &TPD6 = ' ';
+-SET &TPD7 = ' ';
+-SET &TPD8 = ' ';
+
+
+-SET &CNT = 0;
+-REPEAT TOEND &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ DAIRS1 NOCLOSE &Q.&CNT.1. &TD.&CNT.3. &FPD.&CNT.12. &TPD.&CNT.10.
+-TOEND 
+-CLOSE DAIRS1
+
+
+-* Domestic YTD
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+BY YEAR 
+WHERE INTL_DOM EQ 'D'
+ON TABLE SAVE AS YDAIR FORMAT ALPHA
+END
+-RUN
+
+-SET &YEAR1 = ' ';
+-SET &YEAR2 = ' ';
+-SET &FPYD1 = ' ';
+-SET &FPYD2 = ' ';
+-SET &TPYD1 = ' ';
+-SET &TPYD2 = ' ';
+
+-SET &CNT = 0;
+-REPEAT TOENDYD &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ YDAIR NOCLOSE &YEAR.&CNT.4. &FPYD.&CNT.12. &TPYD.&CNT.10.
+-TOENDYD 
+-CLOSE YDAIR
+
+
+DEFINE FILE &&RPT_HOLD
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+FARE1 = IF (CURRENT EQ 'Y') AND (INTL_DOM EQ 'D') THEN FARE_PAID ELSE 0;
+FARE2 = IF (PRIOR EQ 'Y') AND (INTL_DOM EQ 'D') THEN FARE_PAID ELSE 0;
+NET_TKTS1/D10 = IF (CURRENT EQ 'Y') AND (INTL_DOM EQ 'D')  THEN NET_TKT_CNT ELSE 0;
+NET_TKTS2/D10 = IF (PRIOR EQ 'Y') AND (INTL_DOM EQ 'D') THEN NET_TKT_CNT ELSE 0;
+FLAG/A1 = 'A';
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM FARE1 FARE2 FARE_PAID NET_TKTS1 NET_TKTS2 NET_TKT_CNT
+BY FLAG
+ON TABLE HOLD AS DYTD1
+END
+
+TABLE FILE DYTD1
+SUM FARE1 FARE2 NET_TKTS1 NET_TKTS2
+COMPUTE FARED/D12.2CS = FARE1 - FARE2; 
+COMPUTE FARED1/D12.2CS = FARE2 + FARE1;
+COMPUTE NET_TKTSD/D10CS = NET_TKTS1 - NET_TKTS2;
+COMPUTE NET_TKTSD1/D10CS = NET_TKTS2 + NET_TKTS1;
+COMPUTE FAREDP/D4 = IF ((FARE2 LT 0) AND (FARE2 GT (-1))) THEN 0 ELSE
+                        ((FARED/FARE2)*100);
+COMPUTE NET_TKTDP/D4 = IF ((NET_TKTS2 LT 0) AND (NET_TKTS2 LT (-1))) THEN 0 ELSE
+                        ((NET_TKTSD/NET_TKTS2)*100);
+COMPUTE DFAREDPT/D4 = IF ((FARE_PAID LT 1) AND (FARE_PAID LT (-1))) THEN 0 ELSE
+                        ((FARED1/FARE_PAID)*100);
+COMPUTE DNETTPCT/D4 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT LT (-1))) THEN 0 ELSE
+                        ((NET_TKTSD1/NET_TKT_CNT)*100);
+BY FLAG
+ON TABLE HOLD AS DYTD2
+END
+-RUN
+
+TABLE FILE DYTD2
+PRINT FAREDP NET_TKTDP DFAREDPT DNETTPCT
+BY FLAG
+ON TABLE SAVE AS DYTDD FORMAT ALPHA
+END
+-RUN
+
+-SET &FLAG1 = ' ';
+-SET &FPDPCT1 = ' ';
+-SET &TPDPCT1 = ' ';
+-SET &DFAREDPT1 = ' ';
+-SET &DNETTPCT1 = ' ';
+
+-SET &CNT = 0;
+-REPEAT TOENDP &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ DYTDD NOCLOSE &FLAG.&CNT.1. &FPDPCT.&CNT.4. &TPDPCT.&CNT.4. &DFAREDPT.&CNT.4. &DNETTPCT.&CNT.4.
+-TOENDP 
+-CLOSE DYTDD
+
+
+-* INTERNATIONAL
+DEFINE FILE &&RPT_HOLD
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+QTR/A1 = IF TRAN EQ ' ' THEN ' ' ELSE 'Q';
+END
+
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+BY QTR
+BY TRAN
+WHERE INTL_DOM EQ 'I'
+ON TABLE SAVE AS IAIRS1 FORMAT ALPHA
+END
+-RUN
+
+-* -GOTO AROUNDG1
+
+-* International Graph
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+WHERE INTL_DOM EQ 'I'
+BY QTR
+BY TRAN
+ON TABLE HOLD AS DGHOLD
+END
+-RUN
+
+GRAPH FILE DGHOLD
+SUM FARE_PAID AS 'Volume'
+    NET_TKT_CNT AS 'Net Tickets'
+ACROSS TRAN AS ' '
+ON GRAPH SET LOOKGRAPH VBAR2AX
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET GRAPHSTYLE *
+-* setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(0, new Color, 145 207 255));
+setSeriesFillColor(1, new Color, 125 0 0));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setConnectScatterMarkers(true);
+setO1LabelDisplay(true);
+setO1LabelRotate(0);
+setAxisAssignment(0,0);
+setSeriesType(0,1);
+setAxisAssignment(1,1);
+setSeriesType(1,2);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setY2MajorGridDisplay(false);
+setY2MinorGridDisplay(false);
+setTextFormatPreset(getY1Label(),6);
+setTextFormatPreset(getY2Label(),-1);
+setTextFormatPattern(getY2Label(),"#,###");
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setLegendPosition(1);
+setTitleString("International");
+setTextJustHoriz(getTitle(), 1);
+setFontSizeAbsolute(getTitle(),true);
+setFontStyle(getTitle(),0);
+setFontSizeAbsolute(getTitle(),true);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH HOLD AS INTAT FORMAT SVG
+END
+
+-AROUNDG1
+
+-SET &&G_INTAT=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+-SET &Q1 = ' ';
+-SET &Q2 = ' ';
+-SET &Q3 = ' ';
+-SET &Q4 = ' ';
+-SET &Q5 = ' ';
+-SET &Q6 = ' ';
+-SET &Q7 = ' ';
+-SET &Q8 = ' ';
+-SET &TI1 = ' ';
+-SET &TI2 = ' ';
+-SET &TI3 = ' ';
+-SET &TI4 = ' ';
+-SET &TI5 = ' ';
+-SET &TI6 = ' ';
+-SET &TI7 = ' ';
+-SET &TI8 = ' ';
+-SET &FPI1 = ' ';
+-SET &FPI2 = ' ';
+-SET &FPI3 = ' ';
+-SET &FPI4 = ' ';
+-SET &FPI5 = ' ';
+-SET &FPI6 = ' ';
+-SET &FPI7 = ' ';
+-SET &FPI8 = ' ';
+-SET &TPI1 = ' ';
+-SET &TPI2 = ' ';
+-SET &TPI3 = ' ';
+-SET &TPI4 = ' ';
+-SET &TPI5 = ' ';
+-SET &TPI6 = ' ';
+-SET &TPI7 = ' ';
+-SET &TPI8 = ' ';
+
+
+-SET &CNT = 0;
+-REPEAT TOEND1 &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ IAIRS1 NOCLOSE &Q.&CNT.1. &TI.&CNT.3. &FPI.&CNT.12. &TPI.&CNT.10.
+-TOEND1 
+-CLOSE IAIRS1
+
+-* International YTD
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+BY YEAR 
+WHERE INTL_DOM EQ 'I'
+ON TABLE SAVE AS YIAIR FORMAT ALPHA
+END
+-RUN
+
+
+-SET &YEAR1 = ' ';
+-SET &YEAR2 = ' ';
+-SET &FPYI1 = ' ';
+-SET &FPYI2 = ' ';
+-SET &TPYI1 = ' ';
+-SET &TPYI2 = ' ';
+
+-SET &CNT = 0;
+-REPEAT TOENDYI &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ YIAIR NOCLOSE &YEAR.&CNT.4. &FPYI.&CNT.12. &TPYI.&CNT.10.
+-TOENDYI 
+-CLOSE YIAIR
+
+DEFINE FILE &&RPT_HOLD
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+FAREI1 = IF (CURRENT EQ 'Y') AND (INTL_DOM EQ 'I') THEN FARE_PAID ELSE 0;
+FAREI2 = IF (PRIOR EQ 'Y') AND (INTL_DOM EQ 'I') THEN FARE_PAID ELSE 0;
+NET_TKTSI1/D10 = IF (CURRENT EQ 'Y') AND (INTL_DOM EQ 'I')  THEN NET_TKT_CNT ELSE 0;
+NET_TKTSI2/D10 = IF (PRIOR EQ 'Y') AND (INTL_DOM EQ 'I') THEN NET_TKT_CNT ELSE 0;
+FLAG/A1 = 'A';
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM FAREI1 FAREI2 FARE_PAID NET_TKTSI1 NET_TKTSI2 NET_TKT_CNT
+BY FLAG
+ON TABLE HOLD AS IYTD1
+END
+
+TABLE FILE IYTD1
+SUM FAREI1 FAREI2 NET_TKTSI1 NET_TKTSI2
+COMPUTE FAREI3/D12.2CS = FAREI1 - FAREI2; 
+COMPUTE FAREI4/D12.2CS = FAREI2 + FAREI1;
+COMPUTE NET_TKTSI3/D10CS = NET_TKTSI1 - NET_TKTSI2;
+COMPUTE NET_TKTSI4/D10CS = NET_TKTSI1 + NET_TKTSI2;
+COMPUTE FAREIP/D4 = IF ((FAREI2 LT 0) AND (FAREI2 GT (-1))) THEN 0 ELSE
+                        ((FAREI3/FAREI2)*100);
+COMPUTE NET_TKTIP/D4 = IF ((NET_TKTSI2 LT 0) AND (NET_TKTSI2 LT (-1))) THEN 0 ELSE
+                        ((NET_TKTSI3/NET_TKTSI2)*100);
+COMPUTE IFAREDPT/D4 = IF ((FARE_PAID LT 1) AND (FARE_PAID LT (-1))) THEN 0 ELSE
+                        ((FAREI4/FARE_PAID)*100);
+COMPUTE INETTPCT/D4 = IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT LT (-1))) THEN 0 ELSE
+                        ((NET_TKTSI4/NET_TKT_CNT)*100);
+BY FLAG
+ON TABLE HOLD AS IYTD2
+END
+-RUN
+
+TABLE FILE IYTD2
+PRINT FAREIP NET_TKTIP IFAREDPT INETTPCT
+BY FLAG
+ON TABLE SAVE AS IYTDD FORMAT ALPHA
+END
+-RUN
+
+-SET &FLAG1 = ' ';
+-SET &FPIPCT1 = ' ';
+-SET &TPIPCT1 = ' ';
+-SET &IFAREDPT1 = ' ';
+-SET &INETTPCT1 = ' ';
+
+-SET &CNT = 0;
+-REPEAT TOENIP &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ IYTDD NOCLOSE &FLAG.&CNT.1. &FPIPCT.&CNT.4. &TPIPCT.&CNT.4. &IFAREDPT.&CNT.4. &INETTPCT.&CNT.4.
+-TOENIP 
+-CLOSE IYTDD
+
+
+-* Total
+DEFINE FILE &&RPT_HOLD
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+CPFLAG/A1 = IF CURRENT EQ 'Y' THEN '1' ELSE '2';
+QTR/A1 = IF TRAN EQ ' ' THEN ' ' ELSE 'Q';
+END
+
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+BY QTR
+BY TRAN
+ON TABLE SAVE AS TAIRS1 FORMAT ALPHA
+END
+-RUN
+
+-TYPE BEFORE AROUNDG2
+
+-* -GOTO AROUNDG2
+
+-* Total Graph
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+-* BY QTR
+ BY TRAN
+ ON TABLE HOLD AS TGHOLD
+ END
+ -RUN
+
+ GRAPH FILE TGHOLD
+ SUM FARE_PAID AS 'Volume'
+     NET_TKT_CNT AS 'Net Tickets'
+ ACROSS TRAN AS ' '
+ ON GRAPH SET LOOKGRAPH VBAR2AX
+ ON GRAPH SET BARNUMB OFF
+ ON GRAPH SET 3D OFF
+ ON GRAPH SET VZERO ON
+ ON GRAPH SET GRID OFF
+ ON GRAPH SET GRAPHSTYLE *
+-*  setSeriesFillColor(0, new Color, 0 64 128));
+ setSeriesFillColor(0, new Color, 145 207 255));
+ setSeriesFillColor(1, new Color, 125 0 0));
+ setMarkerDisplay(true);
+ setUseSeriesShapes(true);
+ setConnectLineMarkers(true);
+ setConnectScatterMarkers(true);
+ setO1LabelDisplay(true);
+ setO1LabelRotate(0);
+ setAxisAssignment(0,0);
+ setSeriesType(0,1);
+ setAxisAssignment(1,1);
+ setSeriesType(1,2);
+ setO1MajorGridDisplay(false);
+ setO1MinorGridDisplay(false);
+ setY1MajorGridDisplay(false);
+ setY1MinorGridDisplay(false);
+ setY2MajorGridDisplay(false);
+ setY2MinorGridDisplay(false);
+ setTextFormatPreset(getY1Label(),6);
+ setTextFormatPreset(getY2Label(),-1);
+ setTextFormatPattern(getY2Label(),"#,###");
+ setPieFeelerTextDisplay(1);
+ setPieLabelDisplay(0);
+ setTextFormatPreset(getPieSliceLabel(),1);
+ setRiserBorderMode(1);
+ setSeriesDefaultTransparentBorderColor(true);
+ setUseSeriesBorderDefaults(true);
+ setLegendDisplay(true);
+ setLegendPosition(1);
+ setTitleString("Total");
+ setTextJustHoriz(getTitle(), 1);
+ setFontSizeAbsolute(getTitle(),true);
+ setFontStyle(getTitle(),0);
+ setFontSizeAbsolute(getTitle(),true);
+ setFontSizeAbsolute(getLegendText(),true);
+ setFontSizeAbsolute(getY1Title(),true);
+ setFontSizeAbsolute(getY1Label(),true);
+ setFontSizeAbsolute(getY2Title(),true);
+ setFontSizeAbsolute(getY2Label(),true);
+ setFontSizeAbsolute(getO1Title(),true);
+ setPlace(true);
+ ENDSTYLE
+ ON GRAPH HOLD AS TTLAT FORMAT SVG
+ END
+-RUN
+
+-AROUNDG2
+
+-SET &&G_TTLAT=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+-SET &Q1 = ' ';
+-SET &Q2 = ' ';
+-SET &Q3 = ' ';
+-SET &Q4 = ' ';
+-SET &Q5 = ' ';
+-SET &Q6 = ' ';
+-SET &Q7 = ' ';
+-SET &Q8 = ' ';
+-SET &TT1 = ' ';
+-SET &TT2 = ' ';
+-SET &TT3 = ' ';
+-SET &TT4 = ' ';
+-SET &TT5 = ' ';
+-SET &TT6 = ' ';
+-SET &TT7 = ' ';
+-SET &TT8 = ' ';
+-SET &FPT1 = ' ';
+-SET &FPT2 = ' ';
+-SET &FPT3 = ' ';
+-SET &FPT4 = ' ';
+-SET &FPT5 = ' ';
+-SET &FPT6 = ' ';
+-SET &FPT7 = ' ';
+-SET &FPT8 = ' ';
+-SET &TPT1 = ' ';
+-SET &TPT2 = ' ';
+-SET &TPT3 = ' ';
+-SET &TPT4 = ' ';
+-SET &TPT5 = ' ';
+-SET &TPT6 = ' ';
+-SET &TPT7 = ' ';
+-SET &TPT8 = ' ';
+
+
+-SET &CNT = 0;
+-REPEAT TOEND2 &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ TAIRS1 NOCLOSE &Q.&CNT.1. &TD.&CNT.3. &FPT.&CNT.12. &TPT.&CNT.10.
+-TOEND2 
+-CLOSE TAIRS1
+
+-* Total YTD
+TABLE FILE &&RPT_HOLD
+SUM FARE_PAID
+    NET_TKT_CNT
+BY YEAR 
+ON TABLE SAVE AS YTAIR FORMAT ALPHA
+END
+-RUN
+
+-SET &YEAR1 = ' ';
+-SET &YEAR2 = ' ';
+-SET &FPYT1 = ' ';
+-SET &FPYT2 = ' ';
+-SET &TPYT1 = ' ';
+-SET &TPYT2 = ' ';
+
+-SET &CNT = 0;
+-REPEAT TOENDYT &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ YTAIR NOCLOSE &YEAR.&CNT.4. &FPYT.&CNT.12. &TPYT.&CNT.10.
+-TOENDYT 
+-CLOSE YTAIR
+
+DEFINE FILE &&RPT_HOLD
+CURRENT/A1 = IF TRN_DATE GE &&FROMDT.EVAL AND
+                TRN_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF TRN_DATE GE &&FXDATE.EVAL AND
+               TRN_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+FARET1 = IF CURRENT EQ 'Y' THEN FARE_PAID ELSE 0;
+FARET2 = IF PRIOR EQ 'Y' THEN FARE_PAID ELSE 0;
+NET_TKTST1/D10 = IF CURRENT EQ 'Y' THEN NET_TKT_CNT ELSE 0;
+NET_TKTST2/D10 = IF PRIOR EQ 'Y' THEN NET_TKT_CNT ELSE 0;
+FLAG/A1 = 'A';
+END
+-RUN
+
+TABLE FILE &&RPT_HOLD
+SUM FARET1 FARET2 NET_TKTST1 NET_TKTST2 
+BY FLAG
+ON TABLE HOLD AS IYTD1
+END
+
+TABLE FILE IYTD1
+SUM FARET1 FARET2 NET_TKTST1 NET_TKTST2
+COMPUTE FARET3/D12.2CS = FARET1 - FARET2; 
+COMPUTE NET_TKTST3/D10CS = NET_TKTST1 - NET_TKTST2;
+COMPUTE FARETP/D4 = IF ((FARET2 LT 0) AND (FARET2 GT (-1))) THEN 0 ELSE
+                        ((FARET3/FARET2)*100);
+COMPUTE NET_TKTTP/D4 = IF ((NET_TKTST2 LT 0) AND (NET_TKTST2 LT (-1))) THEN 0 ELSE
+                        ((NET_TKTST3/NET_TKTST2)*100);
+BY FLAG
+ON TABLE HOLD AS TYTD2
+END
+-RUN
+
+TABLE FILE TYTD2
+PRINT FARETP NET_TKTTP 
+BY FLAG
+ON TABLE SAVE AS TYTDD FORMAT ALPHA
+END
+-RUN
+
+-SET &FLAG1 = ' ';
+-SET &FPTPCT1 = ' ';
+-SET &TPTPCT1 = ' ';
+
+
+-SET &CNT = 0;
+-REPEAT TOENTP &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ TYTDD NOCLOSE &FLAG.&CNT.1. &FPTPCT.&CNT.4. &TPTPCT.&CNT.4. 
+-TOENTP 
+-CLOSE TYTDD
+
+
+-SET &FPD1 = TRIM('L', &FPD1, 12, ' ', 1, 'A12');
+-SET &FPD2 = TRIM('L', &FPD2, 12, ' ', 1, 'A12');
+-SET &FPD3 = TRIM('L', &FPD3, 12, ' ', 1, 'A12');
+-SET &FPD4 = TRIM('L', &FPD4, 12, ' ', 1, 'A12');
+-SET &FPD5 = TRIM('L', &FPD5, 12, ' ', 1, 'A12');
+-SET &FPD6 = TRIM('L', &FPD6, 12, ' ', 1, 'A12');
+-SET &FPD7 = TRIM('L', &FPD7, 12, ' ', 1, 'A12');
+-SET &FPD8 = TRIM('L', &FPD8, 12, ' ', 1, 'A12');
+
+-SET &FPI1 = TRIM('L', &FPI1, 12, ' ', 1, 'A12');
+-SET &FPI2 = TRIM('L', &FPI2, 12, ' ', 1, 'A12');
+-SET &FPI3 = TRIM('L', &FPI3, 12, ' ', 1, 'A12');
+-SET &FPI4 = TRIM('L', &FPI4, 12, ' ', 1, 'A12');
+-SET &FPI5 = TRIM('L', &FPI5, 12, ' ', 1, 'A12');
+-SET &FPI6 = TRIM('L', &FPI6, 12, ' ', 1, 'A12');
+-SET &FPI7 = TRIM('L', &FPI7, 12, ' ', 1, 'A12');
+-SET &FPI8 = TRIM('L', &FPI8, 12, ' ', 1, 'A12');
+
+-SET &FPT1 = TRIM('L', &FPT1, 12, ' ', 1, 'A12');
+-SET &FPT2 = TRIM('L', &FPT2, 12, ' ', 1, 'A12');
+-SET &FPT3 = TRIM('L', &FPT3, 12, ' ', 1, 'A12');
+-SET &FPT4 = TRIM('L', &FPT4, 12, ' ', 1, 'A12');
+-SET &FPT5 = TRIM('L', &FPT5, 12, ' ', 1, 'A12');
+-SET &FPT6 = TRIM('L', &FPT6, 12, ' ', 1, 'A12');
+-SET &FPT7 = TRIM('L', &FPT7, 12, ' ', 1, 'A12');
+-SET &FPT8 = TRIM('L', &FPT8, 12, ' ', 1, 'A12');
+
+-SET &FPYD1 = TRIM('L', &FPYD1, 12, ' ', 1, 'A12');
+-SET &FPYD2 = TRIM('L', &FPYD2, 12, ' ', 1, 'A12');
+
+-SET &FPYI1 = TRIM('L', &FPYI1, 12, ' ', 1, 'A12');
+-SET &FPYI2 = TRIM('L', &FPYI2, 12, ' ', 1, 'A12');
+
+-SET &FPYT1 = TRIM('L', &FPYT1, 12, ' ', 1, 'A12');
+-SET &FPYT2 = TRIM('L', &FPYT2, 12, ' ', 1, 'A12');
+
+-SET &TPD1 = TRIM('L', &TPD1, 10, ' ', 1, 'A10');
+-SET &TPD2 = TRIM('L', &TPD2, 10, ' ', 1, 'A10');
+-SET &TPD3 = TRIM('L', &TPD3, 10, ' ', 1, 'A10');
+-SET &TPD4 = TRIM('L', &TPD4, 10, ' ', 1, 'A10');
+-SET &TPD5 = TRIM('L', &TPD5, 10, ' ', 1, 'A10');
+-SET &TPD6 = TRIM('L', &TPD6, 10, ' ', 1, 'A10');
+-SET &TPD7 = TRIM('L', &TPD7, 10, ' ', 1, 'A10');
+-SET &TPD8 = TRIM('L', &TPD8, 10, ' ', 1, 'A10');
+
+-SET &TPI1 = TRIM('L', &TPI1, 10, ' ', 1, 'A10');
+-SET &TPI2 = TRIM('L', &TPI2, 10, ' ', 1, 'A10');
+-SET &TPI3 = TRIM('L', &TPI3, 10, ' ', 1, 'A10');
+-SET &TPI4 = TRIM('L', &TPI4, 10, ' ', 1, 'A10');
+-SET &TPI5 = TRIM('L', &TPI5, 10, ' ', 1, 'A10');
+-SET &TPI6 = TRIM('L', &TPI6, 10, ' ', 1, 'A10');
+-SET &TPI7 = TRIM('L', &TPI7, 10, ' ', 1, 'A10');
+-SET &TPI8 = TRIM('L', &TPI8, 10, ' ', 1, 'A10');
+
+-SET &TPT1 = TRIM('L', &TPT1, 10, ' ', 1, 'A10');
+-SET &TPT2 = TRIM('L', &TPT2, 10, ' ', 1, 'A10');
+-SET &TPT3 = TRIM('L', &TPT3, 10, ' ', 1, 'A10');
+-SET &TPT4 = TRIM('L', &TPT4, 10, ' ', 1, 'A10');
+-SET &TPT5 = TRIM('L', &TPT5, 10, ' ', 1, 'A10');
+-SET &TPT6 = TRIM('L', &TPT6, 10, ' ', 1, 'A10');
+-SET &TPT7 = TRIM('L', &TPT7, 10, ' ', 1, 'A10');
+-SET &TPT8 = TRIM('L', &TPT8, 10, ' ', 1, 'A10');
+
+-* YTD Domestic, International, Total
+-SET &TPYD1 = TRIM('L', &TPYD1, 10, ' ', 1, 'A10');
+-SET &TPYD2 = TRIM('L', &TPYD2, 10, ' ', 1, 'A10');
+
+-SET &TPYI1 = TRIM('L', &TPYI1, 10, ' ', 1, 'A10');
+-SET &TPYI2 = TRIM('L', &TPYI2, 10, ' ', 1, 'A10');
+
+-SET &TPYT1 = TRIM('L', &TPYT1, 10, ' ', 1, 'A10');
+-SET &TPYT2 = TRIM('L', &TPYT2, 10, ' ', 1, 'A10');
+
+-* Domestic YTD Percentages
+-SET &FPDPCT1 = TRIM('L', &FPDPCT1, 4, ' ', 1, 'A4');
+-SET &TPDPCT1 = TRIM('L', &TPDPCT1, 4, ' ', 1, 'A4');
+-SET &DFAREDPT1 = TRIM('L', &DFAREDPT1, 4, ' ', 1, 'A4');
+-SET &DNETTPCT1 = TRIM('L', &DNETTPCT1, 4, ' ', 1, 'A4');
+-* International YTD Percentages
+-SET &FPIPCT1 = TRIM('L', &FPIPCT1, 4, ' ', 1, 'A4');
+-SET &TPIPCT1 = TRIM('L', &TPIPCT1, 4, ' ', 1, 'A4');
+-SET &IFAREDPT1 = TRIM('L', &IFAREDPT1, 4, ' ', 1, 'A4');
+-SET &INETTPCT1 = TRIM('L', &INETTPCT1, 4, ' ', 1, 'A4');
+-* Total YTD Percentages
+-SET &FPTPCT1 = TRIM('L', &FPTPCT1, 4, ' ', 1, 'A4');
+-SET &TPTPCT1 = TRIM('L', &TPTPCT1, 4, ' ', 1, 'A4');
+
+
+-SET &FDLEN1 = ARGLEN(12, &FPD1, 'I1');
+-SET &FDLEN2 = ARGLEN(12, &FPD2, 'I1');
+-SET &FDLEN3 = ARGLEN(12, &FPD3, 'I1');
+-SET &FDLEN4 = ARGLEN(12, &FPD4, 'I1');
+-SET &FDLEN5 = ARGLEN(12, &FPD5, 'I1');
+-SET &FDLEN6 = ARGLEN(12, &FPD6, 'I1');
+-SET &FDLEN7 = ARGLEN(12, &FPD7, 'I1');
+-SET &FDLEN8 = ARGLEN(12, &FPD8, 'I1');
+
+-SET &FILEN1 = ARGLEN(12, &FPI1, 'I1');
+-SET &FILEN2 = ARGLEN(12, &FPI2, 'I1');
+-SET &FILEN3 = ARGLEN(12, &FPI3, 'I1');
+-SET &FILEN4 = ARGLEN(12, &FPI4, 'I1');
+-SET &FILEN5 = ARGLEN(12, &FPI5, 'I1');
+-SET &FILEN6 = ARGLEN(12, &FPI6, 'I1');
+-SET &FILEN7 = ARGLEN(12, &FPI7, 'I1');
+-SET &FILEN8 = ARGLEN(12, &FPI8, 'I1');
+
+-SET &FTLEN1 = ARGLEN(12, &FPT1, 'I1');
+-SET &FTLEN2 = ARGLEN(12, &FPT2, 'I1');
+-SET &FTLEN3 = ARGLEN(12, &FPT3, 'I1');
+-SET &FTLEN4 = ARGLEN(12, &FPT4, 'I1');
+-SET &FTLEN5 = ARGLEN(12, &FPT5, 'I1');
+-SET &FTLEN6 = ARGLEN(12, &FPT6, 'I1');
+-SET &FTLEN7 = ARGLEN(12, &FPT7, 'I1');
+-SET &FTLEN8 = ARGLEN(12, &FPT8, 'I1');
+
+-SET &FDYLEN1 = ARGLEN(12, &FPYD1, 'I1');
+-SET &FDYLEN2 = ARGLEN(12, &FPYD2, 'I1');
+
+-SET &FIYLEN1 = ARGLEN(12, &FPYI1, 'I1');
+-SET &FIYLEN2 = ARGLEN(12, &FPYI2, 'I1');
+
+-SET &FTYLEN1 = ARGLEN(12, &FPYT1, 'I1');
+-SET &FTYLEN2 = ARGLEN(12, &FPYT2, 'I1');
+
+
+-SET &TDLEN1 = ARGLEN(10, &TPD1, 'I1');
+-SET &TDLEN2 = ARGLEN(10, &TPD2, 'I1');
+-SET &TDLEN3 = ARGLEN(10, &TPD3, 'I1');
+-SET &TDLEN4 = ARGLEN(10, &TPD4, 'I1');
+-SET &TDLEN5 = ARGLEN(10, &TPD5, 'I1');
+-SET &TDLEN6 = ARGLEN(10, &TPD6, 'I1');
+-SET &TDLEN7 = ARGLEN(10, &TPD7, 'I1');
+-SET &TDLEN8 = ARGLEN(10, &TPD8, 'I1');
+
+-SET &TILEN1 = ARGLEN(10, &TPI1, 'I1');
+-SET &TILEN2 = ARGLEN(10, &TPI2, 'I1');
+-SET &TILEN3 = ARGLEN(10, &TPI3, 'I1');
+-SET &TILEN4 = ARGLEN(10, &TPI4, 'I1');
+-SET &TILEN5 = ARGLEN(10, &TPI5, 'I1');
+-SET &TILEN6 = ARGLEN(10, &TPI6, 'I1');
+-SET &TILEN7 = ARGLEN(10, &TPI7, 'I1');
+-SET &TILEN8 = ARGLEN(10, &TPI8, 'I1');
+
+-SET &TTLEN1 = ARGLEN(10, &TPT1, 'I1');
+-SET &TTLEN2 = ARGLEN(10, &TPT2, 'I1');
+-SET &TTLEN3 = ARGLEN(10, &TPT3, 'I1');
+-SET &TTLEN4 = ARGLEN(10, &TPT4, 'I1');
+-SET &TTLEN5 = ARGLEN(10, &TPT5, 'I1');
+-SET &TTLEN6 = ARGLEN(10, &TPT6, 'I1');
+-SET &TTLEN7 = ARGLEN(10, &TPT7, 'I1');
+-SET &TTLEN8 = ARGLEN(10, &TPT8, 'I1');
+
+-SET &TDYLEN1 = ARGLEN(10, &TPYD1, 'I1');
+-SET &TDYLEN2 = ARGLEN(10, &TPYD2, 'I1');
+
+-SET &TIYLEN1 = ARGLEN(10, &TPYI1, 'I1');
+-SET &TIYLEN2 = ARGLEN(10, &TPYI2, 'I1');
+
+-SET &TTYLEN1 = ARGLEN(10, &TPYT1, 'I1');
+-SET &TTYLEN2 = ARGLEN(10, &TPYT2, 'I1');
+
+-* DOMESTIC VARIANCE/PERCENTAGE
+-SET &FDPLEN1 = ARGLEN(4, &FPDPCT1, 'I1');
+-SET &TPDLEN1 = ARGLEN(4, &TPDPCT1, 'I1');
+-SET &FDDPLEN1 = ARGLEN(4, &DFAREDPT1, 'I1');
+-SET &TDDPLEN1 = ARGLEN(4, &DNETTPCT1, 'I1');
+
+-* INTERNATIONAL VARIANCE/PERCENTAGE
+-SET &FIPLEN1 = ARGLEN(4, &FPIPCT1, 'I1');
+-SET &TIDLEN1 = ARGLEN(4, &TPIPCT1, 'I1');
+-SET &FIDPLEN1 = ARGLEN(4, &IFAREDPT1, 'I1');
+-SET &TIDPLEN1 = ARGLEN(4, &INETTPCT1, 'I1');
+
+-* TOTAL VARIANCE/PERCENTAGE
+-SET &FTPLEN1 = ARGLEN(4, &FPTPCT1, 'I1');
+-SET &TTDLEN1 = ARGLEN(4, &TPTPCT1, 'I1');
+
+
+-SET &FPD1 = IF &FDLEN1 EQ 12 THEN '$' | EDIT(&FPD1, '999,999,999,999')
+- ELSE IF &FDLEN1 EQ 11 THEN '$' | EDIT (&FPD1, '99,999,999,999')
+- ELSE IF &FDLEN1 EQ 10 THEN '$' | EDIT (&FPD1, '9,999,999,999')
+- ELSE IF &FDLEN1 EQ 9 THEN '$' | EDIT (&FPD1, '99,999,999')
+- ELSE IF &FDLEN1 EQ 8 THEN '$' | EDIT (&FPD1, '9,999,999')
+- ELSE IF &FDLEN1 EQ 7 THEN '$' | EDIT (&FPD1, '999,999')
+- ELSE IF &FDLEN1 EQ 6 THEN '$' | EDIT (&FPD1, '99,999')
+- ELSE IF &FDLEN1 EQ 5 THEN '$' | EDIT (&FPD1, '9,999')
+- ELSE IF &FDLEN1 EQ 4 THEN '$' | EDIT (&FPD1, '999')
+- ELSE IF &FDLEN1 EQ 3 THEN '$' | EDIT (&FPD1, '99')
+- ELSE IF &FDLEN1 EQ 2 THEN '$' | EDIT (&FPD1, '9')
+- ELSE IF &FDLEN1 EQ 1 AND &FPD1 NE '0' THEN '$' | EDIT (&FPD1, '9')
+- ELSE ' ';
+
+
+-SET &FPD2 = IF &FDLEN2 EQ 12 THEN '$' | EDIT(&FPD2, '999,999,999,999')
+- ELSE IF &FDLEN2 EQ 11 THEN '$' | EDIT (&FPD2, '99,999,999,999')
+- ELSE IF &FDLEN2 EQ 10 THEN '$' | EDIT (&FPD2, '9,999,999,999')
+- ELSE IF &FDLEN2 EQ 9 THEN '$' | EDIT (&FPD2, '99,999,999')
+- ELSE IF &FDLEN2 EQ 8 THEN '$' | EDIT (&FPD2, '9,999,999')
+- ELSE IF &FDLEN2 EQ 7 THEN '$' | EDIT (&FPD2, '999,999')
+- ELSE IF &FDLEN2 EQ 6 THEN '$' | EDIT (&FPD2, '99,999')
+- ELSE IF &FDLEN2 EQ 5 THEN '$' | EDIT (&FPD2, '9,999')
+- ELSE IF &FDLEN2 EQ 4 THEN '$' | EDIT (&FPD2, '999')
+- ELSE IF &FDLEN2 EQ 3 THEN '$' | EDIT (&FPD2, '99')
+- ELSE IF &FDLEN2 EQ 2 THEN '$' | EDIT (&FPD2, '9')
+- ELSE IF &FDLEN2 EQ 1 AND &FPD2 NE '0' THEN '$' | EDIT (&FPD2, '9')
+- ELSE ' ';
+
+-SET &FPD3 = IF &FDLEN3 EQ 12 THEN '$' | EDIT(&FPD3, '999,999,999,999')
+- ELSE IF &FDLEN3 EQ 11 THEN '$' | EDIT (&FPD3, '99,999,999,999')
+- ELSE IF &FDLEN3 EQ 10 THEN '$' | EDIT (&FPD3, '9,999,999,999')
+- ELSE IF &FDLEN3 EQ 9 THEN '$' | EDIT (&FPD3, '99,999,999')
+- ELSE IF &FDLEN3 EQ 8 THEN '$' | EDIT (&FPD3, '9,999,999')
+- ELSE IF &FDLEN3 EQ 7 THEN '$' | EDIT (&FPD3, '999,999')
+- ELSE IF &FDLEN3 EQ 6 THEN '$' | EDIT (&FPD3, '99,999')
+- ELSE IF &FDLEN3 EQ 5 THEN '$' | EDIT (&FPD3, '9,999')
+- ELSE IF &FDLEN3 EQ 4 THEN '$' | EDIT (&FPD3, '999')
+- ELSE IF &FDLEN3 EQ 3 THEN '$' | EDIT (&FPD3, '99')
+- ELSE IF &FDLEN3 EQ 2 THEN '$' | EDIT (&FPD3, '9')
+- ELSE IF &FDLEN3 EQ 1 AND &FPD3 NE '0' THEN '$' | EDIT (&FPD3, '9')
+- ELSE ' ';
+
+-SET &FPD4 = IF &FDLEN4 EQ 12 THEN '$' | EDIT(&FPD4, '999,999,999,999')
+- ELSE IF &FDLEN4 EQ 11 THEN '$' | EDIT (&FPD4, '99,999,999,999')
+- ELSE IF &FDLEN4 EQ 10 THEN '$' | EDIT (&FPD4, '9,999,999,999')
+- ELSE IF &FDLEN4 EQ 9 THEN '$' | EDIT (&FPD4, '99,999,999')
+- ELSE IF &FDLEN4 EQ 8 THEN '$' | EDIT (&FPD4, '9,999,999')
+- ELSE IF &FDLEN4 EQ 7 THEN '$' | EDIT (&FPD4, '999,999')
+- ELSE IF &FDLEN4 EQ 6 THEN '$' | EDIT (&FPD4, '99,999')
+- ELSE IF &FDLEN4 EQ 5 THEN '$' | EDIT (&FPD4, '9,999')
+- ELSE IF &FDLEN4 EQ 4 THEN '$' | EDIT (&FPD4, '999')
+- ELSE IF &FDLEN4 EQ 3 THEN '$' | EDIT (&FPD4, '99')
+- ELSE IF &FDLEN4 EQ 2 THEN '$' | EDIT (&FPD4, '9')
+- ELSE IF &FDLEN4 EQ 1 AND &FPD4 NE '0' THEN '$' | EDIT (&FPD4, '9')
+- ELSE ' ';
+
+
+-SET &FPD5 = IF &FDLEN5 EQ 12 THEN '$' | EDIT(&FPD5, '999,999,999,999')
+- ELSE IF &FDLEN5 EQ 11 THEN '$' | EDIT (&FPD5, '99,999,999,999')
+- ELSE IF &FDLEN5 EQ 10 THEN '$' | EDIT (&FPD5, '9,999,999,999')
+- ELSE IF &FDLEN5 EQ 9 THEN '$' | EDIT (&FPD5, '99,999,999')
+- ELSE IF &FDLEN5 EQ 8 THEN '$' | EDIT (&FPD5, '9,999,999')
+- ELSE IF &FDLEN5 EQ 7 THEN '$' | EDIT (&FPD5, '999,999')
+- ELSE IF &FDLEN5 EQ 6 THEN '$' | EDIT (&FPD5, '99,999')
+- ELSE IF &FDLEN5 EQ 5 THEN '$' | EDIT (&FPD5, '9,999')
+- ELSE IF &FDLEN5 EQ 4 THEN '$' | EDIT (&FPD5, '999')
+- ELSE IF &FDLEN5 EQ 3 THEN '$' | EDIT (&FPD5, '99')
+- ELSE IF &FDLEN5 EQ 2 THEN '$' | EDIT (&FPD5, '9')
+- ELSE IF &FDLEN5 EQ 1 AND &FPD5 NE '0' THEN '$' | EDIT (&FPD5, '9')
+- ELSE ' ';
+
+-SET &FPD6 = IF &FDLEN6 EQ 12 THEN '$' | EDIT(&FPD6, '999,999,999,999')
+- ELSE IF &FDLEN6 EQ 11 THEN '$' | EDIT (&FPD6, '99,999,999,999')
+- ELSE IF &FDLEN6 EQ 10 THEN '$' | EDIT (&FPD6, '9,999,999,999')
+- ELSE IF &FDLEN6 EQ 9 THEN '$' | EDIT (&FPD6, '99,999,999')
+- ELSE IF &FDLEN6 EQ 8 THEN '$' | EDIT (&FPD6, '9,999,999')
+- ELSE IF &FDLEN6 EQ 7 THEN '$' | EDIT (&FPD6, '999,999')
+- ELSE IF &FDLEN6 EQ 6 THEN '$' | EDIT (&FPD6, '99,999')
+- ELSE IF &FDLEN6 EQ 5 THEN '$' | EDIT (&FPD6, '9,999')
+- ELSE IF &FDLEN6 EQ 4 THEN '$' | EDIT (&FPD6, '999')
+- ELSE IF &FDLEN6 EQ 3 THEN '$' | EDIT (&FPD6, '99')
+- ELSE IF &FDLEN6 EQ 2 THEN '$' | EDIT (&FPD6, '9')
+- ELSE IF &FDLEN6 EQ 1 AND &FPD6 NE '0' THEN '$' | EDIT (&FPD6, '9')
+- ELSE ' ';
+
+-SET &FPD7 = IF &FDLEN7 EQ 12 THEN '$' | EDIT(&FPD7, '999,999,999,999')
+- ELSE IF &FDLEN7 EQ 11 THEN '$' | EDIT (&FPD7, '99,999,999,999')
+- ELSE IF &FDLEN7 EQ 10 THEN '$' | EDIT (&FPD7, '9,999,999,999')
+- ELSE IF &FDLEN7 EQ 9 THEN '$' | EDIT (&FPD7, '99,999,999')
+- ELSE IF &FDLEN7 EQ 8 THEN '$' | EDIT (&FPD7, '9,999,999')
+- ELSE IF &FDLEN7 EQ 7 THEN '$' | EDIT (&FPD7, '999,999')
+- ELSE IF &FDLEN7 EQ 6 THEN '$' | EDIT (&FPD7, '99,999')
+- ELSE IF &FDLEN7 EQ 5 THEN '$' | EDIT (&FPD7, '9,999')
+- ELSE IF &FDLEN7 EQ 4 THEN '$' | EDIT (&FPD7, '999')
+- ELSE IF &FDLEN7 EQ 3 THEN '$' | EDIT (&FPD7, '99')
+- ELSE IF &FDLEN7 EQ 2 THEN '$' | EDIT (&FPD7, '9')
+- ELSE IF &FDLEN7 EQ 1 AND &FPD7 NE '0' THEN '$' | EDIT (&FPD7, '9')
+- ELSE ' ';
+
+-SET &FPD8 = IF &FDLEN8 EQ 12 THEN '$' | EDIT(&FPD8, '999,999,999,999')
+- ELSE IF &FDLEN8 EQ 11 THEN '$' | EDIT (&FPD8, '99,999,999,999')
+- ELSE IF &FDLEN8 EQ 10 THEN '$' | EDIT (&FPD8, '9,999,999,999')
+- ELSE IF &FDLEN8 EQ 9 THEN '$' | EDIT (&FPD8, '99,999,999')
+- ELSE IF &FDLEN8 EQ 8 THEN '$' | EDIT (&FPD8, '9,999,999')
+- ELSE IF &FDLEN8 EQ 7 THEN '$' | EDIT (&FPD8, '999,999')
+- ELSE IF &FDLEN8 EQ 6 THEN '$' | EDIT (&FPD8, '99,999')
+- ELSE IF &FDLEN8 EQ 5 THEN '$' | EDIT (&FPD8, '9,999')
+- ELSE IF &FDLEN8 EQ 4 THEN '$' | EDIT (&FPD8, '999')
+- ELSE IF &FDLEN8 EQ 3 THEN '$' | EDIT (&FPD8, '99')
+- ELSE IF &FDLEN8 EQ 2 THEN '$' | EDIT (&FPD8, '9')
+- ELSE IF &FDLEN8 EQ 1 AND &FPD8 NE '0' THEN '$' | EDIT (&FPD8, '9')
+- ELSE ' ';
+
+
+-SET &FPI1 = IF &FILEN1 EQ 12 THEN '$' | EDIT(&FPI1, '999,999,999,999')
+- ELSE IF &FILEN1 EQ 11 THEN '$' | EDIT (&FPI1, '99,999,999,999')
+- ELSE IF &FILEN1 EQ 10 THEN '$' | EDIT (&FPI1, '9,999,999,999')
+- ELSE IF &FILEN1 EQ 9 THEN '$' | EDIT (&FPI1, '99,999,999')
+- ELSE IF &FILEN1 EQ 8 THEN '$' | EDIT (&FPI1, '9,999,999')
+- ELSE IF &FILEN1 EQ 7 THEN '$' | EDIT (&FPI1, '999,999')
+- ELSE IF &FILEN1 EQ 6 THEN '$' | EDIT (&FPI1, '99,999')
+- ELSE IF &FILEN1 EQ 5 THEN '$' | EDIT (&FPI1, '9,999')
+- ELSE IF &FILEN1 EQ 4 THEN '$' | EDIT (&FPI1, '999')
+- ELSE IF &FILEN1 EQ 3 THEN '$' | EDIT (&FPI1, '99')
+- ELSE IF &FILEN1 EQ 2 THEN '$' | EDIT (&FPI1, '9')
+- ELSE IF &FILEN1 EQ 1 AND &FPI1 NE '0' THEN '$' | EDIT (&FPI1, '9')
+- ELSE ' ';
+
+
+-SET &FPI2 = IF &FILEN1 EQ 12 THEN '$' | EDIT(&FPI2, '999,999,999,999')
+- ELSE IF &FILEN2 EQ 11 THEN '$' | EDIT (&FPI2, '99,999,999,999')
+- ELSE IF &FILEN2 EQ 10 THEN '$' | EDIT (&FPI2, '9,999,999,999')
+- ELSE IF &FILEN2 EQ 9 THEN '$' | EDIT (&FPI2, '99,999,999')
+- ELSE IF &FILEN2 EQ 8 THEN '$' | EDIT (&FPI2, '9,999,999')
+- ELSE IF &FILEN2 EQ 7 THEN '$' | EDIT (&FPI2, '999,999')
+- ELSE IF &FILEN2 EQ 6 THEN '$' | EDIT (&FPI2, '99,999')
+- ELSE IF &FILEN2 EQ 5 THEN '$' | EDIT (&FPI2, '9,999')
+- ELSE IF &FILEN2 EQ 4 THEN '$' | EDIT (&FPI2, '999')
+- ELSE IF &FILEN2 EQ 3 THEN '$' | EDIT (&FPI2, '99')
+- ELSE IF &FILEN2 EQ 2 THEN '$' | EDIT (&FPI2, '9')
+- ELSE IF &FILEN2 EQ 1 AND &FPI2 NE '0' THEN '$' | EDIT (&FPI2, '9')
+- ELSE ' ';
+
+-SET &FPI3 = IF &FILEN3 EQ 12 THEN '$' | EDIT(&FPI3, '999,999,999,999')
+- ELSE IF &FILEN3 EQ 11 THEN '$' | EDIT (&FPI3, '99,999,999,999')
+- ELSE IF &FILEN3 EQ 10 THEN '$' | EDIT (&FPI3, '9,999,999,999')
+- ELSE IF &FILEN3 EQ 9 THEN '$' | EDIT (&FPI3, '99,999,999')
+- ELSE IF &FILEN3 EQ 8 THEN '$' | EDIT (&FPI3, '9,999,999')
+- ELSE IF &FILEN3 EQ 7 THEN '$' | EDIT (&FPI3, '999,999')
+- ELSE IF &FILEN3 EQ 6 THEN '$' | EDIT (&FPI3, '99,999')
+- ELSE IF &FILEN3 EQ 5 THEN '$' | EDIT (&FPI3, '9,999')
+- ELSE IF &FILEN3 EQ 4 THEN '$' | EDIT (&FPI3, '999')
+- ELSE IF &FILEN3 EQ 3 THEN '$' | EDIT (&FPI3, '99')
+- ELSE IF &FILEN3 EQ 2 THEN '$' | EDIT (&FPI3, '9')
+- ELSE IF &FILEN3 EQ 1 AND &FPI3 NE '0' THEN '$' | EDIT (&FPI3, '9')
+- ELSE ' ';
+
+-SET &FPI4 = IF &FILEN4 EQ 12 THEN '$' | EDIT(&FPI4, '999,999,999,999')
+- ELSE IF &FILEN4 EQ 11 THEN '$' | EDIT (&FPI4, '99,999,999,999')
+- ELSE IF &FILEN4 EQ 10 THEN '$' | EDIT (&FPI4, '9,999,999,999')
+- ELSE IF &FILEN4 EQ 9 THEN '$' | EDIT (&FPI4, '99,999,999')
+- ELSE IF &FILEN4 EQ 8 THEN '$' | EDIT (&FPI4, '9,999,999')
+- ELSE IF &FILEN4 EQ 7 THEN '$' | EDIT (&FPI4, '999,999')
+- ELSE IF &FILEN4 EQ 6 THEN '$' | EDIT (&FPI4, '99,999')
+- ELSE IF &FILEN4 EQ 5 THEN '$' | EDIT (&FPI4, '9,999')
+- ELSE IF &FILEN4 EQ 4 THEN '$' | EDIT (&FPI4, '999')
+- ELSE IF &FILEN4 EQ 3 THEN '$' | EDIT (&FPI4, '99')
+- ELSE IF &FILEN4 EQ 2 THEN '$' | EDIT (&FPI4, '9')
+- ELSE IF &FILEN4 EQ 1 AND &FPI4 NE '0' THEN '$' | EDIT (&FPI4, '9')
+- ELSE ' ';
+
+-SET &FPI5 = IF &FILEN5 EQ 12 THEN '$' | EDIT(&FPI5, '999,999,999,999')
+- ELSE IF &FILEN5 EQ 11 THEN '$' | EDIT (&FPI5, '99,999,999,999')
+- ELSE IF &FILEN5 EQ 10 THEN '$' | EDIT (&FPI5, '9,999,999,999')
+- ELSE IF &FILEN5 EQ 9 THEN '$' | EDIT (&FPI5, '99,999,999')
+- ELSE IF &FILEN5 EQ 8 THEN '$' | EDIT (&FPI5, '9,999,999')
+- ELSE IF &FILEN5 EQ 7 THEN '$' | EDIT (&FPI5, '999,999')
+- ELSE IF &FILEN5 EQ 6 THEN '$' | EDIT (&FPI5, '99,999')
+- ELSE IF &FILEN5 EQ 5 THEN '$' | EDIT (&FPI5, '9,999')
+- ELSE IF &FILEN5 EQ 4 THEN '$' | EDIT (&FPI5, '999')
+- ELSE IF &FILEN5 EQ 3 THEN '$' | EDIT (&FPI5, '99')
+- ELSE IF &FILEN5 EQ 2 THEN '$' | EDIT (&FPI5, '9')
+- ELSE IF &FILEN5 EQ 1 AND &FPI5 NE '0' THEN '$' | EDIT (&FPI5, '9')
+- ELSE ' ';
+
+-SET &FPI6 = IF &FILEN6 EQ 12 THEN '$' | EDIT(&FPI6, '999,999,999,999')
+- ELSE IF &FILEN6 EQ 11 THEN '$' | EDIT (&FPI6, '99,999,999,999')
+- ELSE IF &FILEN6 EQ 10 THEN '$' | EDIT (&FPI6, '9,999,999,999')
+- ELSE IF &FILEN6 EQ 9 THEN '$' | EDIT (&FPI6, '99,999,999')
+- ELSE IF &FILEN6 EQ 8 THEN '$' | EDIT (&FPI6, '9,999,999')
+- ELSE IF &FILEN6 EQ 7 THEN '$' | EDIT (&FPI6, '999,999')
+- ELSE IF &FILEN6 EQ 6 THEN '$' | EDIT (&FPI6, '99,999')
+- ELSE IF &FILEN6 EQ 5 THEN '$' | EDIT (&FPI6, '9,999')
+- ELSE IF &FILEN6 EQ 4 THEN '$' | EDIT (&FPI6, '999')
+- ELSE IF &FILEN6 EQ 3 THEN '$' | EDIT (&FPI6, '99')
+- ELSE IF &FILEN6 EQ 2 THEN '$' | EDIT (&FPI6, '9')
+- ELSE IF &FILEN6 EQ 1 AND &FPI6 NE '0' THEN '$' | EDIT (&FPI6, '9')
+- ELSE ' ';
+
+-SET &FPI7 = IF &FILEN7 EQ 12 THEN '$' | EDIT(&FPI7, '999,999,999,999')
+- ELSE IF &FILEN7 EQ 11 THEN '$' | EDIT (&FPI7, '99,999,999,999')
+- ELSE IF &FILEN7 EQ 10 THEN '$' | EDIT (&FPI7, '9,999,999,999')
+- ELSE IF &FILEN7 EQ 9 THEN '$' | EDIT (&FPI7, '99,999,999')
+- ELSE IF &FILEN7 EQ 8 THEN '$' | EDIT (&FPI7, '9,999,999')
+- ELSE IF &FILEN7 EQ 7 THEN '$' | EDIT (&FPI7, '999,999')
+- ELSE IF &FILEN7 EQ 6 THEN '$' | EDIT (&FPI7, '99,999')
+- ELSE IF &FILEN7 EQ 5 THEN '$' | EDIT (&FPI7, '9,999')
+- ELSE IF &FILEN7 EQ 4 THEN '$' | EDIT (&FPI7, '999')
+- ELSE IF &FILEN7 EQ 3 THEN '$' | EDIT (&FPI7, '99')
+- ELSE IF &FILEN7 EQ 2 THEN '$' | EDIT (&FPI7, '9')
+- ELSE IF &FILEN7 EQ 1 AND &FPI7 NE '0' THEN '$' | EDIT (&FPI7, '9')
+- ELSE ' ';
+
+-SET &FPI8 = IF &FILEN8 EQ 12 THEN '$' | EDIT(&FPI8, '999,999,999,999')
+- ELSE IF &FILEN8 EQ 11 THEN '$' | EDIT (&FPI8, '99,999,999,999')
+- ELSE IF &FILEN8 EQ 10 THEN '$' | EDIT (&FPI8, '9,999,999,999')
+- ELSE IF &FILEN8 EQ 9 THEN '$' | EDIT (&FPI8, '99,999,999')
+- ELSE IF &FILEN8 EQ 8 THEN '$' | EDIT (&FPI8, '9,999,999')
+- ELSE IF &FILEN8 EQ 7 THEN '$' | EDIT (&FPI8, '999,999')
+- ELSE IF &FILEN8 EQ 6 THEN '$' | EDIT (&FPI8, '99,999')
+- ELSE IF &FILEN8 EQ 5 THEN '$' | EDIT (&FPI8, '9,999')
+- ELSE IF &FILEN8 EQ 4 THEN '$' | EDIT (&FPI8, '999')
+- ELSE IF &FILEN8 EQ 3 THEN '$' | EDIT (&FPI8, '99')
+- ELSE IF &FILEN8 EQ 2 THEN '$' | EDIT (&FPI8, '9')
+- ELSE IF &FILEN8 EQ 1 AND &FPI8 NE '0' THEN '$' | EDIT (&FPI8, '9')
+- ELSE ' ';
+
+-SET &FPYD1 = IF &FDYLEN1 EQ 12 THEN '$' | EDIT(&FPYD1, '999,999,999,999')
+- ELSE IF &FDYLEN1 EQ 11 THEN '$' | EDIT (&FPYD1, '99,999,999,999')
+- ELSE IF &FDYLEN1 EQ 10 THEN '$' | EDIT (&FPYD1, '9,999,999,999')
+- ELSE IF &FDYLEN1 EQ 9 THEN '$' | EDIT (&FPYD1, '99,999,999')
+- ELSE IF &FDYLEN1 EQ 8 THEN '$' | EDIT (&FPYD1, '9,999,999')
+- ELSE IF &FDYLEN1 EQ 7 THEN '$' | EDIT (&FPYD1, '999,999')
+- ELSE IF &FDYLEN1 EQ 6 THEN '$' | EDIT (&FPYD1, '99,999')
+- ELSE IF &FDYLEN1 EQ 5 THEN '$' | EDIT (&FPYD1, '9,999')
+- ELSE IF &FDYLEN1 EQ 4 THEN '$' | EDIT (&FPYD1, '999')
+- ELSE IF &FDYLEN1 EQ 3 THEN '$' | EDIT (&FPYD1, '99')
+- ELSE IF &FDYLEN1 EQ 2 THEN '$' | EDIT (&FPYD1, '9')
+- ELSE IF &FDYLEN1 EQ 1 AND &FPYD1 NE '0' THEN '$' | EDIT (&FPYD1, '9')
+- ELSE ' ';
+
+-SET &FPYD2 = IF &FDYLEN2 EQ 12 THEN '$' | EDIT(&FPYD2, '999,999,999,999')
+- ELSE IF &FDYLEN2 EQ 11 THEN '$' | EDIT (&FPYD2, '99,999,999,999')
+- ELSE IF &FDYLEN2 EQ 10 THEN '$' | EDIT (&FPYD2, '9,999,999,999')
+- ELSE IF &FDYLEN2 EQ 9 THEN '$' | EDIT (&FPYD2, '99,999,999')
+- ELSE IF &FDYLEN2 EQ 8 THEN '$' | EDIT (&FPYD2, '9,999,999')
+- ELSE IF &FDYLEN2 EQ 7 THEN '$' | EDIT (&FPYD2, '999,999')
+- ELSE IF &FDYLEN2 EQ 6 THEN '$' | EDIT (&FPYD2, '99,999')
+- ELSE IF &FDYLEN2 EQ 5 THEN '$' | EDIT (&FPYD2, '9,999')
+- ELSE IF &FDYLEN2 EQ 4 THEN '$' | EDIT (&FPYD2, '999')
+- ELSE IF &FDYLEN2 EQ 3 THEN '$' | EDIT (&FPYD2, '99')
+- ELSE IF &FDYLEN2 EQ 2 THEN '$' | EDIT (&FPYD2, '9')
+- ELSE IF &FDYLEN2 EQ 1 AND &FPYD2 NE '0' THEN '$' | EDIT (&FPYD2, '9')
+- ELSE ' ';
+
+-SET &FPYI1 = IF &FIYLEN1 EQ 12 THEN '$' | EDIT(&FPYI1, '999,999,999,999')
+- ELSE IF &FIYLEN1 EQ 11 THEN '$' | EDIT (&FPYI1, '99,999,999,999')
+- ELSE IF &FIYLEN1 EQ 10 THEN '$' | EDIT (&FPYI1, '9,999,999,999')
+- ELSE IF &FIYLEN1 EQ 9 THEN '$' | EDIT (&FPYI1, '99,999,999')
+- ELSE IF &FIYLEN1 EQ 8 THEN '$' | EDIT (&FPYI1, '9,999,999')
+- ELSE IF &FIYLEN1 EQ 7 THEN '$' | EDIT (&FPYI1, '999,999')
+- ELSE IF &FIYLEN1 EQ 6 THEN '$' | EDIT (&FPYI1, '99,999')
+- ELSE IF &FIYLEN1 EQ 5 THEN '$' | EDIT (&FPYI1, '9,999')
+- ELSE IF &FIYLEN1 EQ 4 THEN '$' | EDIT (&FPYI1, '999')
+- ELSE IF &FIYLEN1 EQ 3 THEN '$' | EDIT (&FPYI1, '99')
+- ELSE IF &FIYLEN1 EQ 2 THEN '$' | EDIT (&FPYI1, '9')
+- ELSE IF &FIYLEN1 EQ 1 AND &FPYI1 NE '0' THEN '$' | EDIT (&FPYI1, '9')
+- ELSE ' ';
+
+-SET &FPYI2 = IF &FIYLEN2 EQ 12 THEN '$' | EDIT(&FPYI2, '999,999,999,999')
+- ELSE IF &FIYLEN2 EQ 11 THEN '$' | EDIT (&FPYI2, '99,999,999,999')
+- ELSE IF &FIYLEN2 EQ 10 THEN '$' | EDIT (&FPYI2, '9,999,999,999')
+- ELSE IF &FIYLEN2 EQ 9 THEN '$' | EDIT (&FPYI2, '99,999,999')
+- ELSE IF &FIYLEN2 EQ 8 THEN '$' | EDIT (&FPYI2, '9,999,999')
+- ELSE IF &FIYLEN2 EQ 7 THEN '$' | EDIT (&FPYI2, '999,999')
+- ELSE IF &FIYLEN2 EQ 6 THEN '$' | EDIT (&FPYI2, '99,999')
+- ELSE IF &FIYLEN2 EQ 5 THEN '$' | EDIT (&FPYI2, '9,999')
+- ELSE IF &FIYLEN2 EQ 4 THEN '$' | EDIT (&FPYI2, '999')
+- ELSE IF &FIYLEN2 EQ 3 THEN '$' | EDIT (&FPYI2, '99')
+- ELSE IF &FIYLEN2 EQ 2 THEN '$' | EDIT (&FPYI2, '9')
+- ELSE IF &FIYLEN2 EQ 1 AND &FPYI2 NE '0' THEN '$' | EDIT (&FPYI2, '9')
+- ELSE ' ';
+
+-SET &FPYT1 = IF &FTYLEN1 EQ 12 THEN '$' | EDIT(&FPYT1, '999,999,999,999')
+- ELSE IF &FTYLEN1 EQ 11 THEN '$' | EDIT (&FPYT1, '99,999,999,999')
+- ELSE IF &FTYLEN1 EQ 10 THEN '$' | EDIT (&FPYT1, '9,999,999,999')
+- ELSE IF &FTYLEN1 EQ 9 THEN '$' | EDIT (&FPYT1, '99,999,999')
+- ELSE IF &FTYLEN1 EQ 8 THEN '$' | EDIT (&FPYT1, '9,999,999')
+- ELSE IF &FTYLEN1 EQ 7 THEN '$' | EDIT (&FPYT1, '999,999')
+- ELSE IF &FTYLEN1 EQ 6 THEN '$' | EDIT (&FPYT1, '99,999')
+- ELSE IF &FTYLEN1 EQ 5 THEN '$' | EDIT (&FPYT1, '9,999')
+- ELSE IF &FTYLEN1 EQ 4 THEN '$' | EDIT (&FPYT1, '999')
+- ELSE IF &FTYLEN1 EQ 3 THEN '$' | EDIT (&FPYT1, '99')
+- ELSE IF &FTYLEN1 EQ 2 THEN '$' | EDIT (&FPYT1, '9')
+- ELSE IF &FTYLEN1 EQ 1 AND &FPYT1 NE '0' THEN '$' | EDIT (&FPYT1, '9')
+- ELSE ' ';
+
+-SET &FPYT2 = IF &FTYLEN2 EQ 12 THEN '$' | EDIT(&FPYT2, '999,999,999,999')
+- ELSE IF &FTYLEN2 EQ 11 THEN '$' | EDIT (&FPYT2, '99,999,999,999')
+- ELSE IF &FTYLEN2 EQ 10 THEN '$' | EDIT (&FPYT2, '9,999,999,999')
+- ELSE IF &FTYLEN2 EQ 9 THEN '$' | EDIT (&FPYT2, '99,999,999')
+- ELSE IF &FTYLEN2 EQ 8 THEN '$' | EDIT (&FPYT2, '9,999,999')
+- ELSE IF &FTYLEN2 EQ 7 THEN '$' | EDIT (&FPYT2, '999,999')
+- ELSE IF &FTYLEN2 EQ 6 THEN '$' | EDIT (&FPYT2, '99,999')
+- ELSE IF &FTYLEN2 EQ 5 THEN '$' | EDIT (&FPYT2, '9,999')
+- ELSE IF &FTYLEN2 EQ 4 THEN '$' | EDIT (&FPYT2, '999')
+- ELSE IF &FTYLEN2 EQ 3 THEN '$' | EDIT (&FPYT2, '99')
+- ELSE IF &FTYLEN2 EQ 2 THEN '$' | EDIT (&FPYT2, '9')
+- ELSE IF &FTYLEN2 EQ 1 AND &FPYT2 NE '0' THEN '$' | EDIT (&FPYT2, '9')
+- ELSE ' ';
+
+-SET &TPD1 = IF &TDLEN1 EQ 10 THEN EDIT (&TPD1, '9,999,999,999')
+- ELSE IF &TDLEN1 EQ 9 THEN EDIT (&TPD1, '999,999,999')
+- ELSE IF &TDLEN1 EQ 8 THEN EDIT (&TPD1, '99,999,999')
+- ELSE IF &TDLEN1 EQ 7 THEN EDIT (&TPD1, '9,999,999')
+- ELSE IF &TDLEN1 EQ 6 THEN EDIT (&TPD1, '999,999')
+- ELSE IF &TDLEN1 EQ 5 THEN EDIT (&TPD1, '99,999')
+- ELSE IF &TDLEN1 EQ 4 THEN EDIT (&TPD1, '9,999')
+- ELSE IF &TDLEN1 EQ 3 THEN EDIT (&TPD1, '999')
+- ELSE IF &TDLEN1 EQ 2 THEN EDIT (&TPD1, '99')
+- ELSE IF &TDLEN1 EQ 1 AND &TPD1 NE '0' THEN EDIT (&TPD1, '9')
+- ELSE ' ';
+
+-SET &TPD2 = IF &TDLEN2 EQ 10 THEN EDIT (&TPD2, '9,999,999,999')
+- ELSE IF &TDLEN2 EQ 9 THEN EDIT (&TPD2, '999,999,999')
+- ELSE IF &TDLEN2 EQ 8 THEN EDIT (&TPD2, '99,999,999')
+- ELSE IF &TDLEN2 EQ 7 THEN EDIT (&TPD2, '9,999,999')
+- ELSE IF &TDLEN2 EQ 6 THEN EDIT (&TPD2, '999,999')
+- ELSE IF &TDLEN2 EQ 5 THEN EDIT (&TPD2, '99,999')
+- ELSE IF &TDLEN2 EQ 4 THEN EDIT (&TPD2, '9,999')
+- ELSE IF &TDLEN2 EQ 3 THEN EDIT (&TPD2, '999')
+- ELSE IF &TDLEN2 EQ 2 THEN EDIT (&TPD2, '99')
+- ELSE IF &TDLEN2 EQ 1 AND &TPD2 NE '0' THEN EDIT (&TPD2, '9')
+- ELSE ' ';
+
+-SET &TPD3 = IF &TDLEN3 EQ 10 THEN EDIT (&TPD3, '9,999,999,999')
+- ELSE IF &TDLEN3 EQ 9 THEN EDIT (&TPD3, '999,999,999')
+- ELSE IF &TDLEN3 EQ 8 THEN EDIT (&TPD3, '99,999,999')
+- ELSE IF &TDLEN3 EQ 7 THEN EDIT (&TPD3, '9,999,999')
+- ELSE IF &TDLEN3 EQ 6 THEN EDIT (&TPD3, '999,999')
+- ELSE IF &TDLEN3 EQ 5 THEN EDIT (&TPD3, '99,999')
+- ELSE IF &TDLEN3 EQ 4 THEN EDIT (&TPD3, '9,999')
+- ELSE IF &TDLEN3 EQ 3 THEN EDIT (&TPD3, '999')
+- ELSE IF &TDLEN3 EQ 2 THEN EDIT (&TPD3, '99')
+- ELSE IF &TDLEN3 EQ 1 AND &TPD3 NE '0' THEN EDIT (&TPD3, '9')
+- ELSE ' ';
+
+
+-SET &TPD4 = IF &TDLEN4 EQ 10 THEN EDIT (&TPD4, '9,999,999,999')
+- ELSE IF &TDLEN4 EQ 9 THEN EDIT (&TPD4, '999,999,999')
+- ELSE IF &TDLEN4 EQ 8 THEN EDIT (&TPD4, '99,999,999')
+- ELSE IF &TDLEN4 EQ 7 THEN EDIT (&TPD4, '9,999,999')
+- ELSE IF &TDLEN4 EQ 6 THEN EDIT (&TPD4, '999,999')
+- ELSE IF &TDLEN4 EQ 5 THEN EDIT (&TPD4, '99,999')
+- ELSE IF &TDLEN4 EQ 4 THEN EDIT (&TPD4, '9,999')
+- ELSE IF &TDLEN4 EQ 3 THEN EDIT (&TPD4, '999')
+- ELSE IF &TDLEN4 EQ 2 THEN EDIT (&TPD4, '99')
+- ELSE IF &TDLEN4 EQ 1 AND &TPD4 NE '0' THEN EDIT (&TPD4, '9')
+- ELSE ' ';
+
+
+-SET &TPD5 = IF &TDLEN5 EQ 10 THEN EDIT (&TPD5, '9,999,999,999')
+- ELSE IF &TDLEN5 EQ 9 THEN EDIT (&TPD5, '999,999,999')
+- ELSE IF &TDLEN5 EQ 8 THEN EDIT (&TPD5, '99,999,999')
+- ELSE IF &TDLEN5 EQ 7 THEN EDIT (&TPD5, '9,999,999')
+- ELSE IF &TDLEN5 EQ 6 THEN EDIT (&TPD5, '999,999')
+- ELSE IF &TDLEN5 EQ 5 THEN EDIT (&TPD5, '99,999')
+- ELSE IF &TDLEN5 EQ 4 THEN EDIT (&TPD5, '9,999')
+- ELSE IF &TDLEN5 EQ 3 THEN EDIT (&TPD5, '999')
+- ELSE IF &TDLEN5 EQ 2 THEN EDIT (&TPD5, '99')
+- ELSE IF &TDLEN5 EQ 1 AND &TPD5 NE '0' THEN EDIT (&TPD5, '9')
+- ELSE ' ';
+
+
+-SET &TPD6 = IF &TDLEN6 EQ 10 THEN EDIT (&TPD6, '9,999,999,999')
+- ELSE IF &TDLEN6 EQ 9 THEN EDIT (&TPD6, '999,999,999')
+- ELSE IF &TDLEN6 EQ 8 THEN EDIT (&TPD6, '99,999,999')
+- ELSE IF &TDLEN6 EQ 7 THEN EDIT (&TPD6, '9,999,999')
+- ELSE IF &TDLEN6 EQ 6 THEN EDIT (&TPD6, '999,999')
+- ELSE IF &TDLEN6 EQ 5 THEN EDIT (&TPD6, '99,999')
+- ELSE IF &TDLEN6 EQ 4 THEN EDIT (&TPD6, '9,999')
+- ELSE IF &TDLEN6 EQ 3 THEN EDIT (&TPD6, '999')
+- ELSE IF &TDLEN6 EQ 2 THEN EDIT (&TPD6, '99')
+- ELSE IF &TDLEN6 EQ 1 AND &TPD6 NE '0' THEN EDIT (&TPD6, '9')
+- ELSE ' ';
+
+-SET &TPD7 = IF &TDLEN7 EQ 10 THEN EDIT (&TPD7, '9,999,999,999')
+- ELSE IF &TDLEN7 EQ 9 THEN EDIT (&TPD7, '999,999,999')
+- ELSE IF &TDLEN7 EQ 8 THEN EDIT (&TPD7, '99,999,999')
+- ELSE IF &TDLEN7 EQ 7 THEN EDIT (&TPD7, '9,999,999')
+- ELSE IF &TDLEN7 EQ 6 THEN EDIT (&TPD7, '999,999')
+- ELSE IF &TDLEN7 EQ 5 THEN EDIT (&TPD7, '99,999')
+- ELSE IF &TDLEN7 EQ 4 THEN EDIT (&TPD7, '9,999')
+- ELSE IF &TDLEN7 EQ 3 THEN EDIT (&TPD7, '999')
+- ELSE IF &TDLEN7 EQ 2 THEN EDIT (&TPD7, '99')
+- ELSE IF &TDLEN7 EQ 1 AND &TPD7 NE '0' THEN EDIT (&TPD7, '9')
+- ELSE ' ';
+
+
+-SET &TPD8 = IF &TDLEN8 EQ 10 THEN EDIT (&TPD8, '9,999,999,999')
+- ELSE IF &TDLEN8 EQ 9 THEN EDIT (&TPD8, '999,999,999')
+- ELSE IF &TDLEN8 EQ 8 THEN EDIT (&TPD8, '99,999,999')
+- ELSE IF &TDLEN8 EQ 7 THEN EDIT (&TPD8, '9,999,999')
+- ELSE IF &TDLEN8 EQ 6 THEN EDIT (&TPD8, '999,999')
+- ELSE IF &TDLEN8 EQ 5 THEN EDIT (&TPD8, '99,999')
+- ELSE IF &TDLEN8 EQ 4 THEN EDIT (&TPD8, '9,999')
+- ELSE IF &TDLEN8 EQ 3 THEN EDIT (&TPD8, '999')
+- ELSE IF &TDLEN8 EQ 2 THEN EDIT (&TPD8, '99')
+- ELSE IF &TDLEN8 EQ 1 AND &TPD8 NE '0' THEN EDIT (&TPD8, '9')
+- ELSE ' ';
+
+
+-SET &TPI1 = IF &TILEN1 EQ 10 THEN EDIT (&TPI1, '9,999,999,999')
+- ELSE IF &TILEN1 EQ 9 THEN EDIT (&TPI1, '999,999,999')
+- ELSE IF &TILEN1 EQ 8 THEN EDIT (&TPI1, '99,999,999')
+- ELSE IF &TILEN1 EQ 7 THEN EDIT (&TPI1, '9,999,999')
+- ELSE IF &TILEN1 EQ 6 THEN EDIT (&TPI1, '999,999')
+- ELSE IF &TILEN1 EQ 5 THEN EDIT (&TPI1, '99,999')
+- ELSE IF &TILEN1 EQ 4 THEN EDIT (&TPI1, '9,999')
+- ELSE IF &TILEN1 EQ 3 THEN EDIT (&TPI1, '999')
+- ELSE IF &TILEN1 EQ 2 THEN EDIT (&TPI1, '99')
+- ELSE IF &TILEN1 EQ 1 AND &TPI1 NE '0' THEN EDIT (&TPI1, '9')
+- ELSE ' ';
+
+-SET &TPI2 = IF &TILEN2 EQ 10 THEN EDIT (&TPI2, '9,999,999,999')
+- ELSE IF &TILEN2 EQ 9 THEN EDIT (&TPI2, '999,999,999')
+- ELSE IF &TILEN2 EQ 8 THEN EDIT (&TPI2, '99,999,999')
+- ELSE IF &TILEN2 EQ 7 THEN EDIT (&TPI2, '9,999,999')
+- ELSE IF &TILEN2 EQ 6 THEN EDIT (&TPI2, '999,999')
+- ELSE IF &TILEN2 EQ 5 THEN EDIT (&TPI2, '99,999')
+- ELSE IF &TILEN2 EQ 4 THEN EDIT (&TPI2, '9,999')
+- ELSE IF &TILEN2 EQ 3 THEN EDIT (&TPI2, '999')
+- ELSE IF &TILEN2 EQ 2 THEN EDIT (&TPI2, '99')
+- ELSE IF &TILEN2 EQ 1 AND &TPI2 NE '0' THEN EDIT (&TPI2, '9')
+- ELSE ' ';
+
+-SET &TPI3 = IF &TILEN3 EQ 10 THEN EDIT (&TPI3, '9,999,999,999')
+- ELSE IF &TILEN3 EQ 9 THEN EDIT (&TPI3, '999,999,999')
+- ELSE IF &TILEN3 EQ 8 THEN EDIT (&TPI3, '99,999,999')
+- ELSE IF &TILEN3 EQ 7 THEN EDIT (&TPI3, '9,999,999')
+- ELSE IF &TILEN3 EQ 6 THEN EDIT (&TPI3, '999,999')
+- ELSE IF &TILEN3 EQ 5 THEN EDIT (&TPI3, '99,999')
+- ELSE IF &TILEN3 EQ 4 THEN EDIT (&TPI3, '9,999')
+- ELSE IF &TILEN3 EQ 3 THEN EDIT (&TPI3, '999')
+- ELSE IF &TILEN3 EQ 2 THEN EDIT (&TPI3, '99')
+- ELSE IF &TILEN3 EQ 1 AND &TPI3 NE '0' THEN EDIT (&TPI3, '9')
+- ELSE ' ';
+
+
+-SET &TPI4 = IF &TILEN4 EQ 10 THEN EDIT (&TPI4, '9,999,999,999')
+- ELSE IF &TILEN4 EQ 9 THEN EDIT (&TPI4, '999,999,999')
+- ELSE IF &TILEN4 EQ 8 THEN EDIT (&TPI4, '99,999,999')
+- ELSE IF &TILEN4 EQ 7 THEN EDIT (&TPI4, '9,999,999')
+- ELSE IF &TILEN4 EQ 6 THEN EDIT (&TPI4, '999,999')
+- ELSE IF &TILEN4 EQ 5 THEN EDIT (&TPI4, '99,999')
+- ELSE IF &TILEN4 EQ 4 THEN EDIT (&TPI4, '9,999')
+- ELSE IF &TILEN4 EQ 3 THEN EDIT (&TPI4, '999')
+- ELSE IF &TILEN4 EQ 2 THEN EDIT (&TPI4, '99')
+- ELSE IF &TILEN4 EQ 1 AND &TPI4 NE '0' THEN EDIT (&TPI4, '9')
+- ELSE ' ';
+
+
+-SET &TPI5 = IF &TILEN5 EQ 10 THEN EDIT (&TPI5, '9,999,999,999')
+- ELSE IF &TILEN5 EQ 9 THEN EDIT (&TPI5, '999,999,999')
+- ELSE IF &TILEN5 EQ 8 THEN EDIT (&TPI5, '99,999,999')
+- ELSE IF &TILEN5 EQ 7 THEN EDIT (&TPI5, '9,999,999')
+- ELSE IF &TILEN5 EQ 6 THEN EDIT (&TPI5, '999,999')
+- ELSE IF &TILEN5 EQ 5 THEN EDIT (&TPI5, '99,999')
+- ELSE IF &TILEN5 EQ 4 THEN EDIT (&TPI5, '9,999')
+- ELSE IF &TILEN5 EQ 3 THEN EDIT (&TPI5, '999')
+- ELSE IF &TILEN5 EQ 2 THEN EDIT (&TPI5, '99')
+- ELSE IF &TILEN5 EQ 1 AND &TPI5 NE '0' THEN EDIT (&TPI5, '9')
+- ELSE ' ';
+
+
+-SET &TPI6 = IF &TILEN6 EQ 10 THEN EDIT (&TPI6, '9,999,999,999')
+- ELSE IF &TILEN6 EQ 9 THEN EDIT (&TPI6, '999,999,999')
+- ELSE IF &TILEN6 EQ 8 THEN EDIT (&TPI6, '99,999,999')
+- ELSE IF &TILEN6 EQ 7 THEN EDIT (&TPI6, '9,999,999')
+- ELSE IF &TILEN6 EQ 6 THEN EDIT (&TPI6, '999,999')
+- ELSE IF &TILEN6 EQ 5 THEN EDIT (&TPI6, '99,999')
+- ELSE IF &TILEN6 EQ 4 THEN EDIT (&TPI6, '9,999')
+- ELSE IF &TILEN6 EQ 3 THEN EDIT (&TPI6, '999')
+- ELSE IF &TILEN6 EQ 2 THEN EDIT (&TPI6, '99')
+- ELSE IF &TILEN6 EQ 1 AND &TPI6 NE '0' THEN EDIT (&TPI6, '9')
+- ELSE ' ';
+
+-SET &TPI7 = IF &TILEN7 EQ 10 THEN EDIT (&TPI7, '9,999,999,999')
+- ELSE IF &TILEN7 EQ 9 THEN EDIT (&TPI7, '999,999,999')
+- ELSE IF &TILEN7 EQ 8 THEN EDIT (&TPI7, '99,999,999')
+- ELSE IF &TILEN7 EQ 7 THEN EDIT (&TPI7, '9,999,999')
+- ELSE IF &TILEN7 EQ 6 THEN EDIT (&TPI7, '999,999')
+- ELSE IF &TILEN7 EQ 5 THEN EDIT (&TPI7, '99,999')
+- ELSE IF &TILEN7 EQ 4 THEN EDIT (&TPI7, '9,999')
+- ELSE IF &TILEN7 EQ 3 THEN EDIT (&TPI7, '999')
+- ELSE IF &TILEN7 EQ 2 THEN EDIT (&TPI7, '99')
+- ELSE IF &TILEN7 EQ 1 AND &TPI7 NE '0' THEN EDIT (&TPI7, '9')
+- ELSE ' ';
+
+
+-SET &TPI8 = IF &TILEN8 EQ 10 THEN EDIT (&TPI8, '9,999,999,999')
+- ELSE IF &TILEN8 EQ 9 THEN EDIT (&TPI8, '999,999,999')
+- ELSE IF &TILEN8 EQ 8 THEN EDIT (&TPI8, '99,999,999')
+- ELSE IF &TILEN8 EQ 7 THEN EDIT (&TPI8, '9,999,999')
+- ELSE IF &TILEN8 EQ 6 THEN EDIT (&TPI8, '999,999')
+- ELSE IF &TILEN8 EQ 5 THEN EDIT (&TPI8, '99,999')
+- ELSE IF &TILEN8 EQ 4 THEN EDIT (&TPI8, '9,999')
+- ELSE IF &TILEN8 EQ 3 THEN EDIT (&TPI8, '999')
+- ELSE IF &TILEN8 EQ 2 THEN EDIT (&TPI8, '99')
+- ELSE IF &TILEN8 EQ 1 AND &TPI8 NE '0' THEN EDIT (&TPI8, '9')
+- ELSE ' ';
+
+-SET &FPT1 = IF &FTLEN1 EQ 12 THEN '$' | EDIT(&FPT1, '999,999,999,999')
+- ELSE IF &FTLEN1 EQ 11 THEN '$' | EDIT (&FPT1, '99,999,999,999')
+- ELSE IF &FTLEN1 EQ 10 THEN '$' | EDIT (&FPT1, '9,999,999,999')
+- ELSE IF &FTLEN1 EQ 9 THEN '$' | EDIT (&FPT1, '99,999,999')
+- ELSE IF &FTLEN1 EQ 8 THEN '$' | EDIT (&FPT1, '9,999,999')
+- ELSE IF &FTLEN1 EQ 7 THEN '$' | EDIT (&FPT1, '999,999')
+- ELSE IF &FTLEN1 EQ 6 THEN '$' | EDIT (&FPT1, '99,999')
+- ELSE IF &FTLEN1 EQ 5 THEN '$' | EDIT (&FPT1, '9,999')
+- ELSE IF &FTLEN1 EQ 4 THEN '$' | EDIT (&FPT1, '999')
+- ELSE IF &FTLEN1 EQ 3 THEN '$' | EDIT (&FPT1, '99')
+- ELSE IF &FTLEN1 EQ 2 THEN '$' | EDIT (&FPT1, '9')
+- ELSE IF &FTLEN1 EQ 1 AND &FPT1 NE '0' THEN '$' | EDIT (&FPT1, '9')
+- ELSE ' ';
+
+
+-SET &FPT2 = IF &FTLEN1 EQ 12 THEN '$' | EDIT(&FPT2, '999,999,999,999')
+- ELSE IF &FTLEN2 EQ 11 THEN '$' | EDIT (&FPT2, '99,999,999,999')
+- ELSE IF &FTLEN2 EQ 10 THEN '$' | EDIT (&FPT2, '9,999,999,999')
+- ELSE IF &FTLEN2 EQ 9 THEN '$' | EDIT (&FPT2, '99,999,999')
+- ELSE IF &FTLEN2 EQ 8 THEN '$' | EDIT (&FPT2, '9,999,999')
+- ELSE IF &FTLEN2 EQ 7 THEN '$' | EDIT (&FPT2, '999,999')
+- ELSE IF &FTLEN2 EQ 6 THEN '$' | EDIT (&FPT2, '99,999')
+- ELSE IF &FTLEN2 EQ 5 THEN '$' | EDIT (&FPT2, '9,999')
+- ELSE IF &FTLEN2 EQ 4 THEN '$' | EDIT (&FPT2, '999')
+- ELSE IF &FTLEN2 EQ 3 THEN '$' | EDIT (&FPT2, '99')
+- ELSE IF &FTLEN2 EQ 2 THEN '$' | EDIT (&FPT2, '9')
+- ELSE IF &FTLEN2 EQ 1 AND &FPT2 NE '0' THEN '$' | EDIT (&FPT2, '9')
+- ELSE ' ';
+
+-SET &FPT3 = IF &FTLEN3 EQ 12 THEN '$' | EDIT(&FPT3, '999,999,999,999')
+- ELSE IF &FTLEN3 EQ 11 THEN '$' | EDIT (&FPT3, '99,999,999,999')
+- ELSE IF &FTLEN3 EQ 10 THEN '$' | EDIT (&FPT3, '9,999,999,999')
+- ELSE IF &FTLEN3 EQ 9 THEN '$' | EDIT (&FPT3, '99,999,999')
+- ELSE IF &FTLEN3 EQ 8 THEN '$' | EDIT (&FPT3, '9,999,999')
+- ELSE IF &FTLEN3 EQ 7 THEN '$' | EDIT (&FPT3, '999,999')
+- ELSE IF &FTLEN3 EQ 6 THEN '$' | EDIT (&FPT3, '99,999')
+- ELSE IF &FTLEN3 EQ 5 THEN '$' | EDIT (&FPT3, '9,999')
+- ELSE IF &FTLEN3 EQ 4 THEN '$' | EDIT (&FPT3, '999')
+- ELSE IF &FTLEN3 EQ 3 THEN '$' | EDIT (&FPT3, '99')
+- ELSE IF &FTLEN3 EQ 2 THEN '$' | EDIT (&FPT3, '9')
+- ELSE IF &FTLEN3 EQ 1 AND &FPT3 NE '0' THEN '$' | EDIT (&FPT3, '9')
+- ELSE ' ';
+
+-SET &FPT4 = IF &FTLEN4 EQ 12 THEN '$' | EDIT(&FPT4, '999,999,999,999')
+- ELSE IF &FTLEN4 EQ 11 THEN '$' | EDIT (&FPT4, '99,999,999,999')
+- ELSE IF &FTLEN4 EQ 10 THEN '$' | EDIT (&FPT4, '9,999,999,999')
+- ELSE IF &FTLEN4 EQ 9 THEN '$' | EDIT (&FPT4, '99,999,999')
+- ELSE IF &FTLEN4 EQ 8 THEN '$' | EDIT (&FPT4, '9,999,999')
+- ELSE IF &FTLEN4 EQ 7 THEN '$' | EDIT (&FPT4, '999,999')
+- ELSE IF &FTLEN4 EQ 6 THEN '$' | EDIT (&FPT4, '99,999')
+- ELSE IF &FTLEN4 EQ 5 THEN '$' | EDIT (&FPT4, '9,999')
+- ELSE IF &FTLEN4 EQ 4 THEN '$' | EDIT (&FPT4, '999')
+- ELSE IF &FTLEN4 EQ 3 THEN '$' | EDIT (&FPT4, '99')
+- ELSE IF &FTLEN4 EQ 2 THEN '$' | EDIT (&FPT4, '9')
+- ELSE IF &FTLEN4 EQ 1 AND &FPT4 NE '0' THEN '$' | EDIT (&FPT4, '9')
+- ELSE ' ';
+
+-SET &FPT5 = IF &FTLEN5 EQ 12 THEN '$' | EDIT(&FPT5, '999,999,999,999')
+- ELSE IF &FTLEN5 EQ 11 THEN '$' | EDIT (&FPT5, '99,999,999,999')
+- ELSE IF &FTLEN5 EQ 10 THEN '$' | EDIT (&FPT5, '9,999,999,999')
+- ELSE IF &FTLEN5 EQ 9 THEN '$' | EDIT (&FPT5, '99,999,999')
+- ELSE IF &FTLEN5 EQ 8 THEN '$' | EDIT (&FPT5, '9,999,999')
+- ELSE IF &FTLEN5 EQ 7 THEN '$' | EDIT (&FPT5, '999,999')
+- ELSE IF &FTLEN5 EQ 6 THEN '$' | EDIT (&FPT5, '99,999')
+- ELSE IF &FTLEN5 EQ 5 THEN '$' | EDIT (&FPT5, '9,999')
+- ELSE IF &FTLEN5 EQ 4 THEN '$' | EDIT (&FPT5, '999')
+- ELSE IF &FTLEN5 EQ 3 THEN '$' | EDIT (&FPT5, '99')
+- ELSE IF &FTLEN5 EQ 2 THEN '$' | EDIT (&FPT5, '9')
+- ELSE IF &FTLEN5 EQ 1 AND &FPT5 NE '0' THEN '$' | EDIT (&FPT5, '9')
+- ELSE ' ';
+
+-SET &FPT6 = IF &FTLEN6 EQ 12 THEN '$' | EDIT(&FPT6, '999,999,999,999')
+- ELSE IF &FTLEN6 EQ 11 THEN '$' | EDIT (&FPT6, '99,999,999,999')
+- ELSE IF &FTLEN6 EQ 10 THEN '$' | EDIT (&FPT6, '9,999,999,999')
+- ELSE IF &FTLEN6 EQ 9 THEN '$' | EDIT (&FPT6, '99,999,999')
+- ELSE IF &FTLEN6 EQ 8 THEN '$' | EDIT (&FPT6, '9,999,999')
+- ELSE IF &FTLEN6 EQ 7 THEN '$' | EDIT (&FPT6, '999,999')
+- ELSE IF &FTLEN6 EQ 6 THEN '$' | EDIT (&FPT6, '99,999')
+- ELSE IF &FTLEN6 EQ 5 THEN '$' | EDIT (&FPT6, '9,999')
+- ELSE IF &FTLEN6 EQ 4 THEN '$' | EDIT (&FPT6, '999')
+- ELSE IF &FTLEN6 EQ 3 THEN '$' | EDIT (&FPT6, '99')
+- ELSE IF &FTLEN6 EQ 2 THEN '$' | EDIT (&FPT6, '9')
+- ELSE IF &FTLEN6 EQ 1 AND &FPT6 NE '0' THEN '$' | EDIT (&FPT6, '9')
+- ELSE ' ';
+
+-SET &FPT7 = IF &FTLEN7 EQ 12 THEN '$' | EDIT(&FPT7, '999,999,999,999')
+- ELSE IF &FTLEN7 EQ 11 THEN '$' | EDIT (&FPT7, '99,999,999,999')
+- ELSE IF &FTLEN7 EQ 10 THEN '$' | EDIT (&FPT7, '9,999,999,999')
+- ELSE IF &FTLEN7 EQ 9 THEN '$' | EDIT (&FPT7, '99,999,999')
+- ELSE IF &FTLEN7 EQ 8 THEN '$' | EDIT (&FPT7, '9,999,999')
+- ELSE IF &FTLEN7 EQ 7 THEN '$' | EDIT (&FPT7, '999,999')
+- ELSE IF &FTLEN7 EQ 6 THEN '$' | EDIT (&FPT7, '99,999')
+- ELSE IF &FTLEN7 EQ 5 THEN '$' | EDIT (&FPT7, '9,999')
+- ELSE IF &FTLEN7 EQ 4 THEN '$' | EDIT (&FPT7, '999')
+- ELSE IF &FTLEN7 EQ 3 THEN '$' | EDIT (&FPT7, '99')
+- ELSE IF &FTLEN7 EQ 2 THEN '$' | EDIT (&FPT7, '9')
+- ELSE IF &FTLEN7 EQ 1 AND &FPT7 NE '0' THEN '$' | EDIT (&FPT7, '9')
+- ELSE ' ';
+
+-SET &FPT8 = IF &FTLEN8 EQ 12 THEN '$' | EDIT(&FPT8, '999,999,999,999')
+- ELSE IF &FTLEN8 EQ 11 THEN '$' | EDIT (&FPT8, '99,999,999,999')
+- ELSE IF &FTLEN8 EQ 10 THEN '$' | EDIT (&FPT8, '9,999,999,999')
+- ELSE IF &FTLEN8 EQ 9 THEN '$' | EDIT (&FPT8, '99,999,999')
+- ELSE IF &FTLEN8 EQ 8 THEN '$' | EDIT (&FPT8, '9,999,999')
+- ELSE IF &FTLEN8 EQ 7 THEN '$' | EDIT (&FPT8, '999,999')
+- ELSE IF &FTLEN8 EQ 6 THEN '$' | EDIT (&FPT8, '99,999')
+- ELSE IF &FTLEN8 EQ 5 THEN '$' | EDIT (&FPT8, '9,999')
+- ELSE IF &FTLEN8 EQ 4 THEN '$' | EDIT (&FPT8, '999')
+- ELSE IF &FTLEN8 EQ 3 THEN '$' | EDIT (&FPT8, '99')
+- ELSE IF &FTLEN8 EQ 2 THEN '$' | EDIT (&FPT8, '9')
+- ELSE IF &FTLEN8 EQ 1 AND &FPT8 NE '0' THEN '$' | EDIT (&FPT8, '9')
+- ELSE ' ';
+
+
+-SET &TPT1 = IF &TTLEN1 EQ 10 THEN EDIT (&TPT1, '9,999,999,999')
+- ELSE IF &TTLEN1 EQ 9 THEN EDIT (&TPT1, '999,999,999')
+- ELSE IF &TTLEN1 EQ 8 THEN EDIT (&TPT1, '99,999,999')
+- ELSE IF &TTLEN1 EQ 7 THEN EDIT (&TPT1, '9,999,999')
+- ELSE IF &TTLEN1 EQ 6 THEN EDIT (&TPT1, '999,999')
+- ELSE IF &TTLEN1 EQ 5 THEN EDIT (&TPT1, '99,999')
+- ELSE IF &TTLEN1 EQ 4 THEN EDIT (&TPT1, '9,999')
+- ELSE IF &TTLEN1 EQ 3 THEN EDIT (&TPT1, '999')
+- ELSE IF &TTLEN1 EQ 2 THEN EDIT (&TPT1, '99')
+- ELSE IF &TTLEN1 EQ 1 AND &TPT1 NE '0' THEN EDIT (&TPT1, '9')
+- ELSE ' ';
+
+-SET &TPT2 = IF &TTLEN2 EQ 10 THEN EDIT (&TPT2, '9,999,999,999')
+- ELSE IF &TTLEN2 EQ 9 THEN EDIT (&TPT2, '999,999,999')
+- ELSE IF &TTLEN2 EQ 8 THEN EDIT (&TPT2, '99,999,999')
+- ELSE IF &TTLEN2 EQ 7 THEN EDIT (&TPT2, '9,999,999')
+- ELSE IF &TTLEN2 EQ 6 THEN EDIT (&TPT2, '999,999')
+- ELSE IF &TTLEN2 EQ 5 THEN EDIT (&TPT2, '99,999')
+- ELSE IF &TTLEN2 EQ 4 THEN EDIT (&TPT2, '9,999')
+- ELSE IF &TTLEN2 EQ 3 THEN EDIT (&TPT2, '999')
+- ELSE IF &TTLEN2 EQ 2 THEN EDIT (&TPT2, '99')
+- ELSE IF &TTLEN2 EQ 1 AND &TPT2 NE '0' THEN EDIT (&TPT2, '9')
+- ELSE ' ';
+
+-SET &TPT3 = IF &TTLEN3 EQ 10 THEN EDIT (&TPT3, '9,999,999,999')
+- ELSE IF &TTLEN3 EQ 9 THEN EDIT (&TPT3, '999,999,999')
+- ELSE IF &TTLEN3 EQ 8 THEN EDIT (&TPT3, '99,999,999')
+- ELSE IF &TTLEN3 EQ 7 THEN EDIT (&TPT3, '9,999,999')
+- ELSE IF &TTLEN3 EQ 6 THEN EDIT (&TPT3, '999,999')
+- ELSE IF &TTLEN3 EQ 5 THEN EDIT (&TPT3, '99,999')
+- ELSE IF &TTLEN3 EQ 4 THEN EDIT (&TPT3, '9,999')
+- ELSE IF &TTLEN3 EQ 3 THEN EDIT (&TPT3, '999')
+- ELSE IF &TTLEN3 EQ 2 THEN EDIT (&TPT3, '99')
+- ELSE IF &TTLEN3 EQ 1 AND &TPT3 NE '0' THEN EDIT (&TPT3, '9')
+- ELSE ' ';
+
+
+-SET &TPT4 = IF &TTLEN4 EQ 10 THEN EDIT (&TPT4, '9,999,999,999')
+- ELSE IF &TTLEN4 EQ 9 THEN EDIT (&TPT4, '999,999,999')
+- ELSE IF &TTLEN4 EQ 8 THEN EDIT (&TPT4, '99,999,999')
+- ELSE IF &TTLEN4 EQ 7 THEN EDIT (&TPT4, '9,999,999')
+- ELSE IF &TTLEN4 EQ 6 THEN EDIT (&TPT4, '999,999')
+- ELSE IF &TTLEN4 EQ 5 THEN EDIT (&TPT4, '99,999')
+- ELSE IF &TTLEN4 EQ 4 THEN EDIT (&TPT4, '9,999')
+- ELSE IF &TTLEN4 EQ 3 THEN EDIT (&TPT4, '999')
+- ELSE IF &TTLEN4 EQ 2 THEN EDIT (&TPT4, '99')
+- ELSE IF &TTLEN4 EQ 1 AND &TPT4 NE '0' THEN EDIT (&TPT4, '9')
+- ELSE ' ';
+
+
+-SET &TPT5 = IF &TTLEN5 EQ 10 THEN EDIT (&TPT5, '9,999,999,999')
+- ELSE IF &TTLEN5 EQ 9 THEN EDIT (&TPT5, '999,999,999')
+- ELSE IF &TTLEN5 EQ 8 THEN EDIT (&TPT5, '99,999,999')
+- ELSE IF &TTLEN5 EQ 7 THEN EDIT (&TPT5, '9,999,999')
+- ELSE IF &TTLEN5 EQ 6 THEN EDIT (&TPT5, '999,999')
+- ELSE IF &TTLEN5 EQ 5 THEN EDIT (&TPT5, '99,999')
+- ELSE IF &TTLEN5 EQ 4 THEN EDIT (&TPT5, '9,999')
+- ELSE IF &TTLEN5 EQ 3 THEN EDIT (&TPT5, '999')
+- ELSE IF &TTLEN5 EQ 2 THEN EDIT (&TPT5, '99')
+- ELSE IF &TTLEN5 EQ 1 AND &TPT5 NE '0' THEN EDIT (&TPT5, '9')
+- ELSE ' ';
+
+
+-SET &TPT6 = IF &TTLEN6 EQ 10 THEN EDIT (&TPT6, '9,999,999,999')
+- ELSE IF &TTLEN6 EQ 9 THEN EDIT (&TPT6, '999,999,999')
+- ELSE IF &TTLEN6 EQ 8 THEN EDIT (&TPT6, '99,999,999')
+- ELSE IF &TTLEN6 EQ 7 THEN EDIT (&TPT6, '9,999,999')
+- ELSE IF &TTLEN6 EQ 6 THEN EDIT (&TPT6, '999,999')
+- ELSE IF &TTLEN6 EQ 5 THEN EDIT (&TPT6, '99,999')
+- ELSE IF &TTLEN6 EQ 4 THEN EDIT (&TPT6, '9,999')
+- ELSE IF &TTLEN6 EQ 3 THEN EDIT (&TPT6, '999')
+- ELSE IF &TTLEN6 EQ 2 THEN EDIT (&TPT6, '99')
+- ELSE IF &TTLEN6 EQ 1 AND &TPT6 NE '0' THEN EDIT (&TPT6, '9')
+- ELSE ' ';
+
+-SET &TPT7 = IF &TTLEN7 EQ 10 THEN EDIT (&TPT7, '9,999,999,999')
+- ELSE IF &TTLEN7 EQ 9 THEN EDIT (&TPT7, '999,999,999')
+- ELSE IF &TTLEN7 EQ 8 THEN EDIT (&TPT7, '99,999,999')
+- ELSE IF &TTLEN7 EQ 7 THEN EDIT (&TPT7, '9,999,999')
+- ELSE IF &TTLEN7 EQ 6 THEN EDIT (&TPT7, '999,999')
+- ELSE IF &TTLEN7 EQ 5 THEN EDIT (&TPT7, '99,999')
+- ELSE IF &TTLEN7 EQ 4 THEN EDIT (&TPT7, '9,999')
+- ELSE IF &TTLEN7 EQ 3 THEN EDIT (&TPT7, '999')
+- ELSE IF &TTLEN7 EQ 2 THEN EDIT (&TPT7, '99')
+- ELSE IF &TTLEN7 EQ 1 AND &TPT7 NE '0' THEN EDIT (&TPT7, '9')
+- ELSE ' ';
+
+-SET &TPT8 = IF &TTLEN8 EQ 10 THEN EDIT (&TPT8, '9,999,999,999')
+- ELSE IF &TTLEN8 EQ 9 THEN EDIT (&TPT8, '999,999,999')
+- ELSE IF &TTLEN8 EQ 8 THEN EDIT (&TPT8, '99,999,999')
+- ELSE IF &TTLEN8 EQ 7 THEN EDIT (&TPT8, '9,999,999')
+- ELSE IF &TTLEN8 EQ 6 THEN EDIT (&TPT8, '999,999')
+- ELSE IF &TTLEN8 EQ 5 THEN EDIT (&TPT8, '99,999')
+- ELSE IF &TTLEN8 EQ 4 THEN EDIT (&TPT8, '9,999')
+- ELSE IF &TTLEN8 EQ 3 THEN EDIT (&TPT8, '999')
+- ELSE IF &TTLEN8 EQ 2 THEN EDIT (&TPT8, '99')
+- ELSE IF &TTLEN8 EQ 1 AND &TPT8 NE '0' THEN EDIT (&TPT8, '9')
+- ELSE ' ';
+
+-SET &TPYD1 = IF &TDYLEN1 EQ 10 THEN EDIT (&TPYD1, '9,999,999,999')
+- ELSE IF &TDYLEN1 EQ 9 THEN EDIT (&TPYD1, '999,999,999')
+- ELSE IF &TDYLEN1 EQ 8 THEN EDIT (&TPYD1, '99,999,999')
+- ELSE IF &TDYLEN1 EQ 7 THEN EDIT (&TPYD1, '9,999,999')
+- ELSE IF &TDYLEN1 EQ 6 THEN EDIT (&TPYD1, '999,999')
+- ELSE IF &TDYLEN1 EQ 5 THEN EDIT (&TPYD1, '99,999')
+- ELSE IF &TDYLEN1 EQ 4 THEN EDIT (&TPYD1, '9,999')
+- ELSE IF &TDYLEN1 EQ 3 THEN EDIT (&TPYD1, '999')
+- ELSE IF &TDYLEN1 EQ 2 THEN EDIT (&TPYD1, '99')
+- ELSE IF &TDYLEN1 EQ 1 AND &TPYD1 NE '0' THEN EDIT (&TPYD1, '9')
+- ELSE ' ';
+
+-SET &TPYD2 = IF &TDYLEN2 EQ 10 THEN EDIT (&TPYD2, '9,999,999,999')
+- ELSE IF &TDYLEN2 EQ 9 THEN EDIT (&TPYD2, '999,999,999')
+- ELSE IF &TDYLEN2 EQ 8 THEN EDIT (&TPYD2, '99,999,999')
+- ELSE IF &TDYLEN2 EQ 7 THEN EDIT (&TPYD2, '9,999,999')
+- ELSE IF &TDYLEN2 EQ 6 THEN EDIT (&TPYD2, '999,999')
+- ELSE IF &TDYLEN2 EQ 5 THEN EDIT (&TPYD2, '99,999')
+- ELSE IF &TDYLEN2 EQ 4 THEN EDIT (&TPYD2, '9,999')
+- ELSE IF &TDYLEN2 EQ 3 THEN EDIT (&TPYD2, '999')
+- ELSE IF &TDYLEN2 EQ 2 THEN EDIT (&TPYD2, '99')
+- ELSE IF &TDYLEN2 EQ 1 AND &TPYD2 NE '0' THEN EDIT (&TPYD2, '9')
+- ELSE ' ';
+
+-SET &TPYI1 = IF &TIYLEN1 EQ 10 THEN EDIT (&TPYI1, '9,999,999,999')
+- ELSE IF &TIYLEN1 EQ 9 THEN EDIT (&TPYI1, '999,999,999')
+- ELSE IF &TIYLEN1 EQ 8 THEN EDIT (&TPYI1, '99,999,999')
+- ELSE IF &TIYLEN1 EQ 7 THEN EDIT (&TPYI1, '9,999,999')
+- ELSE IF &TIYLEN1 EQ 6 THEN EDIT (&TPYI1, '999,999')
+- ELSE IF &TIYLEN1 EQ 5 THEN EDIT (&TPYI1, '99,999')
+- ELSE IF &TIYLEN1 EQ 4 THEN EDIT (&TPYI1, '9,999')
+- ELSE IF &TIYLEN1 EQ 3 THEN EDIT (&TPYI1, '999')
+- ELSE IF &TIYLEN1 EQ 2 THEN EDIT (&TPYI1, '99')
+- ELSE IF &TIYLEN1 EQ 1 AND &TPYI1 NE '0' THEN EDIT (&TPYI1, '9')
+- ELSE ' ';
+
+-SET &TPYI2 = IF &TIYLEN2 EQ 10 THEN EDIT (&TPYI2, '9,999,999,999')
+- ELSE IF &TIYLEN2 EQ 9 THEN EDIT (&TPYI2, '999,999,999')
+- ELSE IF &TIYLEN2 EQ 8 THEN EDIT (&TPYI2, '99,999,999')
+- ELSE IF &TIYLEN2 EQ 7 THEN EDIT (&TPYI2, '9,999,999')
+- ELSE IF &TIYLEN2 EQ 6 THEN EDIT (&TPYI2, '999,999')
+- ELSE IF &TIYLEN2 EQ 5 THEN EDIT (&TPYI2, '99,999')
+- ELSE IF &TIYLEN2 EQ 4 THEN EDIT (&TPYI2, '9,999')
+- ELSE IF &TIYLEN2 EQ 3 THEN EDIT (&TPYI2, '999')
+- ELSE IF &TIYLEN2 EQ 2 THEN EDIT (&TPYI2, '99')
+- ELSE IF &TIYLEN2 EQ 1 AND &TPYI2 NE '0' THEN EDIT (&TPYI2, '9')
+- ELSE ' ';
+
+-SET &TPYT1 = IF &TTYLEN1 EQ 10 THEN EDIT (&TPYT1, '9,999,999,999')
+- ELSE IF &TTYLEN1 EQ 9 THEN EDIT (&TPYT1, '999,999,999')
+- ELSE IF &TTYLEN1 EQ 8 THEN EDIT (&TPYT1, '99,999,999')
+- ELSE IF &TTYLEN1 EQ 7 THEN EDIT (&TPYT1, '9,999,999')
+- ELSE IF &TTYLEN1 EQ 6 THEN EDIT (&TPYT1, '999,999')
+- ELSE IF &TTYLEN1 EQ 5 THEN EDIT (&TPYT1, '99,999')
+- ELSE IF &TTYLEN1 EQ 4 THEN EDIT (&TPYT1, '9,999')
+- ELSE IF &TTYLEN1 EQ 3 THEN EDIT (&TPYT1, '999')
+- ELSE IF &TTYLEN1 EQ 2 THEN EDIT (&TPYT1, '99')
+- ELSE IF &TTYLEN1 EQ 1 AND &TPYT1 NE '0' THEN EDIT (&TPYT1, '9')
+- ELSE ' ';
+
+-SET &TPYT2 = IF &TTYLEN2 EQ 10 THEN EDIT (&TPYT2, '9,999,999,999')
+- ELSE IF &TTYLEN2 EQ 9 THEN EDIT (&TPYT2, '999,999,999')
+- ELSE IF &TTYLEN2 EQ 8 THEN EDIT (&TPYT2, '99,999,999')
+- ELSE IF &TTYLEN2 EQ 7 THEN EDIT (&TPYT2, '9,999,999')
+- ELSE IF &TTYLEN2 EQ 6 THEN EDIT (&TPYT2, '999,999')
+- ELSE IF &TTYLEN2 EQ 5 THEN EDIT (&TPYT2, '99,999')
+- ELSE IF &TTYLEN2 EQ 4 THEN EDIT (&TPYT2, '9,999')
+- ELSE IF &TTYLEN2 EQ 3 THEN EDIT (&TPYT2, '999')
+- ELSE IF &TTYLEN2 EQ 2 THEN EDIT (&TPYT2, '99')
+- ELSE IF &TTYLEN2 EQ 1 AND &TPYT2 NE '0' THEN EDIT (&TPYT2, '9')
+- ELSE ' ';
+
+
+-SET &FPI8 = IF &FILEN8 EQ 12 THEN '$' | EDIT(&FPI8, '999,999,999,999')
+- ELSE IF &FILEN8 EQ 11 THEN '$' | EDIT (&FPI8, '99,999,999,999')
+- ELSE IF &FILEN8 EQ 10 THEN '$' | EDIT (&FPI8, '9,999,999,999')
+- ELSE IF &FILEN8 EQ 9 THEN '$' | EDIT (&FPI8, '99,999,999')
+- ELSE IF &FILEN8 EQ 8 THEN '$' | EDIT (&FPI8, '9,999,999')
+- ELSE IF &FILEN8 EQ 7 THEN '$' | EDIT (&FPI8, '999,999')
+- ELSE IF &FILEN8 EQ 6 THEN '$' | EDIT (&FPI8, '99,999')
+- ELSE IF &FILEN8 EQ 5 THEN '$' | EDIT (&FPI8, '9,999')
+- ELSE IF &FILEN8 EQ 4 THEN '$' | EDIT (&FPI8, '999')
+- ELSE IF &FILEN8 EQ 3 THEN '$' | EDIT (&FPI8, '99')
+- ELSE IF &FILEN8 EQ 2 THEN '$' | EDIT (&FPI8, '9')
+- ELSE IF &FILEN8 EQ 1 AND &FPI8 NE '0' THEN '$' | EDIT (&FPI8, '9')
+- ELSE ' ';
+
+-* Domestic Year Variance
+-SET &FPDPCT1 = IF &FDPLEN1 EQ 4 THEN EDIT (&FPDPCT1, '9999') | '%'
+- ELSE IF &FDPLEN1 EQ 3 THEN EDIT (&FPDPCT1, '999') | '%'
+- ELSE IF &FDPLEN1 EQ 2 THEN EDIT (&FPDPCT1, '99') | '%'
+- ELSE IF &FDPLEN1 EQ 1 AND &FPDPCT1 NE '0' THEN EDIT (&FPDPCT1, '9') | '%'
+- ELSE ' ';
+
+-SET &TPDPCT1 = IF &TPDLEN1 EQ 4 THEN EDIT (&TPDPCT1, '9999') | '%'
+- ELSE IF &TPDLEN1 EQ 3 THEN EDIT (&TPDPCT1, '999') | '%'
+- ELSE IF &TPDLEN1 EQ 2 THEN EDIT (&TPDPCT1, '99') | '%'
+- ELSE IF &TPDLEN1 EQ 1 AND &TPDPCT1 NE '0' THEN EDIT (&TPDPCT1, '9') | '%'
+- ELSE ' ';
+
+-SET &DFAREDPT1 = IF &FDDPLEN1 EQ 4 THEN EDIT (&DFAREDPT1, '9999') | '%'
+- ELSE IF &FDDPLEN1 EQ 3 THEN EDIT (&DFAREDPT1, '999') | '%'
+- ELSE IF &FDDPLEN1 EQ 2 THEN EDIT (&DFAREDPT1, '99') | '%'
+- ELSE IF &FDDPLEN1 EQ 1 AND &DFAREDPT1 NE '0' THEN EDIT (&DFAREDPT1, '9') | '%'
+- ELSE ' ';
+
+-SET &DNETTPCT1 = IF &TDDPLEN1 EQ 4 THEN EDIT (&DNETTPCT1, '9999') | '%'
+- ELSE IF &TDDPLEN1 EQ 3 THEN EDIT (&DNETTPCT1, '999') | '%'
+- ELSE IF &TDDPLEN1 EQ 2 THEN EDIT (&DNETTPCT1, '99') | '%'
+- ELSE IF &TDDPLEN1 EQ 1 AND &DNETTPCT1 NE '0' THEN EDIT (&DNETTPCT1, '9') | '%'
+- ELSE ' ';
+
+-* International Year Variance
+-SET &FPIPCT1 = IF &FIPLEN1 EQ 4 THEN EDIT (&FPIPCT1, '9999') | '%'
+- ELSE IF &FIPLEN1 EQ 3 THEN EDIT (&FPIPCT1, '999') | '%'
+- ELSE IF &FIPLEN1 EQ 2 THEN EDIT (&FPIPCT1, '99') | '%'
+- ELSE IF &FIPLEN1 EQ 1 AND &FPIPCT1 NE '0' THEN EDIT (&FPIPCT1, '9') | '%'
+- ELSE ' ';
+
+-SET &TPIPCT1 = IF &TIDLEN1 EQ 4 THEN EDIT (&TPIPCT1, '9999') | '%'
+- ELSE IF &TIDLEN1 EQ 3 THEN EDIT (&TPIPCT1, '999') | '%'
+- ELSE IF &TIDLEN1 EQ 2 THEN EDIT (&TPIPCT1, '99') | '%'
+- ELSE IF &TIDLEN1 EQ 1 AND &TPIPCT1 NE '0' THEN EDIT (&TPIPCT1, '9') | '%'
+- ELSE ' ';
+
+-SET &IFAREDPT1 = IF &FIDPLEN1 EQ 4 THEN EDIT (&IFAREDPT1, '9999') | '%'
+- ELSE IF &FIDPLEN1 EQ 3 THEN EDIT (&IFAREDPT1, '999') | '%'
+- ELSE IF &FIDPLEN1 EQ 2 THEN EDIT (&IFAREDPT1, '99') | '%'
+- ELSE IF &FIDPLEN1 EQ 1 AND &IFAREDPT1 NE '0' THEN EDIT (&IFAREDPT1, '9') | '%'
+- ELSE ' ';
+
+-SET &INETTPCT1 = IF &TIDPLEN1 EQ 4 THEN EDIT (&INETTPCT1, '9999') | '%'
+- ELSE IF &TIDPLEN1 EQ 3 THEN EDIT (&INETTPCT1, '999') | '%'
+- ELSE IF &TIDPLEN1 EQ 2 THEN EDIT (&INETTPCT1, '99') | '%'
+- ELSE IF &TIDPLEN1 EQ 1 AND &INETTPCT1 NE '0' THEN EDIT (&INETTPCT1, '9') | '%'
+- ELSE ' ';
+
+-* Total Year Variance
+-SET &FPTPCT1 = IF &FTPLEN1 EQ 4 THEN EDIT (&FPTPCT1, '9999') | '%'
+- ELSE IF &FTPLEN1 EQ 3 THEN EDIT (&FPTPCT1, '999') | '%'
+- ELSE IF &FTPLEN1 EQ 2 THEN EDIT (&FPTPCT1, '99') | '%'
+- ELSE IF &FTPLEN1 EQ 1 AND &FPTPCT1 NE '0' THEN EDIT (&FPTPCT1, '9') | '%'
+- ELSE ' ';
+
+-SET &TPTPCT1 = IF &TTDLEN1 EQ 4 THEN EDIT (&TPTPCT1, '9999') | '%'
+- ELSE IF &TTDLEN1 EQ 3 THEN EDIT (&TPTPCT1, '999') | '%'
+- ELSE IF &TTDLEN1 EQ 2 THEN EDIT (&TPTPCT1, '99') | '%'
+- ELSE IF &TTDLEN1 EQ 1 AND &TPTPCT1 NE '0' THEN EDIT (&TPTPCT1, '9') | '%'
+- ELSE ' ';
+
+TABLE FILE BRPTINST
+BY INST_KEY NOPRINT
+ON TABLE SET PAGE-NUM OFF
+&&OUTLINE1
+&&OUTLINE2
+FOOTING
+"</24"
+" ___________________________________________________________________________________________________________<60 ________________________________________________________________________________________________________"
+"| <9 | <&POS1 &Q1&TD1 <&POS2A | <&POS2 &Q2&TD2 <&POS3A | <&POS3 &Q3&TD3 <&POS4A | <&POS4 &Q4&TD4 <&POS5A | <&POS5 &Q5&TD5 <&POS6A | <&POS6 &Q6&TD6 <&POS7A | <&POS7 &Q7&TD7 <&POS8A | <&POS8 &Q8&TD8 <58 | <60 | <&POSI1A |  <&POSI1 &Q1&TD1 <&POSI2A | <&POSI2 &Q2&TD2 <&POSI3A | <&POSI3 &Q3&TD3  <&POSI4A | <&POSI4 &Q4&TD4 <&POSI5A | <&POSI5 &Q5&TD5 <&POSI6A | <&POSI6 &Q6&TD6 <&POSI7A | <&POSI7 &Q7&TD7 <&POSI8A | <&POSI8 &Q8&TD8 <115 |"
+"|___________________________________________________________________________________________________________<58 | <60 |________________________________________________________________________________________________________<115 |"
+"|Domestic Spend <9 | <&POS1 &FPD1 <&POS2A | <&POS2 &FPD2 <&POS3A | <&POS3 &FPD3 <&POS4A | <&POS4 &FPD4 <&POS5A | <&POS5 &FPD5 <&POS6A | <&POS6 &FPD6 <&POS7A | <&POS7 &FPD7 <&POS8A | <&POS8 &FPD8 <58 | <60 | <61 Intl Spend <&POSI1A | <&POSI1 &FPI1 <&POSI2A | <&POSI2 &FPI2 <&POSI3A | <&POSI3 &FPI3 <&POSI4A | <&POSI4 &FPI4 <&POSI5A | <&POSI5 &FPI5 <&POSI6A | <&POSI6 &FPI6 <&POSI7A | <&POSI7 &FPI7 <&POSI8A | <&POSI8 &FPI8 <115 |"
+"|___________________________________________________________________________________________________________<58 | <60 |________________________________________________________________________________________________________<115 |"
+"|Domestic Tickets  <9 | <&POS1 &TPD1 <&POS2A | <&POS2 &TPD2 <&POS3A | <&POS3 &TPD3 <&POS4A | <&POS4 &TPD4 <&POS5A | <&POS5 &TPD5 <&POS6A | <&POS6 &TPD6 <&POS7A | <&POS7 &TPD7 <&POS8A | <&POS8 &TPD8 <58 | <60 | <61 Intl Tickets <&POSI1A | <&POSI1 &TPI1 <&POSI2A | <&POSI2 &TPI2 <&POSI3A | <&POSI3 &TPI3 <&POSI4A | <&POSI4 &TPI4 <&POSI5A | <&POSI5 &TPI5 <&POSI6A | <&POSI6 &TPI6 <&POSI7A | <&POSI7 &TPI7 <&POSI8A | <&POSI8 &TPI8 <115 |"
+"|___________________________________________________________________________________________________________<58 | <60 |________________________________________________________________________________________________________<115 |"
+"</25"
+" <&POSYD1A Year to Date Spend and Net Tickets"
+"<67  _____________________________________________________________________________"
+"<67 | <68   <&POSYD1A | <&POSYD1 &YEAR1 <&POSYD2A | <&POSYD2 &YEAR2 <&POSYD3A | <&POSYD3 Variance <&POSYD4A | <&POSYD4 % of Total <&POSYD5A |"
+"<67 |_____________________________________________________________________________<&POSYD5A |"
+"<67 | <68 Domestic Spend <&POSYD1A | <&POSYD1 &FPYD1 <&POSYD2A | <&POSYD2 &FPYD2 <&POSYD3A | <&POSYD3 &FPDPCT1 <&POSYD4A | <&POSYD4 &DFAREDPT1 <&POSYD5A |"
+"<67 |_____________________________________________________________________________<&POSYD5A |"
+"<67 | <68 Domestic Tickets <&POSYD1A | <&POSYD1 &TPYD1 <&POSYD2A | <&POSYD2 &TPYD2 <&POSYD3A | <&POSYD3 &TPDPCT1 <&POSYD4A | <&POSYD4 &DNETTPCT1 <&POSYD5A |"
+"<67 |_____________________________________________________________________________<&POSYD5A |"
+"<67 | <68 Intl Spend <&POSYD1A | <&POSYD1 &FPYI1 <&POSYD2A | <&POSYD2 &FPYI2 <&POSYD3A | <&POSYD3 &FPIPCT1 <&POSYD4A | <&POSYD4 &IFAREDPT1 <&POSYD5A |"
+"___________________________________________________________________________________________________________ <67 |_____________________________________________________________________________<&POSYD5A |"
+"| <9 | <&POS1 &Q1&TD1 <&POS2A | <&POS2 &Q2&TD2 <&POS3A | <&POS3 &Q3&TD3 <&POS4A | <&POS4 &Q4&TD4 <&POS5A | <&POS5 &Q5&TD5 <&POS6A | <&POS6 &Q6&TD6 <&POS7A | <&POS7 &Q7&TD7 <&POS8A | <&POS8 &Q8&TD8 <58 | <67 | <68 Intl Tickets <&POSYD1A | <&POSYD1 &TPYI1 <&POSYD2A | <&POSYD2 &TPYI2 <&POSYD3A | <&POSYD3 &TPIPCT1 <&POSYD4A | <&POSYD4 &INETTPCT1 <&POSYD5A |"
+"|__________________________________________________________________________________________________________<58 | <67 |_____________________________________________________________________________<&POSYD5A |"
+"|Total Spend <9 | <&POS1 &FPT1 <&POS2A | <&POS2 &FPT2 <&POS3A | <&POS3 &FPT3 <&POS4A | <&POS4 &FPT4 <&POS5A | <&POS5 &FPT5 <&POS6A | <&POS6 &FPT6 <&POS7A | <&POS7 &FPT7 <&POS8A | <&POS8 &FPT8 <58 | <67 | <68 Total Spend <&POSYD1A | <&POSYD1 &FPYT1 <&POSYD2A | <&POSYD2 &FPYT2 <&POSYD3A | <&POSYD3 &FPTPCT1 <&POSYD4A | <&POSYD4 100% <&POSYD5A |"
+"|__________________________________________________________________________________________________________<58 | <67 |_____________________________________________________________________________<&POSYD5A |"
+"|Total Tickets <9 | <&POS1 &TPT1 <&POS2A | <&POS2 &TPT2 <&POS3A | <&POS3 &TPT3 <&POS4A | <&POS4 &TPT4 <&POS5A | <&POS5 &TPT5 <&POS6A | <&POS6 &TPT6 <&POS7A | <&POS7 &TPT7 <&POS8A | <&POS8 &TPT8 <58 | <67 | <68 Total Tickets <&POSYD1A | <&POSYD1 &TPYT1 <&POSYD2A | <&POSYD2 &TPYT2 <&POSYD3A | <&POSYD3 &TPTPCT1 <&POSYD4A | <&POSYD4 100% <&POSYD5A |"
+"|___________________________________________________________________________________________________________<58 | <67 |_____________________________________________________________________________<&POSYD5A |"
+ON TABLE SET STYLE *
+-INCLUDE ASSTY
+ENDSTYLE
+END
+-RUN

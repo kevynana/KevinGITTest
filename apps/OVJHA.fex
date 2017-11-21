@@ -1,0 +1,60 @@
+-SET &Y1=' ';
+-SET &Y2=' ';
+-SET &Y3=' ';
+-SET &Y4=' ';
+-SET &Y5=' ';
+-SET &Y6=' ';
+-SET &Y7=' ';
+-SET &Y8=' ';
+-SET &Y9=' ';
+-SET &C1=' ';
+-SET &C2=' ';
+-SET &C3=' ';
+-SET &C4=' ';
+-SET &S1=' ';
+-SET &S2=' ';
+-SET &S3=' ';
+-SET &S4=' ';
+-SET &T2 = ' ';
+-SET &TNTPIC  = ' ';
+-SET &ROLLPIC = ' ';
+-SET &DTSTY   = ' ';
+-SET &TNTCVPOS=' ';
+-SET &TNTCVSIZ=' ';
+-SET &ROLCVPOS=' ';
+-SET &ROLCVSIZ=' ';
+-SET &TNTDTPOS=' ';
+-SET &TNTDTSIZ=' ';
+-SET &ROLDTPOS=' ';
+-SET &ROLDTSIZ=' ';
+-SET &TNTSMPOS=' ';
+-SET &TNTSMSIZ=' ';
+-SET &ROLSMPOS=' ';
+-SET &ROLSMSIZ=' ';
+-SET &TNTTRPOS=' ';
+-SET &TNTTRSIZ=' ';
+-SET &ROLTRPOS=' ';
+-SET &ROLTRSIZ=' ';
+-* File OVABCD.FEX
+-* REPORT STREAM = OVERVIEW.FEX
+ 
+-SET &FROMDT = '''1999/01/01''';
+-SET &TODT = '''1999/12/31''';
+-SET &FXDATE = '''1998/01/01''';
+-SET &TXDATE = '''1998/12/31''';
+ 
+-SET &I1='';
+-SET &I2='';
+-SET &I3='';
+-SET &LVL_DSC = 'CONG BUSINESS TRAVEL';
+-SET &F1 = '';
+ 
+-SET &OUTPUT_DEST = '''C:\TT\CONG-R\DEC1999\CONG\''';
+-SET &COVER_DEST = '''C:\TT\DSTM-R\OTIHTLC''';
+ 
+-SET &OUT_LINE1 = 'ON TABLE SAVE FILENAME ';
+-SET &OUT_LINE2 = 'FORMAT VIEWER ';
+ 
+-* -SET &BITMAP = 'ABCD.GIF';
+-* -SET &POSSIZ = '(0.5 0.3)';
+-* -SET &SIZPOS = '(2.0 .4)';

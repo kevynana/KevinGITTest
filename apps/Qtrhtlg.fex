@@ -1,0 +1,272 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE HR_50
+ FLAG/A1 = 'A';
+ NBR_DAYS/P12 = IF (NUM_DAYS LT 0) AND (NUM_ROOMS LT 0) THEN
+                   ((NUM_DAYS * NUM_ROOMS) * (-1)) ELSE
+                   (NUM_DAYS * NUM_ROOMS);
+ NBR_ROOMS/P12 = NUM_ROOMS;
+ NEW_TOTAL_AMT/P12 = TOTAL_AMT;
+END
+-RUN
+
+TABLEF FILE HR_50
+PRINT FLAG
+  INVOICE_DATE	
+  NBR_DAYS	
+  NBR_ROOMS
+  NEW_TOTAL_AMT
+    
+WHERE (INVOICE_DATE GE &&FROMDT.EVAL) AND (INVOICE_DATE LE &&TODT.EVAL) OR
+      (INVOICE_DATE GE &&FXDATE.EVAL AND INVOICE_DATE LE &&TXDATE.EVAL)
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+
+
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS HTLHLD
+END
+-RUN
+
+DEFINE FILE HTLHLD 
+CURRENT/A1 = IF INVOICE_DATE GE &&FROMDT.EVAL AND
+                INVOICE_DATE LE &&TODT.EVAL THEN 'Y' ELSE 'N';
+PRIOR/A1 =  IF INVOICE_DATE GE &&FXDATE.EVAL AND
+               INVOICE_DATE LE &&TXDATE.EVAL THEN 'Y' ELSE 'N';
+PERIOD/A10 = IF CURRENT EQ 'Y' THEN 'Period1' ELSE
+             IF PRIOR EQ 'Y' THEN 'Period2' ELSE ' ';
+NNROOMS/D8 = NBR_DAYS*NBR_ROOMS;
+END
+
+-* Hotel Amount Graph Creation
+
+GRAPH FILE HTLHLD
+SUM NEW_TOTAL_AMT AS ' '
+ACROSS PERIOD AS ' '
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS HTLAMT FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(6); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),12);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(6);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Total Hotel Amount");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setAutoshading(false);
+setFillColor(getSeries(1),new Color(255,255,0));
+setFillColor(getSeries(0),new Color(0,64,128));
+ENDSTYLE 
+END
+-RUN
+
+
+-SET &&G_GIF19=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+
+-* Number of Hotel Rooms Graph Creation
+
+GRAPH FILE HTLHLD
+SUM NBR_ROOMS AS ' '
+ACROSS PERIOD AS ' '
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS HTLRM FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(1); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),12);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Number of Hotel Rooms");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setAutoshading(false);
+setFillColor(getSeries(1),new Color(255,255,0));
+setFillColor(getSeries(0),new Color(0,64,128));
+ENDSTYLE 
+END
+-RUN
+
+
+-SET &&G_GIF20=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+-* Number of Hotel Nights Graph Creation
+
+GRAPH FILE HTLHLD
+SUM NBR_DAYS AS ' '
+ACROSS PERIOD AS ' '
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS HTLNGT FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(1); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),12);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Number of Hotel Nights");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setAutoshading(false);
+setFillColor(getSeries(1),new Color(255,255,0));
+setFillColor(getSeries(0),new Color(0,64,128));
+ENDSTYLE 
+END
+-RUN
+
+
+-SET &&G_GIF21=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+
+
+
+-* Hotel Average Nightly Rate Graph Creation
+GRAPH FILE HTLHLD
+SUM 
+COMPUTE AVG/D12.2CS = IF ((NBR_DAYS LT 1) AND (NBR_DAYS GT (-1))) THEN 0 ELSE
+                            (NEW_TOTAL_AMT/NBR_DAYS); AS ' '
+ACROSS PERIOD AS ' '
+ON TABLE SET 3D OFF
+ON TABLE SAVE AS HTLAVG FORMAT SVG
+ON TABLE SET GRAPHSTYLE *
+setGraphType(17);
+setLegendDisplay(true);
+setLegendPosition(2);
+setFontSizeAbsolute(getLegendText(),true);
+setAutofit(getLegendText(),false);
+setFontSize(getLegendText(),15);
+setFontStyle(getLegendText(),0);
+setLegendMarkerPosition(1);
+setAutofit(getDataText(),true); 
+setDataTextDisplay(true);
+setDataTextFormat(6); 
+setFontSizeAbsolute(getDataText(),true);
+setAutofit(getDataText(),false);
+setFontStyle(getDataText(),0);
+setFontSize(getDataText(),12);
+setO1LabelDisplay(true);
+setFontSizeAbsolute(getO1Label(),true); 
+setAutofit(getO1Label(),false);
+setFontStyle(getO1Label(),0);
+setFontSize(getO1Label(),15);
+setO1LabelRotate(0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setFontSizeAbsolute(getY1Label(),true);
+setAutofit(getY1Label(),false);
+setY1LabelDisplay(true);
+setY1LabelFormat(6);
+setFontSize(getY1Label(),15);
+setFontStyle(getY1Label(),0);
+setY1AxisSide(0);
+setFontSizeAbsolute(getTitle(),true); 
+setAutofit(getTitle(),false);
+setTitleString("Hotel Average Nightly Rate");
+setTextJustHoriz(getTitle(),1);
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),15);
+setSubtitleString(" ");
+setAutoshading(false);
+setFillColor(getSeries(1),new Color(255,255,0));
+setFillColor(getSeries(0),new Color(0,64,128));
+ENDSTYLE 
+END
+-RUN
+
+-SET &&G_GIF22=IF &LINES GT 0 THEN 'Y' ELSE 'N'
+

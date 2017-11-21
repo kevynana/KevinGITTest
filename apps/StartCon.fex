@@ -1,0 +1,356 @@
+-*************************************************************************
+-* this program is used to perform automated database conversion
+-*************************************************************************
+-*SET &ECHO=ALL;
+SET MESSAGE=OFF
+
+-SET &&OLDPATH = 'D:\TNT\TTRACKER\DATA\';
+-SET &&OLDREFPATH = 'D:\TNT\TTRACKER\SYSTEM\DATA\';
+
+-SET &&NEWPATH = 'D:\NEWDBS\';
+
+-*****************************************************
+-* step 0: update the PR_STAMP in rollup
+-*****************************************************
+-SET &FLAG='N';
+-SET &&WHERETEST ='IF PR_STAMP NE '' ''';
+EX UPDFLAG STATUS='&FLAG.EVAL'
+-RUN
+
+-*****************************************************
+-* step 1: retrieve client infor from rollup database
+-*****************************************************
+TABLE FILE ROLLUP
+PRINT COMP QTR_ENABLE
+BY ROLLUP_CODE
+IF UPD_ENABLE NE ' '
+-*IF ROLLUP_CODE GT 'SEY-R'
+IF ROLLUP_CODE NE 'CONG-R'
+-*IF RECORDLIMIT EQ 2
+-*IF ROLLUP_CODE EQ 'ABCD-R' OR 'AMER-R'
+-*IF ROLLUP_CODE EQ 'MUTM-R'
+ON TABLE SAVE AS CLIENTF
+END
+-RUN
+
+-SET &CNT = &LINES;
+-*****************************************************
+-* step 2: repeat the process for each client
+-*****************************************************
+-REPEAT NOMORE &CNT TIMES
+
+-READ CLIENTF NOCLOSE &&ROLLUPCODE.8 &&COMP.6 &&QTR.1
+-TYPE *** CLIENT COMPANY = &&ROLLUPCODE
+
+-GOTO LOADAH50
+
+-IF '&&QTR.EVAL' NE ' ' THEN GOTO BIG_CLIENTS;
+-*****************************************************
+-* step 3.a: dump SR_50      <<Segments>>
+-*****************************************************
+-SET &&MYFILE = 'S_' | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 3.b: load SR_50
+-*****************************************************
+-SET &MFDSR50 = &&NEWPATH | 'S_' | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWSR_50.MAS';
+-DOS COPY &FROMFILE &MFDSR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 3.c: UPDATE SR_50 WITH level information from
+-*             al_ file
+-*****************************************************
+-SET &MYMFD='SR_50';
+EX UPDSR50 FILENAME=&&MYFILE, MFDNAME=&MYMFD
+-RUN
+
+-STEP4
+-*****************************************************
+-* step 4.a: dump MR_50      <<Markets>>
+-*****************************************************
+-SET &&MYFILE = 'M_' | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 4.b: load MR_50
+-*****************************************************
+-SET &MFDMR50 = &&NEWPATH | 'M_' | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWMR_50.MAS';
+-DOS COPY &FROMFILE &MFDMR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 4.c: UPDATE MR_50 WITH level information from
+-*             al_ file
+-*****************************************************
+-SET &MYMFD='MR_50';
+EX UPDSR50 FILENAME=&&MYFILE, MFDNAME=&MYMFD
+-RUN
+
+
+-STEP5
+-*****************************************************
+-* step 5.a: dump DR_50      <<Destinations>>
+-*****************************************************
+-SET &&MYFILE = 'D_' | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 5.b: load DR_50
+-*****************************************************
+-SET &MFDDR50 = &&NEWPATH | 'D_' | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWDR_50.MAS';
+-DOS COPY &FROMFILE &MFDDR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 5.c: UPDATE DR_50 WITH level information from
+-*             al_ file
+-*****************************************************
+-SET &MYMFD='DR_50';
+EX UPDSR50 FILENAME = &&MYFILE, MFDNAME=&MYMFD
+-RUN
+
+-STEP6
+-*****************************************************
+-* step 6.a: dump CR_50      <<CAR FILES>>
+-*****************************************************
+-SET &&MYFILE = 'C_' | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 6.b: load CR_50
+-*****************************************************
+-SET &MFDCR50 = &&NEWPATH | 'C_' | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWCR_50.MAS';
+-DOS COPY &FROMFILE &MFDCR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 6.c: UPDATE CR_50 WITH level information from
+-*             Cl_ file
+-*****************************************************
+EX UPDCR50 FILENAME = &&MYFILE
+-RUN
+
+-STEP7
+-*****************************************************
+-* step 7.a: dump HR_50      <<hotel files>>
+-*****************************************************
+-SET &&MYFILE = 'H_' | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 7.b: load HR_50
+-*****************************************************
+-SET &MFDHR50 = &&NEWPATH | 'H_' | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWHR_50.MAS';
+-DOS COPY &FROMFILE &MFDHR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 7.c: UPDATE HR_50 WITH level information from
+-*             Hl_ file
+-*****************************************************
+EX UPDHR50 FILENAME = &&MYFILE
+-RUN
+
+-GOTO LOADAH50
+-**************************
+-**************************
+-* THE END OF NON-QUARTERED
+-**************************
+-**************************
+
+-*+++++++++++++
+-BIG_CLIENTS
+-*+++++++++++++
+-*****************************************************
+-* CONVERT QUATERED DATABASES
+-*****************************************************
+
+-SET &COUNTS = 0;
+
+-REPEAT ENDREPEAT 12 TIMES
+
+-SET &FN = IF &COUNTS LE 9 THEN '&COUNTS.EVAL'
+-  ELSE IF &COUNTS EQ 10 THEN 'Z'
+-  ELSE IF &COUNTS EQ 11 THEN 'Y';
+
+-SET &COUNTS = &COUNTS + 1;
+
+-*****************************************************
+-* step 3.a: dump SR_50      <<Segments>>
+-*****************************************************
+-SET &&MYFILE = 'S' | &FN | &&COMP;
+-TYPE MY FILE NAME = &&MYFILE
+
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 3.b: load SR_50
+-*****************************************************
+-SET &MFDSR50 = &&NEWPATH | 'S' | &FN | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWSR_50.MAS';
+-DOS COPY &FROMFILE &MFDSR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 3.c: UPDATE SR_50 WITH level information from
+-*             al_ file
+-*****************************************************
+-SET &MYMFD='SR_50';
+EX UPDSR50 FILENAME = &&MYFILE, MFDNAME=&MYMFD
+-RUN
+
+-*****************************************************
+-* step 4.a: dump MR_50      <<Markets>>
+-*****************************************************
+-SET &&MYFILE = 'M' | &FN | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 4.b: load MR_50
+-*****************************************************
+-SET &MFDMR50 = &&NEWPATH | 'M' | &FN | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWMR_50.MAS';
+-DOS COPY &FROMFILE &MFDMR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 4.c: UPDATE MR_50 WITH level information from
+-*             al_ file
+-*****************************************************
+-SET &MYMFD='MR_50';
+EX UPDSR50 FILENAME = &&MYFILE, MFDNAME=&MYMFD
+-RUN
+
+-*****************************************************
+-* step 5.a: dump DR_50      <<Destinations>>
+-*****************************************************
+-SET &&MYFILE = 'D' | &FN | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 5.b: load DR_50
+-*****************************************************
+-SET &MFDDR50 = &&NEWPATH | 'D' | &FN | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWDR_50.MAS';
+-DOS COPY &FROMFILE &MFDDR50
+
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 5.c: UPDATE DR_50 WITH level information from
+-*             al_ file
+-*****************************************************
+-SET &MYMFD='DR_50';
+EX UPDSR50 FILENAME = &&MYFILE, MFDNAME=&MYMFD
+-RUN
+
+-*****************************************************
+-* step 6.a: dump CR_50      <<CAR FILES>>
+-*****************************************************
+-SET &&MYFILE = 'C' | &FN | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 6.b: load CR_50
+-*****************************************************
+-SET &MFDCR50 = &&NEWPATH | 'C' | &FN | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWCR_50.MAS';
+-DOS COPY &FROMFILE &MFDCR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 6.c: UPDATE CR_50 WITH level information from
+-*             Cl_ file
+-*****************************************************
+EX UPDCR50 FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 7.a: dump HR_50      <<hotel files>>
+-*****************************************************
+-SET &&MYFILE = 'H' | &FN | &&COMP;
+EX DUMPFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 7.b: load HR_50
+-*****************************************************
+-SET &MFDHR50 = &&NEWPATH | 'H' | &FN | &&COMP || '.MAS';
+-SET &FROMFILE = &&NEWPATH || 'NEWHR_50.MAS';
+-DOS COPY &FROMFILE &MFDHR50
+EX LOADFILE FILENAME = &&MYFILE
+-RUN
+
+-*****************************************************
+-* step 7.c: UPDATE HR_50 WITH level information from
+-*             Hl_ file
+-*****************************************************
+EX UPDHR50 FILENAME = &&MYFILE
+-RUN
+-*Done with quartered database
+-ENDREPEAT
+
+-LOADAH50
+-*****************************************************
+-* step 8: GENERATE Ah_50, CH_50 HH_50
+-*****************************************************
+-*COPY MFDs
+-SET &FROMFILE = &&NEWPATH | 'NewAH_50.MAS';
+-SET &TOFILE = &&NEWPATH | 'AL' | &&COMP || '.MAS';
+-DOS COPY &FROMFILE  &TOFILE
+
+-SET &&MYFILE = 'AL' | &&COMP;
+EX LOADAH50 FILENAME = &&MYFILE
+-RUN
+
+-*-SET &FROMFILE = &&NEWPATH | 'CH_50.MAS';
+-*-SET &TOFILE = &&NEWPATH | 'CL' | &&COMP || '.MAS';
+-*-DOS COPY &FROMFILE  &TOFILE
+
+-*-SET &FROMFILE = &&NEWPATH | 'HH_50.MAS';
+-*-SET &TOFILE = &&NEWPATH | 'HL' | &&COMP || '.MAS';
+-*-DOS COPY &FROMFILE  &TOFILE
+
+-* COPY TO CAR HIERARCHY FILE
+-*-SET &FROMFILE = &&NEWPATH | 'AL' | &&COMP || '.FOC';
+-*-SET &TOFILE = &&NEWPATH | 'CL' | &&COMP || '.FOC';
+-*-DOS COPY &FROMFILE  &TOFILE
+
+-*COPY TO HOTEL HIERARCHY FILE
+-*-SET &TOFILE = &&NEWPATH | 'HL' | &&COMP || '.FOC';
+-*-DOS COPY &FROMFILE  &TOFILE
+
+-*****************************************************
+-* step 9: UPDATE PROCESS STAMP TO INDICATE THE COMPLETION OF THE JOB
+-*****************************************************
+-SET &FLAG='Y';
+-SET &&WHERETEST ='WHERE ROLLUP_CODE EQ '&&ROLLUP.EVAL'CODE.EVAL';
+EX UPDFLAG STATUS='&FLAG.EVAL'
+
+-NOMORE
+-RUN

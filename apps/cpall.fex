@@ -1,0 +1,662 @@
+EX SETDBLS SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+
+-TYPE &&OUTPUTDEST
+-IF &&OUTLINE2 EQ 'OFFLINE' THEN GOTO XOFFLINE ELSE GOTO XONLINE;
+
+-XONLINE
+-TYPE Before ONLINE
+ONLINE
+-TYPE After ONLINE
+-RUN
+-GOTO CONT
+
+-XOFFLINE
+-SET &&OUTLINE2 = '';
+-TYPE Before OFFLINE
+OFFLINE
+-TYPE After OFFLINE
+-RUN
+-GOTO CONT
+
+-CONT
+-SET &&RPT_HOLD = 'RPTHOLD';
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCUSE1
+-RUN
+EX TCView1
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCUSE2
+-RUN
+EX TCView2
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCUSE3
+-RUN
+EX TCView3
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCUSE4
+-RUN
+EX TCView4
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCUSE5
+-RUN
+EX TCView5
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCUSE6
+-RUN
+EX TCView6
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCQTR1
+-RUN
+EX TCView7
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCQTR2
+-RUN
+EX TCView8
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCQTR3
+-RUN
+EX TCView9
+-RUN
+-*========================================================================
+USE CLEAR *
+EX TCQTR4
+-RUN
+EX TCView10
+-RUN
+-*========================================================================
+EX SUUSES
+-RUN
+EX TCDESC2
+-RUN
+
+USE CLEAR *
+USE TC_HOLD1.FOC  AS TC_HOLD1
+    TC_HOLD2.FOC  AS TC_HOLD1
+    TC_HOLD3.FOC  AS TC_HOLD1
+    TC_HOLD4.FOC  AS TC_HOLD1
+    TC_HOLD5.FOC  AS TC_HOLD1
+    TC_HOLD6.FOC  AS TC_HOLD1
+    TC_HOLD7.FOC  AS TC_HOLD1
+    TC_HOLD8.FOC  AS TC_HOLD1
+    TC_HOLD9.FOC  AS TC_HOLD1
+    TC_HOLD10.FOC AS TC_HOLD1
+END
+
+DEFINE FILE TC_HOLD1 ADD
+  BUSINESS/I8S = IF CL_CAT EQ 'B' THEN SEG_COUNT ELSE 0;
+  UPGRADE/I8S    = IF CL_CAT EQ 'U' THEN SEG_COUNT ELSE 0;
+  PECO/I8S    = IF CL_CAT EQ 'P' THEN SEG_COUNT ELSE 0;
+  ECO/I8S     = IF CL_CAT EQ 'E' THEN SEG_COUNT ELSE 0;
+  FIRST/I8S    = IF CL_CAT EQ 'F' THEN SEG_COUNT ELSE 0;
+  DEFAULT/I8S    = IF CL_CAT EQ ' ' THEN SEG_COUNT ELSE 0;
+  SEGMT/I8S    = FIRST + BUSINESS + PECO + ECO + DEFAULT + UPGRADE ;
+  LABEL1/A25 = IF '&&ORGDST' EQ 'DIR_CITY_CD' THEN DIR_CTY_CDO ELSE
+               IF '&&ORGDST' EQ 'DIR_CITY_NM' THEN DIR_CTY_NMO ELSE
+               IF '&&ORGDST' EQ 'DIR_CP_CD' THEN DIR_APT_CDO ELSE
+               IF '&&ORGDST' EQ 'DIR_CP_NM' THEN DIR_APT_NMO ELSE
+               IF '&&ORGDST' EQ 'ND_CITY_CD' THEN ND_CTY_CDO ELSE
+               IF '&&ORGDST' EQ 'ND_CITY_NM' THEN ND_CTY_NMO ELSE
+               IF '&&ORGDST' EQ 'ND_CP_CD' THEN ND_APT_CDO ELSE
+               IF '&&ORGDST' EQ 'ND_CP_NM' THEN ND_APT_NMO ELSE ' ';
+
+ LABEL2/A25 = IF '&&ORGDST' EQ 'DIR_CITY_CD' THEN DIR_CTY_CDD ELSE
+               IF '&&ORGDST' EQ 'DIR_CITY_NM' THEN DIR_CTY_NMD ELSE
+               IF '&&ORGDST' EQ 'DIR_CP_CD' THEN DIR_APT_CDD ELSE
+               IF '&&ORGDST' EQ 'DIR_CP_NM' THEN DIR_APT_NMD ELSE
+               IF '&&ORGDST' EQ 'ND_CITY_CD' THEN ND_CTY_CDD ELSE
+               IF '&&ORGDST' EQ 'ND_CITY_NM' THEN ND_CTY_NMD ELSE
+               IF '&&ORGDST' EQ 'ND_CP_CD' THEN ND_APT_CDD ELSE
+               IF '&&ORGDST' EQ 'ND_CP_NM' THEN ND_APT_NMD ELSE ' ';
+END
+-RUN
+
+TABLE FILE TC_HOLD1
+SUM COMM_SEG	
+    CP_FARE_PD AS 'FARE'
+    DEMB_APT 	
+    DISSAVINGS
+    DPT_TIME
+    DRTE_APT	
+    EMB_APT
+    FARE_BAS1
+    LABEL1
+    LABEL2
+    LEVEL3	
+    LEVEL_DESC
+    MILES	
+    NET_COMM	
+    NET_FARE 	
+    NET_TKT_CNT	
+    NEW_SEG_COUNT	
+    RTE_APT	
+    SAVINGS	
+    SEGMT	
+    TOTAL_FARE	
+    VASAVINGS
+    BUSINESS
+    DEFAULT
+    ECO
+    FIRST
+    PECO
+    UPGRADE  
+BY ORGDST
+BY CP_AIRLINE
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+PRINT COMM_SEG	
+      CP_AIRLINE
+      DEMB_APT	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT	
+      EMB_APT
+      FARE
+      FARE_BAS1	
+      LABEL1
+      LABEL2
+      LEVEL3
+      LEVEL_DESC	
+      MILES	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT	
+      RTE_APT
+      SAVINGS	
+      SEGMT	
+      TOTAL_FARE	
+      VASAVINGS
+      BUSINESS
+      DEFAULT
+      ECO
+      FIRST
+      PECO
+      UPGRADE        
+BY ORGDST
+RANKED BY HIGHEST &&RANK_METH   
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+
+DEFINE FILE HOLD2
+  DRANK/D5      = RANK ;
+  ARANKX/A6     = FTOA(DRANK, '(D5)', 'A6');
+  ARANK/A5      = EDIT(ARANKX,'$99999');
+  RANK_LIMIT/I5 = &&RANK_LIMIT2 ;
+  RANK_VALUE/A5 = IF (RANK_LIMIT EQ 0) THEN (ARANK) ELSE
+                  IF RANK GT RANK_LIMIT THEN 'OTHER' ELSE ARANK;
+END
+-RUN
+
+TABLE FILE HOLD2
+PRINT COMM_SEG	
+      CP_AIRLINE
+      DEMB_APT	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT	
+      EMB_APT
+      FARE
+      FARE_BAS1	
+      LABEL1
+      LABEL2
+      LEVEL3
+      LEVEL_DESC	
+      MILES	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT	
+      RTE_APT
+      SAVINGS	
+      SEGMT	
+      TOTAL_FARE	
+      VASAVINGS
+      BUSINESS
+      DEFAULT
+      ECO
+      FIRST
+      PECO
+      UPGRADE        
+BY ORGDST
+BY RANK_VALUE
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+
+DEFINE FILE HOLD3
+AIRLINE_PRINT/A12 = IF RANK_VALUE LE '&&RANK_LIMIT2' 
+	THEN CP_AIRLINE ELSE 'OTHER';
+END
+-RUN
+
+TABLE FILE HOLD3
+SUM COMM_SEG	
+      CP_AIRLINE
+      DEMB_APT	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT	
+      EMB_APT
+      FARE
+      FARE_BAS1	
+      LABEL1
+      LABEL2
+      LEVEL3
+      LEVEL_DESC	
+      MILES	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT	
+      RTE_APT
+      SAVINGS	
+      SEGMT	
+      TOTAL_FARE	
+      VASAVINGS
+      BUSINESS
+      DEFAULT
+      ECO
+      FIRST
+      PECO
+      UPGRADE        
+BY ORGDST 
+BY RANK_VALUE
+BY AIRLINE_PRINT 
+ON TABLE HOLD AS HOLD4
+END
+-RUN
+
+TABLE FILE HOLD1
+SUM &&RANK_METH
+BY ORGDST
+ON TABLE HOLD AS RHOLD1 
+END
+-RUN
+
+TABLE FILE RHOLD1
+PRINT &&RANK_METH
+RANKED BY HIGHEST &&RANK_METH AS 'SEG_RANK'
+BY ORGDST
+ON TABLE HOLD AS RHOLD2
+END
+-RUN
+
+
+MATCH FILE HOLD4
+PRINT AIRLINE_PRINT 	
+      COMM_SEG
+      DEMB_APT	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT	
+      EMB_APT
+      FARE	
+      FARE_BAS1
+      LABEL1
+      LABEL2
+      LEVEL3	
+      LEVEL_DESC
+      MILES	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT	
+      RANK_VALUE
+      RTE_APT
+      SAVINGS	
+      SEGMT	
+      TOTAL_FARE	
+      VASAVINGS
+      BUSINESS
+      DEFAULT
+      ECO
+      FIRST
+      PECO
+      UPGRADE
+BY ORGDST 
+ON TABLE HOLD
+RUN
+FILE RHOLD2
+SUM SEG_RANK
+BY ORGDST
+AFTER MATCH HOLD AS HOLD5 OLD-OR-NEW
+END
+-RUN
+
+
+TABLE FILE HOLD5
+PRINT AIRLINE_PRINT	
+      COMM_SEG
+      DEMB_APT	
+      DISSAVINGS
+      DPT_TIME
+      DRTE_APT	
+      EMB_APT	
+      FARE
+      FARE_BAS1	
+      LABEL1
+      LABEL2
+      LEVEL3
+      LEVEL_DESC	
+      MILES	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT	
+      NEW_SEG_COUNT	
+      ORGDST	
+      RANK_VALUE
+      RTE_APT	
+      SAVINGS	
+      SEGMT	
+      TOTAL_FARE	
+      VASAVINGS	
+      BUSINESS
+      DEFAULT
+      ECO
+      FIRST
+      PECO
+      UPGRADE      
+RANKED BY HIGHEST SEG_RANK 
+ON TABLE HOLD AS HOLD6
+END
+-RUN
+
+DEFINE FILE HOLD6
+  ORG_LIMIT/I2 = &&RANK_LIMIT ;
+  OLIMIT/A2    = EDIT(ORG_LIMIT) ;
+  CRANK/D5     = RANK;
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6 = IF ORGDST NE LAST ORGDST THEN (LAST LIST + 1) 
+    ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6  = EDIT(FRANKX,'$999999'); 
+  ORG_VALUE/A6 = IF ORG_LIMIT EQ 0 THEN BRANK ELSE
+               IF LIST GT ORG_LIMIT THEN 'OTHER' ELSE FRANK;
+END
+-RUN
+
+TABLE FILE HOLD6
+SUM COMM_SEG
+    DEMB_APT	
+    DISSAVINGS
+    DPT_TIME
+    DRTE_APT	
+    EMB_APT
+    FARE
+    FARE_BAS1	
+    LABEL1
+    LABEL2
+    LEVEL3
+    LEVEL_DESC	
+    MILES	
+    NET_COMM	
+    NET_FARE  	
+    NET_TKT_CNT	
+    NEW_SEG_COUNT	
+    OLIMIT	
+    ORG_LIMIT	
+    RTE_APT	
+    SAVINGS	
+    SEG_RANK	
+    SEGMT	
+    TOTAL_FARE	
+    VASAVINGS
+    BUSINESS
+     DEFAULT
+     ECO
+     FIRST
+     PECO
+ UPGRADE
+BY ORG_VALUE
+BY ORGDST
+BY RANK_VALUE
+BY AIRLINE_PRINT
+ON TABLE HOLD AS HOLD7
+END
+-RUN
+
+DEFINE FILE HOLD7
+-INCLUDE STDTIME1
+  DEMBARK_APT/A21 = IF ORG_VALUE LT (OLIMIT) THEN DEMB_APT ELSE 'ALL OTHER';
+  DROUTE_APT/A21 = IF ORG_VALUE LT (OLIMIT) THEN DRTE_APT ELSE 'ALL OTHER';
+  EMBARK_APT/A21 = IF ORG_VALUE LT (OLIMIT) THEN EMB_APT ELSE 'ALL OTHER'; 
+  ORG_PRINT/A55 =IF ORG_VALUE LT (OLIMIT) THEN ORGDST ELSE 'ALL OTHER';
+  RO_PRINT/A12   =IF ORG_VALUE LT (OLIMIT) THEN AIRLINE_PRINT ELSE ' ';
+  ROUTE_APT/A21 = IF ORG_VALUE LT (OLIMIT) THEN RTE_APT ELSE 'ALL OTHER';
+  EMB_LBL/A25 = IF ORG_VALUE LT (OLIMIT) THEN LABEL1 ELSE 'ALL OTHER';
+  RTE_LBL/A25 = IF ORG_VALUE LT (OLIMIT) THEN LABEL2 ELSE 'ALL OTHER';
+END
+-RUN
+
+TABLE FILE HOLD7
+SUM COMM_SEG
+    DEMBARK_APT    	
+    DISSAVINGS
+    DPT_TIME
+    DROUTE_APT	
+    EMBARK_APT
+    EMB_LBL
+    FARE
+    FARE_BAS1	
+    LEVEL3
+    LEVEL_DESC	
+    MILES	
+    NET_COMM	
+    NET_FARE	
+    NET_TKT_CNT
+    NEW_SEG_COUNT
+    ORGDST	
+    ROUTE_APT
+    RTE_LBL
+    SAVINGS	
+    SEG_RANK	
+    SEGMT
+    TIME_DPT	
+    TOTAL_FARE	
+    VASAVINGS
+    BUSINESS
+    DEFAULT
+    ECO
+    FIRST
+    PECO
+    UPGRADE    
+BY ORG_VALUE     
+BY ORG_PRINT  
+BY RANK_VALUE
+BY RO_PRINT
+ON TABLE HOLD AS HOLD8
+END
+-RUN
+
+TABLE FILE HOLD7
+SUM MILES AS 'C_MILES'
+    NET_COMM AS 'C_COMM'
+    FARE AS 'C_FARE' 
+    NET_TKT_CNT AS 'C_SEGMT'
+    TOTAL_FARE AS 'T_FARE'
+BY ORG_PRINT  
+ON TABLE HOLD AS HOLD9
+END
+-RUN
+
+MATCH FILE HOLD8
+PRINT COMM_SEG
+      DEMBARK_APT	
+      DISSAVINGS
+      DPT_TIME
+      DROUTE_APT	
+      EMBARK_APT
+      EMB_LBL	
+      FARE
+      FARE_BAS1	
+      LEVEL3
+      LEVEL_DESC	
+      MILES	
+      NET_COMM	
+      NET_FARE 	
+      NET_TKT_CNT 	
+      NEW_SEG_COUNT	
+      ORGDST
+      ORG_VALUE	
+      RANK_VALUE	
+      RANK_VALUE	
+      RO_PRINT	
+      ROUTE_APT
+      RTE_LBL
+      SAVINGS	
+      SEG_RANK	
+      SEGMT
+      TIME_DPT	
+      TOTAL_FARE	
+      VASAVINGS
+      BUSINESS
+      DEFAULT
+      ECO
+      FIRST
+      PECO
+      UPGRADE  
+BY ORG_PRINT 
+ON TABLE HOLD
+RUN
+FILE HOLD9
+SUM C_COMM
+    C_FARE
+    C_MILES
+    C_SEGMT
+    T_FARE
+BY ORG_PRINT 
+AFTER MATCH HOLD AS HOLD10 OLD-OR-NEW
+END
+-RUN
+
+-SET &&RPTSUF = 'SMY';
+-INCLUDE FDEFRPTS
+-RUN
+
+-TYPE BEFORE DEFINES
+
+DEFINE FILE HOLD10 
+  PER_FARE/D8.1=    IF ((C_FARE LT 1) AND (C_FARE GT (-1))) THEN 0
+                    ELSE ((FARE/C_FARE)*100);
+  PER_TFARE/D8.1=   IF ((T_FARE LT 1) AND (T_FARE GT (-1))) THEN 0
+                    ELSE ((TOTAL_FARE/T_FARE)*100);
+  SEGPER/D8.1 =     IF ((C_SEGMT LT 1) AND (C_SEGMT GT (-1))) THEN 0
+                    ELSE ((NET_TKT_CNT/C_SEGMT)*100);
+  PER_NFARE/D8.1=   IF ((C_COMM LT 1) AND (C_COMM GT (-1))) THEN 0
+                    ELSE ((NET_COMM/C_COMM)*100);
+  MILE_PCT/D8.1=    IF ((C_MILES LT 1) AND (C_MILES GT (-1))) THEN 0
+                    ELSE ((MILES/C_MILES)*100);
+  COSTPER_MILE/D8.2=IF ((MILES LT 1) AND (MILES GT (-1))) THEN 0
+                    ELSE (FARE/MILES);
+  AVGSEG_AMT/D8.2 = IF ((SEGMT LT 1) AND (SEGMT GT (-1))) THEN 0
+                    ELSE (NET_FARE/SEGMT);
+  AVGFLT/D8.2 =     IF ((NET_TKT_CNT LT 1) AND (NET_TKT_CNT GT (-1))) THEN 0
+                    ELSE (NET_FARE/NET_TKT_CNT);
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+  NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+
+TABLE FILE HOLD10
+-INCLUDE HEADER
+"&&SUBHEAD </1"
+   &&S_SUBJ1
+   &&S_SUBJ2
+   &&S_SUBJ3
+   &&S_SUBJ4
+   &&S_SUBJ5
+   &&S_SUBJ6
+   &&S_SUBJ7
+   &&S_SUBJ8
+   &&S_SUBJ9
+   &&S_SUBJ10
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+-INCLUDE FOOTERSM
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT 
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&SMSTY 
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+-* REJ ADDED TO TRAP ERRORS
+-SET &&FEXNOW='CPALL';
+-INCLUDE ERRORCHK
+-IF &&RET GT 1 GOTO XXIT;
+-* REJ ADDED TO TRAP ERRORS
+
+-XXIT

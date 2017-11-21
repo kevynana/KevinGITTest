@@ -1,0 +1,154 @@
+-* File OVERVIEW.FEX
+-* This stream creates the 1 page Executive Overview summary 
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            CHANGED TEMPDISK TO TEMPDIR
+-**********************************************************************
+-TYPE Overview
+SET 3D=OFF
+SET GRID=ON
+SET VGRID=OFF
+SET EMPTYREPORT=ON
+
+-* Following set command determines of the reports created by this
+-* Stream will be drillable
+-SET &&DRILLABLE = IF &&DEPLOY EQ 'L' AND EDIT(&&OUTTO,'$9') NE 'B' 
+- THEN 'N' ELSE 'Y'; 
+-*
+
+EX SETMXTP SETFILE=&&SETF
+-RUN
+-INCLUDE OTHPARMS
+-SET &&TANDT = 'LOGO15.GIF';
+-RUN
+-INCLUDE SetParmtime
+-RUN
+
+-**********************************************************************
+-* DETERMINE IF WE HAVE WEB DEPLOYMENT OR LOCAL STAND ALONE
+-* SET PATH FOR SAVING THE SETFILE
+-**********************************************************************
+-******LOCAL DEPLOYMENT
+-IF &&DEPLOY EQ 'W' GOTO SETWEB;
+-SET &&SETFNM= &&LOCPATH || &&DTTMSTRM ||'.FTM';
+COPY &&SETF &&SETFNM
+-RUN
+-GOTO SETFILDEF;
+
+-******WEB DEPLOYMENT
+-SETWEB
+-SET &&SETFNM = &&WEBPATH || &&DTTMSTRM ||'.FTM';
+
+COPY &&VARFWEB &&SETFNM
+-INCLUDE SETFPARM
+-RUN
+-GOTO SETFILDEF;
+
+-SETFILDEF
+-INCLUDE APNDSETF
+-RUN
+-****************IBISTL-SB*******************************
+-SET &&TANDT = 'LOGO15.GIF';
+-****************IBISTL-SB*******************************
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            CHANGED TEMPDISK TO TEMPDIR
+-**********************************************************************
+
+EX TS_JAMS
+-RUN
+
+FILEDEF AUSEINCL DISK &&AUSEPASS
+-RUN
+FILEDEF CUSEINCL DISK &&CUSEPASS
+-RUN
+FILEDEF HUSEINCL DISK &&HUSEPASS
+-RUN
+FILEDEF LUSEINCL DISK &&LUSEPASS
+-RUN
+
+-INCLUDE SELCATQT
+-RUN
+
+EX &&CATQTRPR
+-RUN
+
+FILEDEF AUSEINCL CLEAR
+-RUN
+FILEDEF CUSEINCL CLEAR
+-RUN
+FILEDEF HUSEINCL CLEAR
+-RUN
+FILEDEF LUSEINCL CLEAR
+-RUN
+
+-SET &&SMD = 'S';
+-RUN
+
+EX TSAIRUSE
+-RUN
+
+EX SELDESC2
+-RUN
+
+EX MX1SHLD
+-RUN
+
+EX MX1SHLD2
+-RUN
+
+EX MX1AHLD
+-RUN
+
+EX MX1RHLD
+-RUN
+
+EX MX1LHLD
+-RUN
+
+-TYPE MX1LST
+EX MX1LST
+-RUN
+
+
+-TYPE MX1ADV
+EX MX1ADV
+-RUN
+
+
+-TYPE MX1REF
+EX MX1REF
+-RUN
+
+-TYPE MX1DOD
+EX MX1DOD
+-RUN
+
+-TYPE HTLUSE
+EX HTLUSE
+-RUN
+
+-TYPE MX1HHLD
+EX MX1HHLD
+-RUN
+
+-TYPE MX1HTLP
+EX MX1HTLP
+-RUN
+
+-TYPE MX1HTLR
+EX MX1HTLR
+-RUN
+
+-TYPE MXSUM1
+EX MXSUM1
+-RUN
+
+
+SET EMPTYREPORT=OFF
+-RUN
+
+-TYPE RESTART
+
+

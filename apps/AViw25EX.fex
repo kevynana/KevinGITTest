@@ -1,0 +1,102 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File AVIEW25EX.FEX
+-********************************************************************
+-* MODIFICAIONS:
+-* 4/29/02  CHANGED MRK_TKT_CNT TO CORRECTLY BACK OUT PARTIAL REFUNDS
+-*          AND EXCHANGES - SC DB
+-* Added Orgdst JK 12/12/03
+-* Added Level1 JK 4/10/14
+-* ADDED TRANTYPE INCLUDE - JK 12/9/14 STORY ID S-06492
+-* 07/25/16   RSB   S-20630 - New Employee ID database field
+-*                            Added EMP_ID 
+-********************************************************************
+-*
+-* This program extracts data for the series of basic hotel location listing
+-* reports.  Based on the user profile selected, one of many report
+-* formats will be produced.  
+-*
+-********************************************************************
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT
+FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;
+LEVEL_DESC/A60      = &&LDESC;
+MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+NET_TKT_CNT/P8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+NEW_SEG_MILES/D9= SEG_MILES;
+
+  
+-* ****DEFINES ON PREVIOUS DEFINES****
+
+-INCLUDE TRANTYPE
+
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  AIR_KEY
+  AIRLINE
+  BR_CL_IDX
+  CLIENT_NUM
+  CLASS	
+  DOC_TYPE	
+  FARE_PAID
+  EMP_ID
+  LEVEL1
+  LEVEL3	
+  LEVEL_DESC
+  MRK_TKT_CNT	
+  NET_TKT_CNT	
+  NEW_SEG_MILES	
+  PASSNGR_NAME	
+  REFUSE_KEY	
+  TKT_NUM
+ 
+-INCLUDE &AIRDATES
+
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS &&RPT_HOLD
+
+END
+
+-*-EXIT

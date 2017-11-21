@@ -1,0 +1,119 @@
+-*******************************************************************************
+-INCLUDE SETECHO
+-* File DVRAIRUSE.FEX
+-* To join pro fee file to SR_50 to get required information
+-*3/21/2017 REJ S-31975 Added the UDID file into the USE statements
+-*******************************************************************************
+USE CLEAR *
+-RUN
+
+-SET &DATAPATH='&&DATASRV.EVAL' || '\TNT\TTRACKER\DATA\';
+
+-IF (&&QTRENAB NE 'X') THEN GOTO USEASingle;
+
+-SET &SQ0  = &DATAPATH | 'S0' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ1  = &DATAPATH | 'S1' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ2  = &DATAPATH | 'S2' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ3  = &DATAPATH | 'S3' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ4  = &DATAPATH | 'S4' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ5  = &DATAPATH | 'S5' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ6  = &DATAPATH | 'S6' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ7  = &DATAPATH | 'S7' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ8  = &DATAPATH | 'S8' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQ9  = &DATAPATH | 'S9' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQY  = &DATAPATH | 'SY' || &&COMPNY || '.FOC AS SR_50';
+-SET &SQZ  = &DATAPATH | 'SZ' || &&COMPNY || '.FOC AS SR_50';
+
+
+-SET &AQ0  = &DATAPATH | 'A0' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ1  = &DATAPATH | 'A1' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ2  = &DATAPATH | 'A2' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ3  = &DATAPATH | 'A3' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ4  = &DATAPATH | 'A4' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ5  = &DATAPATH | 'A5' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ6  = &DATAPATH | 'A6' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ7  = &DATAPATH | 'A7' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ8  = &DATAPATH | 'A8' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQ9  = &DATAPATH | 'A9' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQY  = &DATAPATH | 'AY' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &AQZ  = &DATAPATH | 'AZ' || &&COMPNY || '.FOC AS AIR_MAIN';
+
+
+-SET &TQ0  = &DATAPATH | 'T0' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ1  = &DATAPATH | 'T1' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ2  = &DATAPATH | 'T2' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ3  = &DATAPATH | 'T3' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ4  = &DATAPATH | 'T4' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ5  = &DATAPATH | 'T5' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ6  = &DATAPATH | 'T6' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ7  = &DATAPATH | 'T7' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ8  = &DATAPATH | 'T8' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQ9  = &DATAPATH | 'T9' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQY  = &DATAPATH | 'TY' || &&COMPNY || '.FOC AS TKT_MAIN';
+-SET &TQZ  = &DATAPATH | 'TZ' || &&COMPNY || '.FOC AS TKT_MAIN';
+
+
+-SET &UF1  = &DATAPATH | 'UA' || &&COMPNY || '.FOC AS AIRUDID';
+
+
+USE 
+&SQ0
+&SQ1
+&SQ2
+&SQ3
+&SQ4
+&SQ5
+&SQ6
+&SQ7
+&SQ8
+&SQ9
+&SQY
+&SQZ
+
+&AQ0
+&AQ1
+&AQ2
+&AQ3
+&AQ4
+&AQ5
+&AQ6
+&AQ7
+&AQ8
+&AQ9
+&AQY
+&AQZ
+
+&TQ0
+&TQ1
+&TQ2
+&TQ3
+&TQ4
+&TQ5
+&TQ6
+&TQ7
+&TQ8
+&TQ9
+&TQY
+&TQZ
+
+&UF1
+END
+-RUN
+-GOTO DVRAUSEEXIT;
+
+-USEASingle
+-SET &SDB  = &DATAPATH | 'S_' || &&COMPNY || '.FOC AS SR_50';
+-SET &ADB  = &DATAPATH | 'A_' || &&COMPNY || '.FOC AS AIR_MAIN';
+-SET &TDB  = &DATAPATH | 'T_' || &&COMPNY || '.FOC AS TKT_MAIN';
+
+-SET &UF1  = &DATAPATH | 'UA' || &&COMPNY || '.FOC AS AIRUDID';
+
+USE
+&SDB
+&ADB
+&TDB
+&UF1
+END
+-RUN
+
+-DVRAUSEEXIT

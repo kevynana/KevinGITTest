@@ -1,0 +1,222 @@
+-***************************************************************************
+-* REPORT NAME: TOP NON DIRECTIONAL MARKET PAIR SUMMARY
+-* TOTAL COMPANY REPORTING
+-* JK added code to select only tnt_company eq 1 or 2 2/21/05
+-* 3/24/15 - DEB - S-08078  CREATED NEW EXTRACT FOR TCAVCLMP
+-*09/08/2017 DLV  S-37268    updated ORG_APX DST_APX to A7 updated ND_CP_CD define
+
+
+-***************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-*======================================================================== 
+-*           PERFORM DATA EXTRACT FOR CLIENT DETERMINED IN STEP7
+-*========================================================================
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+DEFINE FILE &&EXTRACT
+DEMB_APT/A21=EDIT(EMB_APT.AIRPORT_NAME,'999999999999999999999$$$$');
+DIR_CITY_CD/A50 = EMB_CTY.EMB_CITY || '-' || RTE_CTY.RTE_CITY;
+DIR_CITY_NM/A50 = EMB_CTY.CITY_NAME | RTE_CTY.CITY_NAME; 
+DIR_CP_CD/A50 = CITYPAIR.EMBARK || '-' || CITYPAIR.ROUTE;
+DIR_CP_NM/A50 = EMB_APT.AIRPORT_NAME | RTE_APT.AIRPORT_NAME;
+DPT/A2 = EDIT (DPT_TIME, '99$$');
+DRTE_APT/A21=EDIT(RTE_APT.AIRPORT_NAME,'999999999999999999999$$$$');
+EMB_APT/A21=EDIT(NDO_APT.AIRPORT_NAME,'999999999999999999999$$$$');
+FARE_PAID/D12.2S  = SEG_AMT + SEG_TAX;
+RTE_APT_CD/A3 =   CITYPAIR.ROUTE;
+EMB_APT_CD/A3 =  CITYPAIR.EMBARK;  
+  
+
+ND_CITY_CD/A50 = NDO_CTY.NDO_CITY || '-' || NDD_CTY.NDD_CITY;
+ND_CITY_NM/A50 = NDO_CTY.CITY_NAME | NDD_CTY.CITY_NAME;
+-*ND_CP_CD/A50  = NDO_APT.ND_ORG || '-' || NDD_APT.ND_DST;
+ND_CP_CD/A50  = ND_ORG || '-' || ND_DST;
+
+NET_TKT_CNT/D8    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+MRK_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (EX_FLAG NE ' ') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;
+RTE_APT/A21=EDIT(NDD_APT.AIRPORT_NAME,'999999999999999999999$$$$');
+-* Defines on Previous Defines
+ND_CP_NM/A55 = EMB_APT|'        '|RTE_APT;
+-IF '&&SETF.EVAL' EQ 'TCTC10D' OR 'TCTC10I' THEN GOTO SETID;
+ORGDST/A55 = &&ORGDST;
+-GOTO NCHK;
+-SETID;
+ORGDST/A55=ND_CP_CD;
+-NCHK;
+CTY_CHK/A1 = IF ND_CP_CD EQ 'JFK-LAX' OR 'JFK-SFO' OR 'ORD-SFO' OR 'ATL-SFO' OR
+                                  'LAX-SFO' OR 'PDX-SFO' OR 'SFO-SEA' OR 'JFK-LHR' OR 
+                                  'CDG-JFK' OR 'LHR-SFO' OR 'SFO-TPE' OR 'HKG-SFO' THEN 'Y' ELSE 'N';
+
+
+-*AT_FLAG/A1 = EDIT(CITYPAIR.EMBARKX, '$$$9'); 
+ 
+ 
+-*ORG_APX/A4 = EMB_APT_CD || AT_FLAG;
+ORG_APX/A7  =ND_ORGX;
+-*DT_FLAG/A1 = EDIT(CITYPAIR.ROUTEX, '$$$9'); 
+-*DST_APX/A4 = RTE_APT_CD || DT_FLAG;
+
+DST_APX/A7 = ND_DSTX;
+-*LENGTH/I2 = ARGLEN(4, ND_ORG, 'I2');
+LENGTH/I2 = ARGLEN(3, ND_ORG, 'I2');
+
+FLAG/A1 = IF EMBARK EQ 'DT1' OR 'RF1' OR 'FP1' OR 'FP2' OR 'FP3' OR 'EX1' THEN 'N' ELSE 'Y' 
+END
+
+TABLEF FILE &&EXTRACT
+PRINT  
+  CITYPAIR.AIRLINE AS 'CP_AIRLINE'
+  CITYPAIR.SEG_MILES/D9C AS 'MILES'	
+  FARE_PAID  AS 'CP_FARE_PD'
+  MRK_TKT_CNT
+  ORGDST
+  CL_CAT
+  ORG_APX
+  DST_APX
+  TKT_NUM
+  LENGTH
+  C_ITIN
+  EMBARK 
+  ROUTE
+-INCLUDE &AIRDATES
+WHERE VOID_DATE EQ 0
+&&WHERE1
+&&WHERE2
+&&WHERE3    
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+-INCLUDE RPTPARMS
+WHERE FLAG EQ 'Y'
+ON TABLE HOLD AS TC_MRK 
+END
+-RUN
+
+
+ 
+
+
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM STEP4 - HOLD TO FOCUS DATABASE TCRANK        
+-*========================================================================
+DEFINE FILE TC_MRK
+ROLLCD/A8 = '&&ROLL';
+HI_CAT/A1 = IF TKT_NUM NE LAST TKT_NUM THEN CL_CAT ELSE ' ';
+END
+TABLE FILE TC_MRK
+SUM 
+    CP_FARE_PD AS 'FARE'
+    MILES	
+    MRK_TKT_CNT
+BY ROLLCD
+BY TKT_NUM
+BY CL_CAT 
+BY ORG_APX
+BY DST_APX
+BY HI_CAT
+ON TABLE HOLD AS TCHOLD1
+END   
+-RUN
+ 
+TABLE FILE TCHOLD1
+PRINT HI_CAT 
+BY ROLLCD
+BY TKT_NUM
+WHERE HI_CAT NE ' '
+ON TABLE HOLD AS TCHOLD2
+END
+-RUN
+ 
+MATCH FILE TCHOLD1
+PRINT FARE MILES MRK_TKT_CNT ORG_APX DST_APX
+BY ROLLCD
+BY TKT_NUM
+ON TABLE HOLD
+RUN
+FILE TCHOLD2
+SUM HI_CAT AS 'CL_CAT'
+BY ROLLCD
+BY TKT_NUM
+AFTER MATCH HOLD AS XONE OLD-OR-NEW
+END
+-RUN
+
+
+TABLE FILE XONE
+SUM MRK_TKT_CNT
+    FARE
+    MILES
+BY ROLLCD
+BY ORG_APX
+BY DST_APX
+BY CL_CAT
+ON TABLE HOLD AS XTWO
+END
+-RUN
+ 
+
+
+DEFINE FILE XTWO
+NMB/I5    = NMB + 1;
+END
+TABLE FILE XTWO
+SUM MRK_TKT_CNT
+    FARE
+    MILES
+BY ROLLCD
+BY NMB
+BY ORG_APX
+BY DST_APX
+BY CL_CAT
+ON TABLE HOLD AS TCM1
+END
+-RUN
+ 
+
+
+
+
+
+ 
+
+
+MODIFY FILE TCAVGMP2
+FIXFORM FROM TCM1
+DATA ON TCM1
+END
+-RUN
+
+
+
+-NEXTONE
+
+
+
+-XXIT
+ 
+ 
+ 

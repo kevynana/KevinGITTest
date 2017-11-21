@@ -1,0 +1,395 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File TCEXTOT2.FEX
+
+-* 7/2/04    DEB    ASSOCIATED WITH TOTAL COMPANY REPORTING TRAVEL SUMMARY 
+ 
+MAINTAIN FILES TC1_MAIN AND AIRSUM1 AND CARSUM1 AND HTLSUM1
+
+INFER TC1_MAIN.CATEGORY INTO E_STACK
+INFER AIRSUM1.DOM_CURR INTO AIR1_STACK
+INFER CARSUM1.DOM_CURR INTO CAR1_STACK
+INFER HTLSUM1.DOM_CURR INTO HTL1_STACK
+
+
+COMPUTE E_STACK(1).CATEGORY = 'Summary';
+        E_STACK(2).CATEGORY = 'Summary';
+        E_STACK(3).CATEGORY = 'Summary';
+        E_STACK(4).CATEGORY = 'Summary';
+        
+        E_STACK(1).ROW_LABEL = 'Total Expense';
+        E_STACK(2).ROW_LABEL = 'Air %';
+        E_STACK(3).ROW_LABEL = 'Car %';
+        E_STACK(4).ROW_LABEL = 'Hotel %';
+
+        E_STACK(1).CAT_ORDER = '5';
+        E_STACK(2).CAT_ORDER = '5';
+        E_STACK(3).CAT_ORDER = '5';
+        E_STACK(4).CAT_ORDER = '5';
+        E_STACK(1).ROW_ORDER = '1'; -* THESE NEED TO BE PARAMETERS
+        E_STACK(2).ROW_ORDER = '2'; -* SO THAT WE CAN SORT HOWEVER 
+        E_STACK(3).ROW_ORDER = '3'; -* THE CLIENT WOULD LIKE TO SEE
+        E_STACK(4).ROW_ORDER = '4';
+        CNT1/I2 = 0;
+
+
+COMPUTE CNT1 = 1;
+
+REPEAT ALL
+ STACK CLEAR AIR1_STACK CAR1_STACK HTL1_STACK
+ NEXT AIRSUM1.DOM_CURR INTO AIR1_STACK
+ NEXT CARSUM1.DOM_CURR INTO CAR1_STACK
+ NEXT HTLSUM1.DOM_CURR INTO HTL1_STACK
+ 
+TYPE "LOADING STACKS"
+ IF AIR1_STACK.FOCCOUNT EQ 0 THEN GOTO EXITREPEAT
+
+PERFORM TOT_EXPENSE
+PERFORM AIR_PERCENT
+PERFORM CAR_PERCENT
+PERFORM HTL_PERCENT
+
+
+ENDREPEAT
+
+
+FOR ALL INCLUDE TC1_MAIN FROM E_STACK
+
+-****************************
+CASE TOT_EXPENSE
+TYPE "<AIR1_STACK(1).DOM_CURR  <AIR1_STACK(1).DOM_PRIOR"
+TYPE "<CAR1_STACK(1).DOM_CURR  <CAR1_STACK(1).DOM_PRIOR"
+TYPE "<HTL1_STACK(1).DOM_CURR  <HTL1_STACK(1).DOM_PRIOR"
+
+
+COMPUTE
+
+E_STACK(1).DOM_CURR = E_STACK(1).DOM_CURR
+                       + AIR1_STACK(CNT1).DOM_CURR 
+                       + CAR1_STACK(CNT1).DOM_CURR
+                       + HTL1_STACK(CNT1).DOM_CURR;
+
+ E_STACK(1).DOM_PRIOR = E_STACK(1).DOM_PRIOR
+                        + AIR1_STACK(CNT1).DOM_PRIOR 
+                        + CAR1_STACK(CNT1).DOM_PRIOR
+                        + HTL1_STACK(CNT1).DOM_PRIOR;
+
+
+
+
+E_STACK(1).INT_CURR = E_STACK(1).INT_CURR
+                       + AIR1_STACK(CNT1).INT_CURR 
+                       + CAR1_STACK(CNT1).INT_CURR
+                       + HTL1_STACK(CNT1).INT_CURR;
+
+E_STACK(1).INT_PRIOR = E_STACK(1).INT_PRIOR
+                       + AIR1_STACK(CNT1).INT_PRIOR 
+                       + CAR1_STACK(CNT1).INT_PRIOR
+                       + HTL1_STACK(CNT1).INT_PRIOR;
+                      
+
+
+E_STACK(1).DI_CURR = E_STACK(1).DOM_CURR + E_STACK(1).INT_CURR;
+E_STACK(1).DI_PRIOR = E_STACK(1).DOM_PRIOR + E_STACK(1).INT_PRIOR;
+
+
+-***YEAR-TO-DATE
+
+E_STACK(1).DYTD_CURR = E_STACK(1).DYTD_CURR
+                       + AIR1_STACK(CNT1).DYTD_CURR 
+                       + CAR1_STACK(CNT1).DYTD_CURR
+                       + HTL1_STACK(CNT1).DYTD_CURR;
+
+ E_STACK(1).DYTD_PRIOR = E_STACK(1).DYTD_PRIOR
+                       + AIR1_STACK(CNT1).DYTD_PRIOR 
+                       + CAR1_STACK(CNT1).DYTD_PRIOR
+                       + HTL1_STACK(CNT1).DYTD_PRIOR;
+                         
+ 
+
+E_STACK(1).IYTD_CURR = E_STACK(1).IYTD_CURR
+                       + AIR1_STACK(CNT1).IYTD_CURR 
+                       + CAR1_STACK(CNT1).IYTD_CURR
+                       + HTL1_STACK(CNT1).IYTD_CURR;
+
+E_STACK(1).IYTD_PRIOR = E_STACK(1).IYTD_PRIOR
+                       + AIR1_STACK(CNT1).IYTD_PRIOR 
+                       + CAR1_STACK(CNT1).IYTD_PRIOR
+                       + HTL1_STACK(CNT1).IYTD_PRIOR;
+                   
+
+
+E_STACK(1).DIYTD_CURR = E_STACK(1).DYTD_CURR + E_STACK(1).IYTD_CURR;
+E_STACK(1).DIYTD_PRIOR = E_STACK(1).DYTD_PRIOR + E_STACK(1).IYTD_PRIOR;
+
+
+-************
+TYPE "<E_STACK(1).DOM_CURR  <E_STACK(1).DOM_PRIOR"
+TYPE "<E_STACK(1).INT_CURR  <E_STACK(1).INT_PRIOR"
+TYPE "<E_STACK(1).DIYTD_CURR  <E_STACK(1).DIYTD_PRIOR"
+TYPE "AFTER TOT_EXPENSE"
+ENDCASE
+
+CASE AIR_PERCENT
+
+COMPUTE
+
+E_STACK(2).DOM_CURR =IF ((E_STACK(1).DOM_CURR LT 1) AND
+                        (E_STACK(1).DOM_CURR GT (-1))) THEN 0 ELSE
+                        (AIR1_STACK(CNT1).DOM_CURR/E_STACK(1).DOM_CURR) * 100;
+  
+
+ E_STACK(2).DOM_PRIOR =IF ((E_STACK(1).DOM_PRIOR LT 1) AND
+                          (E_STACK(1).DOM_PRIOR GT (-1))) THEN 0 ELSE
+                      (AIR1_STACK(CNT1).DOM_PRIOR/E_STACK(1).DOM_PRIOR) * 100;
+ 
+                         
+
+
+
+E_STACK(2).INT_CURR =IF ((E_STACK(1).INT_CURR LT 1) AND
+                        (E_STACK(1).INT_CURR GT (-1))) THEN 0 ELSE
+                        (AIR1_STACK(CNT1).INT_CURR/E_STACK(1).INT_CURR) * 100;
+  
+
+ E_STACK(2).INT_PRIOR =IF ((E_STACK(1).INT_PRIOR LT 1) AND 
+                          (E_STACK(1).INT_PRIOR GT (-1))) THEN 0 ELSE
+                      (AIR1_STACK(CNT1).INT_PRIOR/E_STACK(1).INT_PRIOR) * 100;
+ 
+                      
+
+
+
+E_STACK(2).DI_CURR =IF ((E_STACK(1).DI_CURR LT 1) AND
+                       (E_STACK(1).DI_CURR GT (-1))) THEN 0 ELSE
+                       (AIR1_STACK(CNT1).DI_CURR/E_STACK(1).DI_CURR) * 100;
+
+
+E_STACK(2).DI_PRIOR =IF ((E_STACK(1).DI_PRIOR LT 1) AND
+                        (E_STACK(1).DI_PRIOR GT (-1))) THEN 0 ELSE
+                        (AIR1_STACK(CNT1).DI_PRIOR/E_STACK(1).DI_PRIOR) * 100;
+
+
+
+
+-**YEAR-TO-DATE
+
+E_STACK(2).DYTD_CURR =IF ((E_STACK(1).DYTD_CURR LT 1) AND
+                         (E_STACK(1).DYTD_CURR GT (-1))) THEN 0 ELSE
+                      (AIR1_STACK(CNT1).DYTD_CURR/E_STACK(1).DYTD_CURR) * 100;
+  
+
+ E_STACK(2).DYTD_PRIOR =IF ((E_STACK(1).DYTD_PRIOR LT 1) AND
+                           (E_STACK(1).DYTD_PRIOR GT (-1))) THEN 0 ELSE
+                    (AIR1_STACK(CNT1).DYTD_PRIOR/E_STACK(1).DYTD_PRIOR) * 100;
+ 
+                         
+ 
+
+E_STACK(2).IYTD_CURR =IF ((E_STACK(1).IYTD_CURR LT 1) AND
+                         (E_STACK(1).IYTD_CURR GT (-1))) THEN 0 ELSE
+                (AIR1_STACK(CNT1).IYTD_CURR/E_STACK(1).IYTD_CURR) * 100;
+  
+
+ E_STACK(2).IYTD_PRIOR =IF ((E_STACK(1).IYTD_PRIOR LT 1) AND
+                           (E_STACK(1).IYTD_PRIOR GT (-1))) THEN 0 ELSE
+                (AIR1_STACK(CNT1).IYTD_PRIOR/E_STACK(1).IYTD_PRIOR) * 100;
+ 
+                         
+ 
+
+
+E_STACK(2).DIYTD_CURR =IF ((E_STACK(1).DIYTD_CURR LT 1) AND
+                          (E_STACK(1).DIYTD_CURR GT (-1))) THEN 0 ELSE
+              (AIR1_STACK(CNT1).DIYTD_CURR/E_STACK(1).DIYTD_CURR) * 100;
+
+
+E_STACK(2).DIYTD_PRIOR =IF ((E_STACK(1).DIYTD_PRIOR LT 1) AND
+                           (E_STACK(1).DIYTD_PRIOR GT (-1))) THEN 0 ELSE
+             (AIR1_STACK(CNT1).DIYTD_PRIOR/E_STACK(1).DIYTD_PRIOR) * 100;
+
+
+
+
+-************
+TYPE "AFTER AIR_PERCENT"
+ENDCASE
+
+
+CASE CAR_PERCENT
+
+COMPUTE
+
+E_STACK(3).DOM_CURR =IF ((E_STACK(1).DOM_CURR LT 1) AND
+                        (E_STACK(1).DOM_CURR GT (-1))) THEN 0 ELSE
+                (CAR1_STACK(CNT1).DOM_CURR/E_STACK(1).DOM_CURR) * 100;
+  
+
+ E_STACK(3).DOM_PRIOR =IF ((E_STACK(1).DOM_PRIOR LT 1) AND
+                          (E_STACK(1).DOM_PRIOR GT (-1))) THEN 0 ELSE
+               (CAR1_STACK(CNT1).DOM_PRIOR/E_STACK(1).DOM_PRIOR) * 100;
+ 
+                         
+ 
+
+
+E_STACK(3).INT_CURR =IF ((E_STACK(1).INT_CURR LT 1) AND
+                        (E_STACK(1).INT_CURR GT (-1))) THEN 0 ELSE
+             (CAR1_STACK(CNT1).INT_CURR/E_STACK(1).INT_CURR) * 100;
+  
+
+ E_STACK(3).INT_PRIOR =IF ((E_STACK(1).INT_PRIOR LT 1) AND
+                          (E_STACK(1).INT_PRIOR GT (-1))) THEN 0 ELSE
+               (CAR1_STACK(CNT1).INT_PRIOR/E_STACK(1).INT_PRIOR) * 100;
+ 
+                      
+
+
+
+E_STACK(3).DI_CURR =IF ((E_STACK(1).DI_CURR LT 1) AND 
+                       (E_STACK(1).DI_CURR GT (-1))) THEN 0 ELSE
+                       (CAR1_STACK(CNT1).DI_CURR/E_STACK(1).DI_CURR) * 100;
+
+E_STACK(3).DI_PRIOR =IF ((E_STACK(1).DI_PRIOR LT 1) AND
+                        (E_STACK(1).DI_PRIOR GT (-1))) THEN 0 ELSE
+                   (CAR1_STACK(CNT1).DI_PRIOR/E_STACK(1).DI_PRIOR) * 100;
+
+
+
+
+-**YEAR-TO-DATE
+
+E_STACK(3).DYTD_CURR =IF ((E_STACK(1).DYTD_CURR LT 1) AND
+                         (E_STACK(1).DYTD_CURR GT (-1))) THEN 0 ELSE
+                      (CAR1_STACK(CNT1).DYTD_CURR/E_STACK(1).DYTD_CURR) * 100;
+  
+
+ E_STACK(3).DYTD_PRIOR =IF ((E_STACK(1).DYTD_PRIOR LT 1) AND
+                           (E_STACK(1).DYTD_PRIOR GT (-1))) THEN 0 ELSE
+                    (CAR1_STACK(CNT1).DYTD_PRIOR/E_STACK(1).DYTD_PRIOR) * 100;
+ 
+                         
+ 
+
+E_STACK(3).IYTD_CURR =IF ((E_STACK(1).IYTD_CURR LT 1) AND
+                         (E_STACK(1).IYTD_CURR GT (-1))) THEN 0 ELSE
+                   (CAR1_STACK(CNT1).IYTD_CURR/E_STACK(1).IYTD_CURR) * 100;
+  
+
+ E_STACK(3).IYTD_PRIOR =IF ((E_STACK(1).IYTD_PRIOR LT 1) AND
+                           (E_STACK(1).IYTD_PRIOR GT (-1))) THEN 0 ELSE
+                 (CAR1_STACK(CNT1).IYTD_PRIOR/E_STACK(1).IYTD_PRIOR) * 100;
+ 
+                         
+
+
+
+E_STACK(3).DIYTD_CURR =IF ((E_STACK(1).DIYTD_CURR LT 1) AND
+                          (E_STACK(1).DIYTD_CURR GT (-1))) THEN 0 ELSE
+                    (CAR1_STACK(CNT1).DIYTD_CURR/E_STACK(1).DIYTD_CURR) * 100;
+
+
+E_STACK(3).DIYTD_PRIOR =IF ((E_STACK(1).DIYTD_PRIOR LT 1) AND
+                           (E_STACK(1).DIYTD_PRIOR GT (-1))) THEN 0 ELSE
+                (CAR1_STACK(CNT1).DIYTD_PRIOR/E_STACK(1).DIYTD_PRIOR) * 100;
+
+
+
+
+
+-************
+TYPE "AFTER CAR_PERCENT"
+ENDCASE
+
+
+
+CASE HTL_PERCENT
+
+
+COMPUTE
+
+E_STACK(4).DOM_CURR =IF ((E_STACK(1).DOM_CURR LT 1) AND
+                        (E_STACK(1).DOM_CURR GT (-1))) THEN 0 ELSE
+                        (HTL1_STACK(CNT1).DOM_CURR/E_STACK(1).DOM_CURR) * 100;
+  
+
+ E_STACK(4).DOM_PRIOR =IF ((E_STACK(1).DOM_PRIOR LT 1) AND
+                          (E_STACK(1).DOM_PRIOR GT (-1))) THEN 0 ELSE
+                      (HTL1_STACK(CNT1).DOM_PRIOR/E_STACK(1).DOM_PRIOR) * 100;
+ 
+ E_STACK(4).INT_CURR =IF ((E_STACK(1).INT_CURR LT 1) AND
+                        (E_STACK(1).INT_CURR GT (-1))) THEN 0 ELSE
+                        (HTL1_STACK(CNT1).INT_CURR/E_STACK(1).INT_CURR) * 100;
+  
+
+ E_STACK(4).INT_PRIOR =IF ((E_STACK(1).INT_PRIOR LT 1) AND
+                          (E_STACK(1).INT_PRIOR GT (-1))) THEN 0 ELSE
+               (HTL1_STACK(CNT1).INT_PRIOR/E_STACK(1).INT_PRIOR) * 100;
+
+
+
+                   
+
+
+E_STACK(4).DI_CURR =IF ((E_STACK(1).DI_CURR LT 1) AND
+                       (E_STACK(1).DI_CURR GT (-1))) THEN 0 ELSE
+                (HTL1_STACK(CNT1).DI_CURR/E_STACK(1).DI_CURR) * 100;
+
+
+E_STACK(4).DI_PRIOR =IF ((E_STACK(1).DI_PRIOR LT 1) AND
+                        (E_STACK(1).DI_PRIOR GT (-1))) THEN 0 ELSE
+              (HTL1_STACK(CNT1).DI_PRIOR/E_STACK(1).DI_PRIOR) * 100;
+
+
+
+
+
+
+-**YEAR-TO-DATE
+
+E_STACK(4).DYTD_CURR =IF ((E_STACK(1).DYTD_CURR LT 1) AND
+                         (E_STACK(1).DYTD_CURR GT (-1))) THEN 0 ELSE
+                 (HTL1_STACK(CNT1).DYTD_CURR/E_STACK(1).DYTD_CURR) * 100;
+  
+
+ E_STACK(4).DYTD_PRIOR =IF ((E_STACK(1).DYTD_PRIOR LT 1) AND
+                           (E_STACK(1).DYTD_PRIOR GT (-1))) THEN 0 ELSE
+                 (HTL1_STACK(CNT1).DYTD_PRIOR/E_STACK(1).DYTD_PRIOR) * 100;
+ 
+                         
+ 
+
+E_STACK(4).IYTD_CURR =IF ((E_STACK(1).IYTD_CURR LT 1) AND
+                         (E_STACK(1).IYTD_CURR GT (-1))) THEN 0 ELSE
+                  (HTL1_STACK(CNT1).IYTD_CURR/E_STACK(1).IYTD_CURR) * 100;
+  
+
+ E_STACK(4).IYTD_PRIOR =IF ((E_STACK(1).IYTD_PRIOR LT 1) AND
+                           (E_STACK(1).IYTD_PRIOR GT (-1))) THEN 0 ELSE
+                (HTL1_STACK(CNT1).IYTD_PRIOR/E_STACK(1).IYTD_PRIOR) * 100;
+ 
+                         
+
+
+E_STACK(4).DIYTD_CURR =IF ((E_STACK(1).DIYTD_CURR LT 1) AND
+                          (E_STACK(1).DIYTD_CURR GT (-1))) THEN 0 ELSE
+                 (HTL1_STACK(CNT1).DIYTD_CURR/E_STACK(1).DIYTD_CURR) * 100;
+
+
+E_STACK(4).DIYTD_PRIOR =IF ((E_STACK(1).DIYTD_PRIOR LT 1) AND
+                           (E_STACK(1).DIYTD_PRIOR GT (-1))) THEN 0 ELSE
+                  (HTL1_STACK(CNT1).DIYTD_PRIOR/E_STACK(1).DIYTD_PRIOR) * 100;
+
+ 
+
+ 
+
+
+-************
+TYPE "AFTER HOTEL_PERCENT"
+ENDCASE
+
+
+
+END
+

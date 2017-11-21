@@ -1,0 +1,111 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Created for the new quarterly review - JK 8/2/05
+-******************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+DEFINE FILE &&EXTRACT 
+
+FARE_PAID/D12.2  = SEG_AMT + SEG_TAX;
+  
+NET_TKT_CNT/D12    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (SEG_COUNT EQ 1) AND
+                           (FARE_PAID GE 0) AND
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (SEG_COUNT EQ -1) AND
+                           (EX_FLAG EQ 'F')
+                         THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (SEG_COUNT EQ -1) AND 
+                           (RF_FLAG EQ 'F')
+                         THEN (-1) ELSE 0;
+CLIENTCODE/A8 = '&&ROLLUP.EVAL'; 
+TKT_AMOUNT/D12.2  = TICKET_AMT + TAX_AMT;
+DECLINE_AMT/D12.2   = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         TKT_AMOUNT - LOWEST_AMT;
+DISSAVINGS/D12.2  = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST;    
+SPACE/A1 = '-';
+SPACE1/A1 = ' ';
+REF_DESC/A40 = LCWORD(40, REFUSAL_DESC, REF_DESC);
+REASON/A45 = REFUSE_CODE||SPACE1|SPACE|SPACE1|REF_DESC;
+
+-INCLUDE QRFTRANA
+END
+
+TABLEF FILE &&EXTRACT
+PRINT AIR_MAIN.INTL_DOM AS 'INT_DOM'
+      FARE_PAID
+      NET_TKT_CNT
+      CLIENTCODE AS 'ROLLUP_CODE'      
+      TKT_AMOUNT
+      DECLINE_AMT
+      DISSAVINGS
+      PYTD CURRENT
+      REFUSE_CODE
+      REF_DESC      
+      REASON
+      TRAN
+      TRN_DATE
+      YEAR
+WHERE (TRN_DATE GE '&&FROMDT.EVAL') AND (TRN_DATE LE '&&TODT.EVAL') OR
+      (TRN_DATE GE '&&FXDATE.EVAL') AND (TRN_DATE LE '&&TXDATE.EVAL')
+WHERE VOID.VOID_DATE EQ 0
+-IF &&INTDOM EQ 'T' THEN GOTO SKIP;
+WHERE AIR_MAIN.INTL_DOM EQ '&&INTDOM.EVAL'
+-SKIP
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+-* -IF &&BASEROLL NE &&ROLLUP THEN GOTO SKIPPARM;
+-* -INCLUDE RPTPARMS
+-* -SKIPPARM
+
+ON TABLE HOLD AS PEERLSD
+END
+-RUN
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+
+
+
+TABLE FILE PEERLSD
+SUM DISSAVINGS   
+    REASON
+    FARE_PAID
+    NET_TKT_CNT
+    PYTD CURRENT
+BY ROLLUP_CODE
+BY YEAR
+BY TRAN
+BY REFUSE_CODE
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+
+TABLE FILE HOLD1
+PRINT ROLLUP_CODE YEAR TRAN REFUSE_CODE DISSAVINGS REASON FARE_PAID NET_TKT_CNT PYTD CURRENT
+ON TABLE SAVE
+END
+-RUN
+
+MODIFY FILE QRLS
+FIXFORM ROLLUP_CODE/8 YEAR/4 TRAN/7 REFUSE_CODE/2 DISSAVINGS/12 REASON/45 FARE_PAID/12 NET_TKT_CNT/12 PYTD/1 CURRENT/1
+MATCH ROLLUP_CODE YEAR TRAN REFUSE_CODE
+ON NOMATCH INCLUDE
+DATA ON SAVE
+END
+-RUN
+
+
+ 
+
+
+-NEXTONE

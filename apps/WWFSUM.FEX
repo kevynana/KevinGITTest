@@ -1,0 +1,203 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-INCLUDE SETECHO
+
+SET ASNAMES=ON
+
+
+-SET &&RPTSUF = 'DTL';
+-INCLUDE FDEFRPTS
+-RUN
+
+-IF &&HFLG EQ 'N' AND &&CFLG EQ 'N' AND &&AFLG EQ 'N' THEN GOTO XXIT;
+-IF &&CFLG EQ 'N' THEN GOTO NOCUSE;
+
+
+-SET &HLDPATH=TEMPPATH(50,'A50');
+-SET &HA=&HLDPATH || 'WWFA.FOC';
+-SET &HC=&HLDPATH || 'WWFC.FOC';
+-SET &HH=&HLDPATH || 'WWFH.FOC';
+-RUN
+-GOTO CONTUSE;
+
+-NOCUSE;
+-SET &HLDPATH=TEMPPATH(50,'A50');
+-SET &HA=&HLDPATH || 'WWFA.FOC';
+-SET &HH=&HLDPATH || 'WWFH.FOC';
+-RUN
+-GOTO CONTUSE;
+
+
+-CONTUSE;
+
+USE CLEAR *
+-RUN
+
+EX SUUSES
+-RUN 
+
+-IF &&CFLG EQ 'N' THEN GOTO NOCUSE1;
+
+USE ADD 
+&HA AS WWFA
+&HC AS WWFA
+&HH AS WWFA
+END
+-RUN
+-GOTO CONTUSE1;
+
+-NOCUSE1;
+
+USE ADD 
+&HA AS WWFA
+&HH AS WWFA
+END
+-RUN
+-GOTO CONTUSE1;
+
+
+
+-CONTUSE1;
+
+
+
+DEFINE FILE WWFA
+CHG_AMT/D12.2 = FEE;
+END
+TABLE FILE WWFA
+PRINT AGR_CD
+      C_ITIN
+      CHG_AMT AS 'FEE'
+      LOC_CD
+      GL_CODE
+      DEPT_CD
+      PROJ_CD
+      FUND_SRC
+      LEVEL2
+      LINE_DESC
+      PAX
+-*      PNR_LOCATOR
+      TKT_NUM
+      VAL_AIRLINE
+      XDPT_DT
+      XPSNGR_NM
+      XTRAN_DT
+      FLAG
+      
+BY PNR_LOCATOR
+BY PAX NOPRINT
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+
+DEFINE FILE AIRHOLD1
+BF/A10 = ' ';
+CHG_DSC/A7 = '      ';
+TRAN_TYPE/A15 = 'TRANSACTION FEE';
+
+NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+END
+
+
+
+TABLE FILE AIRHOLD1
+-INCLUDE HEADAIR
+"&&SUBHEAD"
+"</2"
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+  
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY 
+ENDSTYLE
+
+-*
+
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT;
+
+

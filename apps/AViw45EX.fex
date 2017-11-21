@@ -1,0 +1,80 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File AIREXTRT.FEX
+-********************************************************************
+-* MODIFICAIONS:
+-* 5/22/1998 ADDED TRN_DATE CRITERIA TO WHERE STATEMENTS - LP
+-* 7/09/1998 ADDED A DEFINE FOR TICKETLESS MIR TRANSACTIONS - LP
+-* ADDED TRANTYPE INCLUDE - JK 12/10/14 STORY ID S-06492
+-*12/08/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+
+-********************************************************************
+-*
+-* This program extracts data for the series of basic ticket listing
+-* reports.  Based on the user profile selected, one of many report
+-* formats will be produced.  
+-*
+-********************************************************************
+
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+
+-SET &&IDLEVELBREAK = '';
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+DEFINE FILE &&EXTRACT
+  
+  
+  NEW_TRIP_LENGTH/P9    = TRIP_LENGTH;
+  LEVEL_DESC1/A80        = &&LDESC; 
+  XPSNGR_NM/A15        = 
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+
+-INCLUDE TRANTYPE
+-INCLUDE IDLEVDEFINE 
+
+  END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT AIR_KEY
+      NEW_TRIP_LENGTH
+      LEVEL_DESC
+      XPSNGR_NM
+
+-INCLUDE &AIRDATES
+
+WHERE VOID_DATE EQ 0
+WHERE SEG_NBR EQ '01'
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+ON TABLE HOLD AS &&RPT_HOLD
+
+END
+
+-*-EXIT
+
+

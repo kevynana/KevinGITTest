@@ -1,0 +1,39 @@
+-*ChkReportBreak.fex
+-*   Break Report by either SubTotal or PageBreak or ReportBreak based on GUI selection.
+-*   These two global variables &&BREAKBY &&BRK_LVL passed from codegen will be used to
+-*   determine how to break the report.
+-*
+-*   The value of &&BREAKBY 1:  SUBTOTAL; 2: PAGEBREAK; 3: REPORTBREAK.
+-*
+-*   If the report runs to screen, we will treat ReportBreak same as PageBreak.  Otherwise, the ReportBreak  
+-*   will generate multiple reports based on the &&BRK_LVL and Hierarchy selected.
+-*
+-*   A hierarchy level is added to the hold file (RPTHOLD) in the extract programs, and the level is determined 
+-*   by the &&BRK_LVL.
+
+-*get break levels from live data
+TABLE FILE HHIER
+BY &&LDESC
+ON TABLE SAVE AS SELMEMBERS
+END
+-RUN
+-SET &TOTMEMBERS = &LINES;
+
+-SET &INDEX=1;
+-REPEAT ReadAllMmbs &TOTMEMBERS TIMES
+-READ SELMEMBERS NOCLOSE &MEMLEVEL.15.
+-SET &MEM.&INDEX= &MEMLEVEL || '';
+-SET &INDEX = &INDEX + 1;
+-ReadAllMmbs
+-CLOSE SELMEMBERS
+
+
+-SET &INDEX = 1;
+
+-REPEAT ALLMEMBERS &TOTMEMBERS TIMES
+
+-* translate levels into WHERE statement 
+-* PASS &&WHATLEVEL to the detail program and save reports to a different name
+-SET &MEMLEVEL = &MEM.&INDEX;
+-SET &&WHERELEVEL = IF &&BREAKBYFLD EQ ' ' THEN ' ' ELSE 'WHERE &&BREAKBYFLD.EVAL EQ ''&MEMLEVEL.EVAL''';
+-SET &INDEX = &INDEX + 1;

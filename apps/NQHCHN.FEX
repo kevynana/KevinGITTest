@@ -1,0 +1,235 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Created for the new quarterly review - JK 8/2/05
+-******************************************************************************
+-*SET TEMPERASE = OFF
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-SET &&CHN_LMT=10;
+
+DEFINE FILE &&EXTRACT 
+  CHAINN/A25 = LCWORD(25, CHAIN_NAME, CHAINN);
+  NEW_TOTAL_AMT/D12.2C = TOTAL_AMT;
+  NBR_DAYS/D12 =  NUM_DAYS; 
+  NNROOMS/D12 = IF (NBR_DAYS LT 0) AND (NUM_ROOMS LT 0)
+                THEN ((NBR_DAYS*NUM_ROOMS)*(-1))
+                ELSE NBR_DAYS*NUM_ROOMS;
+-INCLUDE QRFTRANC
+END
+
+
+TABLEF FILE &&EXTRACT
+PRINT CHAINN
+      NNROOMS
+      NEW_TOTAL_AMT
+WHERE (INVOICE_DATE GE '&&FROMDT.EVAL') AND (INVOICE_DATE LE '&&TODT.EVAL') 
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS HTLB1
+END
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NoHTLData;
+-RUN
+
+-***************************************************************************************
+-* Hotel Chain Ranking
+-***************************************************************************************
+TABLE FILE HTLB1
+SUM NNROOMS
+    NEW_TOTAL_AMT
+BY CHAINN
+ON TABLE HOLD AS HOLD1
+END
+-RUN
+
+TABLE FILE HOLD1
+PRINT CHAINN
+      NNROOMS
+      NEW_TOTAL_AMT
+RANKED BY HIGHEST NNROOMS NOPRINT
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+DEFINE FILE HOLD2
+  CHN_LIMIT/I2 = &&CHN_LMT;
+  CLIMIT/A2    = EDIT(CHN_LIMIT) ;
+  CRANK/D5     = RANK;    
+  BRANK/A6     = FTOA(CRANK, '(D5)', 'A6');
+  LIST/D6 = IF CHAINN NE LAST CHAINN THEN (LAST LIST + 1) ELSE LAST LIST;
+  FRANKX/A7 = FTOA(LIST, '(D6)', 'A7');
+  FRANK/A6=EDIT(FRANKX,'$999999');
+  CHN_VALUE/A9 = IF CHN_LIMIT EQ 0 THEN BRANK ELSE
+                 IF LIST GT CHN_LIMIT THEN 'All Other' ELSE FRANK;  
+  CHN_PRINT/A36 = IF CHN_VALUE NE 'All Other' THEN CHAINN ELSE 'All Other';
+END
+-RUN
+
+TABLE FILE HOLD2
+SUM NNROOMS
+    NEW_TOTAL_AMT
+COMPUTE AVGRR/D12 = IF ((NNROOMS LT 1) AND (NNROOMS GT (-1))) THEN 0 ELSE
+                       (NEW_TOTAL_AMT/NNROOMS);
+BY CHN_VALUE
+BY CHN_PRINT
+ON TABLE HOLD AS HOLD3
+END
+-RUN
+
+-***********************************************************************************
+-* Total Room Nights Graph
+-***********************************************************************************
+-SET &G_DADV1= 'N';
+-IF &&SKIPGRAPH EQ 'Y' THEN GOTO AROUNDHTL;
+
+GRAPH FILE HOLD3
+SUM NNROOMS AS ' '
+-* ACROSS CHN_VALUE NOPRINT
+ACROSS CHN_PRINT AS ' '
+ON GRAPH SET GRAPHEDIT OFF
+ON GRAPH SET GRAPHSTYLE *
+setGraphType(55);
+
+setConnectLineMarkers(true);
+setO1LabelDisplay(true);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1LabelDisplay(true);
+setY1AxisSide(0);
+
+setFillColor(getSeries(0), new Color, 0 64 128));
+setFillColor(getSeries(1), new Color, 145 207 255));
+setFillColor(getSeries(2), new Color, 160 0 181));
+setFillColor(getSeries(3), new Color, 255 255 128 ));
+setFillColor(getSeries(4), new Color, 0 128 0));
+setFillColor(getSeries(5), new Color, 128 128 128));
+setFillColor(getSeries(6), new Color, 255 0 255));
+setFillColor(getSeries(7), new Color, 64 128 128));
+setFillColor(getSeries(8), new Color, 255 128 0));
+setFillColor(getSeries(9), new Color, 128 0 0));
+
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setPieFeelerTextFormat(2);
+
+setPieDepth(90);
+setFontSizeAbsolute(getPieLabelDisplay(),(true);
+-* setAutofit(getPieLabelDisplay(),true);
+-* setFontSize(getPieLabelDisplay(),2);
+setLegendDisplay(false);
+setPieSliceDetach(getSeries(0), 100);
+setPieSliceDetach(getSeries(1), 100);
+setSubtitleString("Total Room Nights");
+setFontSizeAbsolute(getSubtitle(),false); 
+setAutofit(getSubtitle(),true);
+setTextJustHoriz(getSubtitle(),1);
+setFontStyle(getSubtitle(),1);
+setFontSize(getSubtitle(),10);
+setFontSize(getTitle(),32);
+setPieLabelDisplay(3);
+-*setPieRotate(90);
+
+-*setPlace(true);
+ENDSTYLE
+ON GRAPH HOLD AS HCHNG FORMAT SVG
+END
+-RUN
+
+-SET &G_DADV1=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+-AROUNDHTL
+-***********************************************************************************
+-* Total Room Nights Graph
+-***********************************************************************************
+-SET &G_DADV2= 'N';
+-IF &&SKIPGRAPH EQ 'Y' THEN GOTO AROUNDHTL1;
+
+GRAPH FILE HOLD3
+SUM AVGRR AS ' '
+ACROSS CHN_PRINT AS ' '
+ON GRAPH SET LOOKGRAPH VBAR
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO OFF
+ON GRAPH SET GRID OFF
+ON GRAPH SET GRAPHSTYLE *
+setO1LabelRotate(3);
+setFillColor(getSeries(0), new Color, 0 64 128));
+setFillColor(getSeries(1), new Color, 145 207 255));
+setFillColor(getSeries(2), new Color, 160 0 181));
+setFillColor(getSeries(3), new Color, 255 255 128 ));
+setFillColor(getSeries(4), new Color, 0 128 0));
+setFillColor(getSeries(5), new Color, 128 128 128));
+setFillColor(getSeries(6), new Color, 255 0 255));
+setFillColor(getSeries(7), new Color, 64 128 128));
+setFillColor(getSeries(8), new Color, 255 128 0));
+setFillColor(getSeries(9), new Color, 128 0 0));
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+-* setRiserBorderMode(2);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+-* setLegendPosition(1);
+-* setLegendTextAutofix(true);
+-* setLegendMarkersPerRow(3);
+setTitleString("Average Room Rate");
+setSubtitleString(" ");
+setY1LabelDisplay(true);
+setY1LabelFormat(6);
+setAutofit(getTitle(),true);
+setTextJustHoriz(getTitle(),1);
+setFontSizeAbsolute(getTitle(),true); 
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),12);
+setFontSizeAbsolute(getO1Label(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH HOLD AS HCHNG1 FORMAT SVG
+END
+-RUN
+
+-SET &G_DADV2=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+
+-AROUNDHTL1
+
+
+TABLE FILE BRPTINST
+PRINT INST_KEY NOPRINT
+BY INST_KEY NOPRINT
+ON TABLE SET PAGE-NUM OFF
+&&OUTLINE1
+&&OUTLINE2
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.150000, 
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=8, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=REPORT, IMAGE=HtlSumchn.GIF,POSITION=(0.1 0.1), SIZE=(10.75 .75), $
+-IF &&SKIPGRAPH EQ 'Y' OR &G_DADV1 EQ 'N' GOTO SKIP_DGAT1;
+-*TYPE=REPORT,IMAGE=HCHNG.SVG,POSITION=(1.5  1.0), SIZE=(8.5 5.0), $
+TYPE=REPORT,IMAGE=HCHNG.SVG,POSITION=(1.5  1.0), SIZE=(8.0 5.0), $
+
+-SKIP_DGAT1
+-IF &&SKIPGRAPH EQ 'Y' OR &G_DADV2 EQ 'N' GOTO SKIP_DGAT2;
+TYPE=REPORT,IMAGE=HCHNG1.SVG, POSITION=(1.8  5.5), SIZE=(6.5 3.0), $
+-SKIP_DGAT2
+TYPE=SUBTOTAL, SIZE=9, STYLE=BOLD,  $
+TYPE=GRANDTOTAL, SIZE=9, STYLE=BOLD, $
+TYPE=REPORT,GRID=OFF, $
+ENDSTYLE
+END
+-RUN
+
+
+-NoHTLData
+

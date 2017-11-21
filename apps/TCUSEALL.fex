@@ -1,0 +1,106 @@
+-*========================================================================
+-* PROGRAM 	: TCUSEALL.FEX
+-* DESCRIPTION	: LOOPS THROUGH ENABLED ROLLUP CODE FOR TOTAL REPORTING
+-* DATE         : AUGUST 06, 2003
+-* PROGRAMMER   : WILLIAM TORRES
+-*========================================================================
+-* UPDATES	:
+-* 4/27/04  SAC   ADDED TRP_REF AND NHR_REF
+-*		:
+-*		:	
+-*		:
+-*		:	
+-*		:	
+-*		:
+-*		:
+-*========================================================================
+SET ASNAMES = ON
+
+TABLE FILE ROLLUPX
+BY ROLLUP_CODE NOPRINT
+PRINT ROLLUP_CODE COMP
+IF PR_STAMP EQ 'T'
+IF UPD_ENABLE EQ 'X'
+IF QTR_ENABLE EQ ' '
+IF RECORDLIMIT EQ 1
+ON TABLE SAVE AS TMPREAD
+END
+-SET &&X = &RECORDS ;
+-IF &&X EQ 0 GOTO STOP;
+
+-READ TMPREAD &&ROLL.A8. &&COMP.A6.
+-RUN
+
+-USE50S
+-SET &&AH = AH_50;
+-SET &&DAH = AH_50 || '.';
+-SET &&EXTRACT = SR_50;
+-SET &&EXTJOIN = SR_JOIN;
+-SET &&COMPNY1  = &&COMP ;
+
+-SET &&AIR_PATH = 'D:\TNT\TTRACKER\DATA\';
+-SET &&COM_PATH = 'D:\TNT\TTRACKER\SYSTEM\DATA\';
+-SET &&SU_PATH = 'D:\TNT\TTRACKER\SUDATA\';
+-*========================================================================
+-*                    USE AL DATABASES
+-*========================================================================
+-SET &&AH_DB1 = 'AL' || &&COMPNY1 || '.FOC';
+
+-SET &&USE_AH1 = &&AIR_PATH || &&AH_DB1;
+
+-SET &&USE_AREF = &&COM_PATH || 'AIR_REF.FOC';
+-SET &&USE_TREF = &&COM_PATH || 'TRP_REF.FOC';
+-SET &&USE_NREF = &&COM_PATH || 'NHR_REF.FOC';
+-SET &&USE_CLNT = &&COM_PATH || 'CLIENT.FOC';
+-SET &&USE_BRCH = &&COM_PATH || 'BRANCH.FOC';
+-SET &&USE_ROLL = &&COM_PATH || 'ROLLUPX.FOC';
+-SET &&USE_CCAT = &&COM_PATH || 'CLS_CAT.FOC';
+-SET &&USE_ARPT = &&COM_PATH || 'AIRPORT.FOC';
+-SET &&USE_AEMB = &&COM_PATH || 'EMBARPT.FOC';
+-SET &&USE_ARTE = &&COM_PATH || 'RTEARPT.FOC';
+-SET &&USE_ANDO = &&COM_PATH || 'NDOARPT.FOC';
+-SET &&USE_ANDD = &&COM_PATH || 'NDDARPT.FOC';
+-SET &&USE_MILG = &&COM_PATH || 'MILEAGE.FOC';
+-SET &&USE_ARLN = &&COM_PATH || 'AIRLINE.FOC';
+-SET &&USE_CITY = &&COM_PATH || 'CITY.FOC';
+-SET &&USE_CEMB = &&COM_PATH || 'EMBCITY.FOC';
+-SET &&USE_CRTE = &&COM_PATH || 'RTECITY.FOC';
+-SET &&USE_CNDO = &&COM_PATH || 'NDOCITY.FOC';
+-SET &&USE_CNDD = &&COM_PATH || 'NDDCITY.FOC';
+-SET &&USE_VAIR = &&COM_PATH || 'VAL_AIR.FOC';
+
+-SET &&COMP1A = 'S_' ||&&COMPNY1 || '.FOC';
+-SET &&COMP1B = 'A_' ||&&COMPNY1 || '.FOC';
+-SET &&COMP1C = 'T_' ||&&COMPNY1 || '.FOC';
+
+USE CLEAR *
+
+USE
+D:\TNT\TTRACKER\DATA\&&COMP1A AS &&EXTRACT
+D:\TNT\TTRACKER\DATA\&&COMP1B AS AIR_MAIN
+D:\TNT\TTRACKER\DATA\&&COMP1C AS TKT_MAIN
+
+  &&USE_ARLN
+  &&USE_MILG
+  &&USE_CCAT
+  &&USE_AEMB
+  &&USE_CEMB
+  &&USE_ARTE
+  &&USE_CRTE
+  &&USE_ANDO
+  &&USE_CNDO
+  &&USE_ANDD
+  &&USE_CNDD
+  &&USE_VAIR
+  &&USE_AREF
+  &&USE_TREF
+  &&USE_NREF
+  &&USE_CLNT
+
+  &&USE_AH1 AS &&AH
+
+END
+-RUN
+
+-STOP
+-EXIT

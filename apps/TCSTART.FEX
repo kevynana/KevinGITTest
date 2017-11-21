@@ -1,0 +1,16 @@
+-*========================================================================
+USE CLEAR *
+-*========================================================================
+EX SETDBLS SETFILE=&&SETF
+-RUN
+EX TCCLEAR
+-RUN
+CREATE FILE TCRANK
+-RUN
+EX TCUSEALL
+-RUN
+EX TCVALL1
+-RUN
+EX CPALLSUM
+-RUN
+

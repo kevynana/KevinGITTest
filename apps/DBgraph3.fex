@@ -1,0 +1,165 @@
+-*SET TEMPERASE = OFF
+-INCLUDE SETECHO
+
+DEFINE FILE EACONG
+INV/MTY = INVOICE_MY;
+END
+GRAPH FILE EACONG
+SUM CNTR_SAVINGS AS 'Contract Savings' LOST_SAVINGS AS 'Lost Savings'
+ACROSS INV AS ' '
+WHERE INVOICE_MY GE '01/2006'
+
+ON GRAPH HOLD AS 'DBGRAPH3' FORMAT PNG
+
+ON GRAPH SET LOOKGRAPH VBAR
+ON GRAPH SET GRAPHEDIT SERVER
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D ON
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET VAXIS 190
+ON GRAPH SET HAXIS 370
+ON GRAPH SET UNITS PX
+-* ON GRAPH PCHOLD FORMAT PNG
+ON GRAPH SET GRAPHSTYLE *
+setMarkerDisplay(true);
+setConnectLineMarkers(false);
+setConnectScatterMarkers(false);
+setO1LabelDisplay(true);
+setO1AxisSide(0);
+setO1LabelStagger(false);
+setO1LabelRotate(3);
+setFontSizeAbsolute(getO1Label(),true);
+setFontSize(getO1Label(),9);
+setFontStyle(getO1Label(),0);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setAxisAssignment(0,0);
+setY1LabelDisplay(true);
+setY1AxisSide(0);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setTextFormatPreset(getY1Label(),6);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSize(getY1Label(),9);
+setFontStyle(getY1Label(),0);
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setTextJustHoriz(getLegendText(),2);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSize(getLegendText(),10);
+setFontStyle(getLegendText(),0);
+setTextRotation(getLegendText(),0);
+setTextWrap(getLegendText(),false);
+setLegendPosition(1);
+setTitleString("Performance");
+setTextJustHoriz(getTitle(),1);
+setFontSizeAbsolute(getTitle(),true);
+setFontSize(getTitle(),12);
+setFontStyle(getTitle(),2);
+setTextRotation(getTitle(),0);
+setTextWrap(getTitle(),false);
+setPlaceResize(getTitle(),0);
+setPlaceRotate(getTitle(),0);
+setPlaceAlign(getTitle(),0);
+setPlaceWordWrap(getTitle(),0);
+setPlaceResize(getY1Label(),0);
+setPlaceRotate(getY1Label(),0);
+setPlaceAlign(getY1Label(),0);
+setPlaceWordWrap(getY1Label(),0);
+setPlaceResize(getO1Label(),0);
+setPlaceRotate(getO1Label(),0);
+setPlaceAlign(getO1Label(),0);
+setPlaceWordWrap(getO1Label(),0);
+setPlaceResize(getLegendText(),0);
+setPlaceRotate(getLegendText(),0);
+setPlaceAlign(getLegendText(),0);
+setPlaceWordWrap(getLegendText(),0);
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(2, new Color, 115 160 247));
+setPlace(true);
+ENDSTYLE
+ON GRAPH SET STYLE *
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+     TITLETEXT='Performance',
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+$
+ENDSTYLE
+END
+-RUN
+-QUIT
+
+
+<![CDATA[GRAPH FILE E1CONG
+SUM VOLUME
+ACROSS INVOICE_MY
+ON GRAPH SET LOOKGRAPH VBAR
+ON GRAPH SET GRAPHEDIT SERVER
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET VAXIS 190
+ON GRAPH SET HAXIS 340
+ON GRAPH SET UNITS PX
+ON GRAPH PCHOLD FORMAT PNG
+ON GRAPH SET GRAPHSTYLE *
+setMarkerDisplay(true);
+setConnectLineMarkers(false);
+setConnectScatterMarkers(false);
+setO1LabelDisplay(true);
+setO1AxisSide(0);
+setO1LabelStagger(true);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setAxisAssignment(0,0);
+setY1LabelDisplay(true);
+setY1AxisSide(0);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setTextFormatPreset(getY1Label(),6);
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setTitleString("Performance");
+setTextJustHoriz(getTitle(),1);
+setFontSizeAbsolute(getTitle(),true);
+setFontSize(getTitle(),12);
+setTextRotation(getTitle(),0);
+setTextWrap(getTitle(),false);
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlaceResize(getTitle(),0);
+setPlaceRotate(getTitle(),0);
+setPlaceAlign(getTitle(),0);
+setPlaceWordWrap(getTitle(),0);
+setPlace(true);
+ENDSTYLE
+ON GRAPH SET STYLE *
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+     TITLETEXT='Performance',
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+$
+ENDSTYLE

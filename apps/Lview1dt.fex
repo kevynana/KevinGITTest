@@ -1,0 +1,561 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+-INCLUDE SETECHO
+-*                     FOCEXEC: CVIEW1DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*9/24/04    DEB                ADDED CODE FOR GLOBAL CURRENCY
+-*07/06/06   STEVE              Added XPSNGR_NM to fit onto one page
+-*09/06/06   DEB                ADDED DEFINE ABSRD
+-*4/26/07    DEB                CARRIED THROUGH XLVL3
+-*7/23/07    DEB                CARRIED THROUGH KB_AGT
+-*  02/02/2015  REJ  S-05681 Changes to the no data report to prepare for the Available
+-*                           Report changes.  Rollup Code is being removed from BRPTINST in
+-*                           ER5, so I'm removing the reference to the ROLLUP_CODE in that report.
+-*4/7/16 - JEM - S-17602 ADDED A DEFINE TO DECODE THE RESV_STATUS FIELD TO SHOW OPEN/CHANGED/CANCELLED BASED UPON THE 2ND CHARACTER OF THE FIELD
+-* 10/19/2016   RSB S-24470 - Create custom CAR file for Big Data feed
+-*                             Added: DOD_DESC, LEVEL5, LEVEL6 & LEVEL7 and EMP_ID
+-*                             Added -INCLUDE DATAVROLL
+-*                             Created a new report for ABBDFLIM
+-* 11/02/2016   RSB S-26731 - BIG DATA feeds - expand file feeds to include Domestic International flag
+-*                             Added: INTL_DOM
+-* 12/09/16 RSB S-28795  BIG DATA - Change Level Field titles in all Big Data files (air, car, hotel)
+-*                        Use field name for column title, no need to use ROLLUP.
+-* 03/24/17 JEM S-32120 Carried through EXEC and VIP_FLAG for ABBDFLIM
+-* 05/18/2017 - RSB - S-34801 - Add field to BIG DATA FEED for DVI and rerun all historical data
+-*10/02/2017 JEM S-35468 Place the footer datetime stamp text in a separate file to be -INCLUDED in the stylesheets
+
+-**************************************************************************
+
+
+
+
+SET ASNAMES=ON
+-RUN
+
+
+
+
+
+
+DEFINE FILE LIMHOLD2
+ABSRD/D8 = ABS(RENTAL_DAYS);
+END
+TABLE FILE LIMHOLD2
+PRINT ABSRD
+  AGENT_NUM 
+  AIRPORT_CODE  
+  AIRPORT_NAME
+  ALPHA_RATE
+  AR_BRANCH
+  AROLL_LEV4
+  AROLL_LEV5
+  AROLL_LEV6
+  AROLL_LEV7
+  AROLL_LEV8
+  AROLL_LEV9 
+  AROLL_DSC1
+  AROLL_DSC2
+  AROLL_DSC3
+  AROLL_DSC4
+  AROLL_DSC5
+  AROLL_DSC6
+  AROLL_DSC7
+  AROLL_DSC8
+  AROLL_DSC9
+  AROLL_DSC10
+  AROLL_DSC11
+  AROLL_DSC12
+  AROLL_DSC13
+  AROLL_DSC14
+  AROLL_DSC15
+  AVG_DLY_RATE
+  AVGDR
+  BKGS2
+  BOOKINGS
+  BR_CL_IDX 
+  BZ_SRC
+  CAR
+  CAR_CAT   
+  CAR_DESC
+  CAR_DSC 
+  CAR_KEY   
+  CAR_RATE  
+  CAR_TOT
+  CAR_TYPE  
+  CARD_NUM  
+  CARD1_NUM 
+  CARD3_NUM
+  CCR_CONFIRM 
+  CHG_COD
+  COUNTRY_NAME
+  CC_NUM
+  CURR_DATE
+  DAILY_RATE    
+  DAY_OF_WK
+  DOD_DESC
+  DOD_TYPE  
+  DROP_CITY 
+  DROP_CTY_NAME 
+  DROP_DATE     
+  DROP_DAY
+  DROP_OFF_DT
+  EMP_ID
+  EXEC
+  FOP2
+  GROSS_BOOK
+  IBOOK
+  INTL_DOM
+  INV_DATE
+  INV_MONTH
+  INV_MY    
+  INVOICE_DATE  
+  INVOICE_NUM 
+  PICKUP_DATE
+  KB_AGT
+  LEV_2     
+  LEVEL1    
+  LEVEL2    
+  LEVEL3 
+  LEVEL4
+  LEVEL5
+  LEVEL6
+  LEVEL7
+  LVL3  
+  MIDBOOK
+  MID_AMT
+  MID_DAYS
+  NBR_DAYS
+  NEW_RENTL_AMT
+  NMBR_DAYS
+  NODAYS 
+  NONMIDBOOK
+  NONMID_AMT
+  NONZEBOOK
+  NONMID_DAYS
+  NONZE_AMT
+  NONZE_DAYS    
+  NUM_CARS  
+  NUM_DAYS  
+  PASSNGR_NAME
+  PICK_CTY_NAME 
+  PICK_DAY
+  PICK_UP_DT    
+  PICKUP_CITY   
+  PICKUP_DATE   
+  PNR_LOCATOR   
+  PROD_COD
+  REFUSAL_DESC  
+  REFUSE_CD 
+  REFUSE_KEY    
+  RENTAL_AMT/D12.2
+  RENTAL_DAYS   
+  RESV_BRANCH
+  RESV_STATUS
+  RNTL_TYP  
+  RSNCDE
+  STATE_CODE
+  STD_RATE  
+  TICKET_BRANCH 
+  TOTAL_STD
+  TOTAL_SLSAV
+  TKT_NUM   
+  VENDOR_CODE   
+  VENDOR_NAME
+  VENDOR_NM
+  XSPACE
+  ZE_AMT    
+  ZEBOOK
+  ZE_DAYS
+  XLEVEL3
+  XLEV_3
+  XLVL3
+  NAMEC
+  AMT_RENTL1
+  RATE_DLY1
+  ZE_VNDR 
+  VIP_FLAG
+-INCLUDE BYHIERARCHY
+BY LEVEL_DESC
+-INCLUDE CARRATE
+ON TABLE HOLD AS LIMHOLD3
+END
+-RUN
+
+-IF '&&SETF.EVAL' EQ 'BZLFILE' GOTO BZfil;
+-* 
+-INCLUDE DATAVROLL 
+-IF &RECORDS EQ 0 THEN GOTO NORECORDS;
+-*
+-IF '&&SETF.EVAL' EQ 'ABBDFLIM' GOTO ABBDFLIM;
+-*
+
+-*-SET &&BREAKOPTION = '   ';
+
+-Skipset
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-* 
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-* -SET &&DRILLRPT = &&RPT_HOLD;
+-SET &&DRILLRPT = LIMHOLD3;
+
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+-* DEFINE FILE &&RPT_HOLD ADD
+DEFINE FILE LIMHOLD3 ADD
+NOWTOD/A8 WITH AIRPORT_CODE = HHMMSS (NOWTOD);
+XPSNGR_NM/A20=EDIT(PASSNGR_NAME,'99999999999999999999$$$$$$$$$$$$$');
+RES_ST1/A1 = EDIT(RESV_STATUS, '$9');
+RES_ST/A10 = IF RES_ST1 EQ 'O' THEN 'OPEN' ELSE
+             IF RES_ST1 EQ 'X' THEN 'CHANGED' ELSE
+             IF RES_ST1 EQ 'C' THEN 'CANCELLED' ELSE ' ';
+             
+-INCLUDE DefineSubtotalFields
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+ 
+-* TABLE FILE &&RPT_HOLD
+TABLE FILE LIMHOLD3
+
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-* ADDED ON 02/06/2003
+  COMPUTE AVGDR/D12.2CS=IF (RENTAL_AMT LT 0) AND (NBR_DAYS LT 0)
+    THEN ((RENTAL_AMT/NBR_DAYS) * (-1)) ELSE  IF ((RENTAL_AMT LT 1) AND
+    (RENTAL_AMT GT (-1))) THEN 0 ELSE 
+    (RENTAL_AMT/NBR_DAYS); NOPRINT
+  
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :NOMULTBREAK;
+-INCLUDE LevelNOPRINT
+-:NOMULTBREAK
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :NOMULTOTAL;
+-INCLUDE TOTALBYHIERARCHY
+-GOTO SKIPBREAKOPT;
+-:NOMULTOTAL
+&&BREAKOPTION
+-SKIPBREAKOPT
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+
+
+-*
+&&OUTLINE1 
+&&OUTPUTDEST
+&&OUTLINE2
+END 
+-RUN
+ 
+
+-GOTO XXIT
+
+-BZfil
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+
+DEFINE FILE LIMHOLD3 ADD
+NOWTOD/A8 WITH AIRPORT_CODE = HHMMSS (NOWTOD);
+END
+TABLE FILE LIMHOLD3
+
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+
+PRINT 
+PASSNGR_NAME AS 'Passenger Name' LEVEL4 AS 'EMP ID'
+LEVEL1 AS 'Charge Code 1' LEVEL2 AS 'Charge Code 2'
+LEVEL3 AS 'Charge Code 3'
+AROLL_DSC1 AS 'Total Company' 
+AROLL_DSC2 AS 'Business/Personal/Leisure' AROLL_DSC3 AS 'Sector' AROLL_DSC4 AS 'Global Group' AROLL_DSC5 AS 'Employee Class'
+AROLL_DSC6 AS 'Job Family' AROLL_DSC7 AS 'Grade' AROLL_DSC8 AS 'Job Code' AROLL_DSC9 AS 'CDM' AROLL_DSC10 AS 'Location Description'
+AROLL_DSC11 AS 'Professional Alignment' AROLL_DSC12 AS 'Secondary Alignment' AROLL_DSC13 AS 'Other Alignment' AROLL_DSC14 AS 'Department'
+AROLL_DSC15 AS 'Responsibility Center'
+PNR_LOCATOR AS 'PNR' BR_CL_IDX AS 'AR BR/CL#' DOD_TYPE AS 'Booking' INV_DATE AS 'Invoice Date'
+VENDOR_NAME AS 'Vendor' VENDOR_CODE AS 'Code' CAR_TYPE AS 'Car Type' PICK_UP_DT AS 'Pickup' DROP_OFF_DT AS 'Dropoff'
+RSNCDE AS 'RSN/DESC' NUM_DAYS/I7 AS 'Days' RENTAL_AMT AS 'Total AMT' TOTAL_SLSAV AS 'Savings AMT'
+BY PASSNGR_NAME NOPRINT
+-INCLUDE FOOTERDT
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+
+-*
+&&OUTLINE1 
+&&OUTPUTDEST
+&&OUTLINE2
+END 
+-RUN
+
+-GOTO XXIT
+-********
+-ABBDFLIM
+-********
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRILID;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'CARHOLD3';
+-INCLUDE DRILWHRS
+-***********
+-SKIP_DRILID
+-************************************************************
+-*
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL'   ELSE &&DTSTY;
+-RUN
+-*
+DEFINE FILE LIMHOLD3 ADD
+ NOWTOD      /A8 WITH AIRPORT_CODE = HHMMSS (NOWTOD);
+ PICK_UP_DT  /MDYY = PICKUP_DATE;
+ DROP_OFF_DT /MDYY = DROP_DATE; 
+ IBOOK       /A42  = DOD_DESC;
+ RESV_CODE   /A1   = SUBSTR(2, RESV_STATUS, 2, 2, 1, 'A1');
+ RESV_DESC   /A10  = DECODE RESV_CODE ('O' 'OPEN' 'C' 'CANCELLED' 'X' 'CHANGED');
+ NBR_DAYS    /D12  = NUM_DAYS;
+ BOOKINGS    /D12  = IF NUM_DAYS GT 0 THEN 1 ELSE IF NUM_DAYS LT 0 THEN (-1) ELSE 0;
+ EXVIP_FLAG/A1 = IF EXEC EQ 'E' THEN 'E' ELSE
+                 IF VIP  EQ 'V' THEN 'V' ELSE ' ';
+END
+-*
+TABLE FILE LIMHOLD3
+-*
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPCID;
+"</2"
+-*
+-********
+-NOSPCID;
+-********
+SUM NBR_DAYS   AS 'Number,of Days'
+    BOOKINGS   AS 'Net,Booking'
+    RENTAL_AMT AS 'Rental,Amount'
+   COMPUTE AVG_DLY_RATE/D9.2 = IF ((RENTAL_AMT LT 0) AND (NUM_DAYS LT 0)) THEN ABS(((RENTAL_AMT / NUM_DAYS) * (-1))) ELSE ABS(RENTAL_AMT / NUM_DAYS); AS 'Avg Daily,Rate' 
+    LEVEL1    
+    LEVEL2    
+    LEVEL3     
+    LEVEL4  
+    LEVEL5   
+    LEVEL6   
+    LEVEL7   
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :NOMULTBREAKID;
+-INCLUDE LevelNOPRINT
+-*
+-***************
+-:NOMULTBREAKID;
+-***************
+BY LEVEL_DESC    NOPRINT
+BY EMP_ID        &EMPID
+BY PASSNGR_NAME  AS 'Passenger Name'
+BY BR_CL_IDX     AS 'Client,Number'
+BY IBOOK         AS 'Online/,Traditional,Booking'
+BY INTL_DOM      AS 'Intl/Dom,Flag'
+BY PNR_LOCATOR   AS 'PNR,Locator'
+BY EXVIP_FLAG    AS 'Executive/,VIP Flag'
+BY INV_DATE      AS 'Invoice,Date'
+BY INVOICE_NUM   AS 'Invoice'
+BY RESV_DESC     AS 'Reservation,Status'
+BY VENDOR_CODE   AS 'Vendor,Code'
+BY VENDOR_NAME   AS 'Vendor,Name'
+BY CAR_TYPE      AS 'Car,Type'
+BY CAR_DESC      AS 'Car,Description'
+BY PICK_UP_DT    AS 'Pick-up,Date'
+BY PICKUP_CITY   AS 'Pick-up,City'
+BY PICK_CTY_NAME AS 'Pick-up City' 
+BY DROP_OFF_DT   AS 'Drop-off,Date'
+BY DROP_CITY     AS 'Drop-off,City'
+BY DROP_CTY_NAME AS 'Drop-off City'
+-*
+-***************
+-NOXTSID;
+-***************
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHRID;
+-INCLUDE &&DRILLWHR
+-*
+-***************
+-SKIP_WHRID
+-***************
+
+-IF &&MULTIBREAK NE 'Y' OR &&ALTHIER NE 'Y' THEN GOTO :NOMULTOTALID;
+
+-INCLUDE TOTALBYHIERARCHY
+-GOTO SKIPBREAKOPTID;
+-*
+-***************
+-:NOMULTOTALID;
+-***************
+&&BREAKOPTION
+-IF &&OUTFMT NE 'EXL2K' THEN GOTO NO_REPEATS;
+ON TABLE SET BYDISPLAY ON
+-***********
+-NO_REPEATS
+-***********
+ON LEVEL_DESC RECOMPUTE MULTILINES AS 'TOTAL FOR'
+ON TABLE NOTOTAL
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+-*
+-GOTO XXIT
+-*
+-**********
+-NORECORDS
+-**********
+-SET &&RPTSUF = 'MSG';
+-INCLUDE FDEFRPTS
+-RUN
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+-INCLUDE HEADAIR
+PRINT EMPTY AS 'REPORT,MESSAGE' 
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT
+

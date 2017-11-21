@@ -1,0 +1,442 @@
+-* This extract gathers udid information 
+-* Created 9/30/05  - JK
+-*10/11/05 -DV - ADDED DOD_TYPE H TO ALL DEFINES INCL DOD_TYPE
+-*05/08/06 -SAC - Added WWF_FSR for WWF-R US Aid Report
+-* 8/23/06 - DEB - Added udid BPAY_AMT BUS_FAR PAY_AMT TIER
+-*1/9/08 - DEB - ADDED EXCHG_SALE
+-* 7/16/08 - JK - ADDED LEVEL1 AND LEVEL3 
+-* 1/9/13 - DV - Added LEVEL5 LEVEL6 LEVEL7 VAL_AIRLINE
+-* 3/12/13 - DV ADDED CITY PAIR INTL_DOM 
+-* 3/19/13 - DV ADDED CHG_COD DEFINE ADDED AROLL_LEV11
+-*4/9/13 - DV ADDED ORG_APC DST_APC NFVSV
+-*Changed contract savings define - JK 8/23/13
+-*Added Flight Range Define for Booz-r JK 10/29/13
+-*1/31/14 UPDATED ONLINE/TRADITIONAL DEFINES TO USE ONLINE_TRADITIONAL FIELD INSTEAD OF DOD_TYPE
+-*Added Ticket Main fields for CFAINS request - JK 3/31/14
+-*added fnl_dest_depart_date for CFAINS request - JK 4/14/14
+-* ADDED RF_FLAG - DV - 4/17/14
+-* Added define for new_stay - JK 5/16/14
+-* Added Org_apc - JK 6/30/14
+-* Added TRP_RSN define - DV - 7/27/14
+-* ADDED TRIP_LENGTH - DV - 7/29/14
+-* ADDED DEFINE FOR TRP_LEN - 8/3/14 - JK 
+-* UPDATED DPT_MON FORMAT - 8/7/14 - JK
+-* ADDED CMP_ADV_PURCH DEFINE ADDED ADV_PURCH MILE- DEB - 8/18/14
+-* ADDED IBOOK DEFINE - JK - 11/19/14
+-* ADDED TRVL_AUTH - JK 11/20/14
+-* 2/13/15 - DEB - S-07431 - ADDED NEW_SEG_COUNT FOR ITMILES
+-* 06/01/2015 - DEB S-07786 = CHANGED TO INCLUDE ONLY INTL TICKETS CGBTIDTL
+-* 7/2/15 JEK-Story ID - S-07156 - Added fields for new standard air fare re-search savings report
+-* 7/22/15 JEK-StoryID- S-07156-Per Jami we are making the DSS amount 0 on exchanges
+-* 7/31/15 JEM=StoryID- S-07156 Updating to make drilldown work faster
+-*01/11/16 - DLV - S-13286  Updated to allow reports to sort/subtotal by id-levels
+-*02/22/16 - JEM - S-15795  Added logic for new report HDUDFLYD
+-*5/16/16-JEM-S-18812-added define for CCARD5 
+-*6/6/16-JEM-S-16200-added define for NRFLAG
+-*6/8/16-S-20025-JEM-Added define for tkt_amount 
+-*7/11/16 S-20630 DLV  Added EMP_ID to extract
+-*8/17/16-S-23512 JEM Added define for tkt_type1 and carried through for new report ARTMTGDT
+-* 11/15/2016 - RSB - S-26862 - AMERES-R Custom ABAIRDTL to include PRN Udid
+-*                               Added logic for new report ABUDPRND
+-* 06/07/2017 - RSB - S-35474 - EJONES-R EDJ would like the group numbers (UDID GN-)
+-*                               Added logic for new report ABUDGN1S
+-* 10/25/17     JEM         S-39364 Carrying thru new field TRAVELER_EMAIL
+
+
+
+-INCLUDE SETECHO  
+ 
+SET ASNAMES = ON 
+-SET HOLDATTR = ON;
+-RUN
+
+-SET &&IDLEVELBREAK = '';
+-RUN
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+DEFINE FILE &&EXTRACT
+  BASE_FARE/D12.2CS = SEG_AMT - SEG_COM;
+  BOOK_DT/MDYY = RESV_DATE;
+  CCARD5/A6 = EDIT(CREDIT_CARD, '$$$$$$$$$$$$999999');
+  
+   CHG_COD/A47 = IF LEVEL3 NE ' ' AND LEVEL2 NE ' ' THEN
+                LEVEL1  || '-' || LEVEL2 || '-' || LEVEL3 ELSE
+                IF LEVEL3 EQ ' ' AND LEVEL2 NE ' ' THEN
+                LEVEL1  || '-' || LEVEL2 ELSE
+                IF LEVEL3 EQ ' ' AND LEVEL2 EQ ' ' THEN LEVEL1;
+-*   CLASS_CAT/A8 = DECODE CL_CAT ('F' 'FIRST'     'C' 'COACH'   
+-*                               'D' 'DISCOUNT'  'B' 'BUSINESS'
+-*                              ' ' 'OTHER');  
+
+CLASS_CAT/A15 = DECODE CL_CAT ('F' 'FIRST'     'P' 'PREMIUM ECONOMY'   
+			        'D' 'DEFAULT'   'B' 'BUSINESS'
+			        'E' 'ECONOMY'   'U'  'UPGRADE' 
+                                ' ' 'DEFAULT'); 
+
+
+  FARE_PAID/D12.2CS   = SEG_AMT + SEG_TAX;   
+  IBOOK/A42 = DOD_DESC;
+  
+  LEVEL_DESC1/A60 = &&LDESC;
+  ADV_CAT/A8          = IF (ADV_PURCH LT 7) THEN '0 - 6' ELSE
+                        IF (ADV_PURCH LT 14) THEN '07 - 13' ELSE
+                        IF (ADV_PURCH LT 21) THEN '14 - 20' ELSE '21 +';
+  MILE/D9      = CITYPAIR.SEG_MILES;  
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NEW_ADV_PURCH/D9     = ADV_PURCH;
+  NEW_SEG_AMT/D12.2CS  = SEG_AMT;
+  NEW_SEG_DISC/D12.2CS = SEG_DISC;
+  NEW_SEG_MILES/D9= SEG_MILES;
+  NEW_STAY/P9CS = STAY;
+  NRFLAG/A15 = IF NONREF_FLAG EQ 'N' THEN 'NON-REFUNDABLE' ELSE
+               IF NONREF_FLAG EQ 'R' OR ' '  THEN 'REFUNDABLE' ELSE ' ';  
+  OTFLAG/A15 = IF ONLINE_TRADITIONAL EQ 'ONLINE' THEN 'ONLINE' ELSE 'TRADITIONAL';
+
+  REF_EXCH_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                            (SEG_NBR EQ '01') AND
+                            (FARE_PAID GE 0) AND
+                            (SEG_COUNT EQ 1) AND 
+                            (CONJ_REL EQ 1) THEN 0 ELSE 
+                         IF (TICKET_CODE EQ '1') AND
+                            (SEG_NBR EQ '01') AND 
+                            (EX_FLAG EQ 'F') THEN 1 ELSE 
+                         IF (TICKET_CODE EQ '1') AND
+                            (SEG_NBR EQ '01') AND
+                            (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  SAVINGS/D11.2CS      = SEG_STANDARD - FARE_PAID; 
+  STD_CAT/A1 = IF TKT_CL_CAT CONTAINS 'F' THEN 'F' ELSE
+                 IF TKT_CL_CAT CONTAINS 'B' THEN 'B' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'U' THEN 'U' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'P' THEN 'P' ELSE 
+                 IF TKT_CL_CAT CONTAINS 'E' THEN 'E' ELSE 'D';   
+  TKT_PURCH/D8CS       = IF (TICKET_CODE EQ '1') AND
+                            (SEG_NBR EQ '01') AND
+                            (FARE_PAID GE 0)  AND                    
+                            (SEG_COUNT EQ 1)  AND
+                            (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                            (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                         IF (SEG_COUNT LE 0) AND 
+                            (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                         IF (SEG_COUNT LE 0) AND 
+                             (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                         IF (SEG_COUNT LE 0) AND 
+                           (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TKT_TYP2/A10          =   IF EXCHG_SALE NE ' ' AND VOID_DATE EQ 0 THEN 'EXCHG SALE' ELSE 
+                            IF TKT_TYPE EQ ' ' AND VOID_DATE NE 0 THEN 'VOID' ELSE
+                            IF TKT_TYPE EQ ' ' AND VOID_DATE EQ 0 THEN 'SALE' ELSE
+                            IF TKT_TYPE EQ 'P-RF' OR 'F-RF' THEN 'REFUND' ELSE
+                            'EXCHANGE'; 
+TKT_TYPE1/A40 = IF (TKT_TYPE1 EQ '' AND EXSALE EQ '') THEN 'Original Sale' ELSE
+ 	       IF (TKT_TYPE1 EQ '' AND EXSALE NE '') THEN 'Exchange Sale'	ELSE
+ 	       IF (TKT_TYPE1 EQ 'F-EX') THEN 'Original Ticket Fully Exchanged' ELSE
+               IF (TKT_TYPE1 EQ 'P-EX')    THEN 'Original Ticket Partially Exchanged' ELSE
+               IF (TKT_TYPE1 EQ 'F-RF')    THEN 'Original Ticket Fully Refunded' ELSE
+               IF (TKT_TYPE1 EQ 'P-RF')    THEN 'Original Ticket Partially Refunded' ELSE
+               IF (TKT_TYPE1 EQ 'VOID')    THEN 'Original Ticket Voided';                            
+  TKT_AMOUNT/D12.2CS  = TICKET_AMT + TAX_AMT;
+                            
+-*  WWF_FSR/A1           = EDIT(LEVEL2,'$$$$$$$$$$$9$$$');
+-*  WWF_FSR/A1           = EDIT(LEVEL2,'9');
+  VASAVINGS/D12.2CS    = NEW_SEG_DISC - FARE_PAID;
+
+
+ WWF_FSR1/A4            =  EDIT(LEVEL1, '$$$$$$$$$$$9999');
+ WWF_FSR/A1             = EDIT(WWF_FSR1, '9');
+
+  XAP/A8               = EDIT(ADV_PURCH);
+  XARR_DT/MDYY         = ARR_DATE;
+  XDPT_DT/MDYY         = DPT_DATE;
+  XPSNGR_NM/A15        = EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+ PX_LST/A16 = GETTOK(PASSNGR_NAME, 33 , 1, '/', 16, PX_LST);
+ PX_FST/A16 = GETTOK(PASSNGR_NAME, 33, -1, '/', 16, PX_FST);
+ XTRAN_DT/MDYY        = TRN_DATE;
+ XFST_DPT/MDYY = FST_DPT_DATE;
+ DPT_MON/MT = FST_DPT_DATE;
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+  ADV_DAYS/A8        = IF ADV_PURCH LT 21 THEN XAP ELSE ADV_CAT;
+  AIRLINE_FEE/D8.2CS = IF EMBARK EQ 'FP2' OR 'FP3' 
+     THEN FARE_PAID ELSE 0;
+  DISSAVINGS/D11.2CS = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         FARE_PAID - SEG_LOWEST; 
+  NFVSV/D12.2CS = VASAVINGS;    
+  NEW_SEG_COUNT/D12CS = SEG_COUNT;
+
+-* Flight Duration added for BLVCFRD report
+FLT_LEN1A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 1, '-', 5, FLT_LEN1A);
+  FLT_LEN2A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 2, '-', 5, FLT_LEN2A);
+  FLT_LEN3A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 3, '-', 5, FLT_LEN3A);
+  FLT_LEN4A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 4, '-', 5, FLT_LEN4A);
+  FLT_LEN5A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 5, '-', 5, FLT_LEN5A);
+  FLT_LEN6A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 6, '-', 5, FLT_LEN6A);
+  FLT_LEN7A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 7, '-', 5, FLT_LEN7A);
+  FLT_LEN8A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 8, '-', 5, FLT_LEN8A);
+  FLT_LEN9A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 9, '-', 5, FLT_LEN9A);
+  FLT_LEN10A/A5 = GETTOK(FLIGHT_DURATIONS, 72 , 10, '-', 5, FLT_LEN10A);
+ 
+
+  FLEN1D/D9.2 = ATODBL(FLT_LEN1A,  '5', FLEN1D);
+  FLEN2D/D9.2 = ATODBL(FLT_LEN2A,  '5', FLEN2D);
+  FLEN3D/D9.2 = ATODBL(FLT_LEN3A,  '5', FLEN3D);
+  FLEN4D/D9.2 = ATODBL(FLT_LEN4A,  '5', FLEN4D);
+  FLEN5D/D9.2 = ATODBL(FLT_LEN5A,  '5', FLEN5D);
+  FLEN6D/D9.2 = ATODBL(FLT_LEN6A,  '5', FLEN6D);
+  FLEN7D/D9.2 = ATODBL(FLT_LEN7A,  '5', FLEN7D);
+  FLEN8D/D9.2 = ATODBL(FLT_LEN8A,  '5', FLEN8D);
+  FLEN9D/D9.2 = ATODBL(FLT_LEN9A,  '5', FLEN9D);
+  FLEN10D/D9.2 = ATODBL(FLT_LEN10A,  '5', FLEN10D);
+
+  FLT_LEN1/D5 = FLEN1D;
+  FLT_LEN2/D5 = FLEN2D;
+  FLT_LEN3/D5 = FLEN3D;
+  FLT_LEN4/D5 = FLEN4D;
+  FLT_LEN5/D5 = FLEN5D;
+  FLT_LEN6/D5 = FLEN6D;
+  FLT_LEN7/D5 = FLEN7D;
+  FLT_LEN8/D5 = FLEN8D;
+  FLT_LEN9/D5 = FLEN9D;
+  FLT_LEN10/D5 = FLEN10D;
+  
+ MAX_FLT/D5 = IF FLT_LEN1 GE FLT_LEN2 AND FLT_LEN1 GE FLT_LEN3 AND FLT_LEN1 GE FLT_LEN4 AND FLT_LEN1 GE FLT_LEN5 AND FLT_LEN1 GE FLT_LEN6 AND
+                 FLT_LEN1 GE FLT_LEN7 AND FLT_LEN1 GE FLT_LEN8 THEN FLT_LEN1 ELSE
+              IF FLT_LEN2 GE FLT_LEN1 AND FLT_LEN2 GE FLT_LEN3 AND FLT_LEN2 GE FLT_LEN4 AND FLT_LEN2 GE FLT_LEN5 AND FLT_LEN2 GE FLT_LEN6 AND
+                 FLT_LEN2 GE FLT_LEN7 AND FLT_LEN2 GE FLT_LEN8 THEN FLT_LEN2 ELSE   
+              IF FLT_LEN3 GE FLT_LEN1 AND FLT_LEN3 GE FLT_LEN2 AND FLT_LEN3 GE FLT_LEN4 AND FLT_LEN3 GE FLT_LEN5 AND FLT_LEN3 GE FLT_LEN6 AND
+                 FLT_LEN3 GE FLT_LEN7 AND FLT_LEN3 GE FLT_LEN8 THEN FLT_LEN3 ELSE   
+              IF FLT_LEN4 GE FLT_LEN1 AND FLT_LEN4 GE FLT_LEN2 AND FLT_LEN4 GE FLT_LEN3 AND FLT_LEN4 GE FLT_LEN5 AND FLT_LEN4 GE FLT_LEN6 AND
+                 FLT_LEN4 GE FLT_LEN7 AND FLT_LEN4 GE FLT_LEN8 THEN FLT_LEN4 ELSE        
+              IF FLT_LEN5 GE FLT_LEN1 AND FLT_LEN5 GE FLT_LEN2 AND FLT_LEN5 GE FLT_LEN3 AND FLT_LEN5 GE FLT_LEN4 AND FLT_LEN5 GE FLT_LEN6 AND
+                 FLT_LEN5 GE FLT_LEN7 AND FLT_LEN5 GE FLT_LEN8 THEN FLT_LEN5 ELSE    
+              IF FLT_LEN6 GE FLT_LEN1 AND FLT_LEN6 GE FLT_LEN2 AND FLT_LEN6 GE FLT_LEN3 AND FLT_LEN6 GE FLT_LEN4 AND FLT_LEN6 GE FLT_LEN6 AND
+                 FLT_LEN6 GE FLT_LEN7 AND FLT_LEN6 GE FLT_LEN8 THEN FLT_LEN6 ELSE   
+              IF FLT_LEN7 GE FLT_LEN1 AND FLT_LEN7 GE FLT_LEN2 AND FLT_LEN7 GE FLT_LEN3 AND FLT_LEN7 GE FLT_LEN4 AND FLT_LEN7 GE FLT_LEN7 AND
+                 FLT_LEN7 GE FLT_LEN6 AND FLT_LEN7 GE FLT_LEN8 THEN FLT_LEN7 ELSE FLT_LEN8; 
+                 
+FLT_LEN/A16 = IF MAX_FLT LT 239 THEN '< 4 HOURS' ELSE
+              IF MAX_FLT GE 240 AND MAX_FLT LT 359 THEN '4 - 6 HOURS' ELSE
+              IF MAX_FLT GE 360 AND MAX_FLT LT 479 THEN '6 - 8 HOURS' ELSE '> 8 HOURS';
+    
+FLT_TIME/D5 = IF SEG_NBR EQ '01' THEN FLT_LEN1 ELSE
+              IF SEG_NBR EQ '02' THEN FLT_LEN2 ELSE
+              IF SEG_NBR EQ '03' THEN FLT_LEN3 ELSE
+              IF SEG_NBR EQ '04' THEN FLT_LEN4 ELSE
+              IF SEG_NBR EQ '05' THEN FLT_LEN5 ELSE
+              IF SEG_NBR EQ '06' THEN FLT_LEN6 ELSE
+              IF SEG_NBR EQ '07' THEN FLT_LEN7 ELSE
+              IF SEG_NBR EQ '08' THEN FLT_LEN8 ELSE
+              IF SEG_NBR EQ '09' THEN FLT_LEN9 ELSE FLT_LEN10;
+              
+FLT_T1/D5.2 = FLT_TIME/60;     
+FLT_T/D8.2 = IF FARE_PAID LT 0 THEN FLT_T1 * (-1) ELSE FLT_T1;
+FLT_RANGE/A16 = IF MAX_FLT LT 239 THEN '< 4 HOURS' ELSE '> 4 HOURS';                  
+
+  TRIP_KEY/A2   = EDIT(TRP_KEY, '$$$$$$$$99');
+  TRIPRSN/A10 = IF TRIP_KEY NE ' ' THEN TRIP_KEY ELSE 'ZZZZZZZZZZ';
+  TRIP_RSN/A10 = IF TRIPRSN EQ 'ZZZZZZZZZZ' THEN 'NONE GIVEN' ELSE TRIPRSN;   
+  TRP_LEN/D8CS = TRIP_LENGTH * NET_TKT_CNT;
+  TRP_STAY/D8CS = NEW_STAY;
+ CMP_ADV_PURCH/D9    = IF (TKT_TYPE EQ 'F-EX' OR TKT_TYPE EQ 'F-RF') THEN (ADV_PURCH*(-1))
+  						ELSE IF RF_FLAG EQ ' ' THEN ADV_PURCH
+                        ELSE IF EX_FLAG EQ ' ' THEN ADV_PURCH  
+                        ELSE (ADV_PURCH*(-1));  
+-INCLUDE TRANTYPE  
+-INCLUDE IDLEVDEFINE 
+               
+END
+TABLEF FILE &&EXTRACT
+PRINT ADV_CAT
+  ADV_DAYS 
+  ADV_PURCH
+  AGENT_NUM
+  AIR_KEY	
+  AIR_MAIN.INTL_DOM AS 'INTL_DOM'	
+  AIRLINE	
+  AIRLINE_FEE	
+  AIRLINE_NAME	
+  AROLL_DSC6
+  AROLL_DSC14
+  AROLL_DSC15
+  AROLL_LEV3
+  AROLL_LEV6
+  AROLL_LEV11
+  ARR_DATE
+  ARR_TIME
+  BASE_FARE
+  BOOK_DT
+  BR_CL_IDX
+  CATEGORY
+  CC_NUM
+  CHG_COD
+  CITYPAIR.INTL_DOM AS 'C_INTDOM'
+  C_ITIN
+  CL_CAT	
+  CLASS	
+  CLASS_CAT
+  CMP_ADV_PURCH
+  CTRY_COD
+  DISSAVINGS	
+  DOC_TYPE
+  DPT_DATE
+  DPT_TIME
+  DST_APC
+  DST_APCX
+  DPT_MON
+  CITYPAIR.EMBARK      AS 'EMB_APT_CD'	
+  CITYPAIR.ROUTE       AS 'RTE_APT_CD'	
+  EMB_APT.AIRPORT_NAME AS 'EMB_APT_NM'
+  EMB_CTY.CITY_NAME    AS 'EMB_CTY_NM'
+  EMB_CTY.COUNTRY_CODE AS 'EMB_CNTRY_CODE'
+  EMP_ID
+  EXCHG_SALE
+  FARE_BAS
+  FARE_BASE_CODE
+  FARE_PAID	
+  FLIGHT
+  FLT_LEN
+  FLT_RANGE
+  FLT_T
+  FNL_DEST_AIRPORT
+  FST_DPT_DATE
+  IBOOK
+  INVOICE_NUM	
+  LEVEL_DESC
+  LEVEL1
+  LEVEL2
+  LEVEL3
+  LEVEL4
+  LEVEL5
+  LEVEL6
+  LEVEL7
+  MILE
+  NET_TKT_CNT	
+  NEW_ADV_PURCH	
+  NEW_SEG_AMT
+  NEW_SEG_COUNT
+  NEW_SEG_DISC	
+  NEW_SEG_MILES
+  NEW_STAY
+  NFVSV
+  NRFLAG
+  ORG_APCX
+  ORG_APC
+  OTFLAG
+  PASSNGR_NAME
+  PNR_LOCATOR
+  PX_FST
+  PX_LST
+  REF_EXCH_CNT
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  REFUSE_KEY   
+  RF_FLAG
+  RTE_APT.AIRPORT_NAME AS 'RTE_APT_NM'	
+  RTE_CTY.CITY_NAME    AS 'RTE_CTY_NM'
+  RTE_CTY.COUNTRY_CODE AS 'RTE_CNTRY_CODE'
+  SAVINGS
+  SEG_AMT
+  SEG_COUNT	
+  SEG_DESIG	
+  SEG_LOWEST	
+  SEG_NBR	
+  SEG_STANDARD
+  SEG_TAX
+  STD_CAT
+  TKT_DATE	
+  TKT_NUM
+  TKT_PURCH	
+  TKT_SORT	
+  TKT_TYPE
+  TKT_TYPE1
+  TKT_TYP2
+  TKT_AMOUNT
+  TRN_DATE
+  TRIP_LENGTH
+  TRIP_PURPOSE
+  TRP_LEN
+  TRP_REF.TRP_DESC AS 'TRP_DSC' 
+  TRIP_RSN
+  TRP_STAY
+  TRAVELER_EMAIL
+  TRVL_AUTH
+    XARR_DT
+  XDPT_DT	
+  XPSNGR_NM
+  XTRAN_DT
+  XFST_DPT
+  STD_FARE
+  LOWEST_AMT
+  VAL_AIRLINE
+  VAL_AIR.AIRLINE_NAME AS 'VALAIR_NAME'
+  VOID_DATE
+  FLT_LEN1
+  FLT_LEN2
+  FLT_LEN3
+  FLT_LEN4
+  FLT_LEN5
+  FLT_LEN6
+  FLT_LEN7
+  FLT_LEN8
+  FLT_LEN9
+  FLT_LEN10
+-* Fields added for CFAINS-R request
+  ORG_CNTRY_CODE
+  FST_DEST_CNTRY_CODE
+  FNL_DEST_CNTY_CODE
+  FST_DEST_DEPART_DATE
+  FST_DEST_ARRIVAL_DATE
+  FNL_DEST_ARRIVAL_DATE
+  DEPART_DATES
+  ARRIVAL_DATES
+  CREDIT_CARD
+  CCARD5
+-INCLUDE &AIRDATES
+-IF &&SETF EQ 'VSUDADTL' OR 'ABUDPRND' OR 'ABUDGN1D' THEN GOTO InclVoid;
+-* -IF &&SETF EQ 'VSUDADTL' THEN GOTO InclVoid;
+WHERE VOID_DATE EQ 0
+-InclVoid
+-IF '&&SETF.EVAL' NE 'CGBCIDTL' THEN GOTO InclDom;
+WHERE AIR_MAIN.INTL_DOM EQ 'I' 
+-InclDom
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+-INCLUDE RPTPARMS
+
+-* ON TABLE HOLD AS REPHOLD
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+
+
+
+ 
+
+ 
+

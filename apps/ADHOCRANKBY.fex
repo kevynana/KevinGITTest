@@ -1,0 +1,82 @@
+-**************************************************************************************************************
+-*  ADHOCRANKBY.FEX
+-*  This program is used to generate dynamic query when only one RANKBYTOP is selected, which means
+-*  &&RANK_LIMIT GT 0 but &&RANK_LIMIT2 EQ 0.  The 2 global variables are generated from codegen.
+-*  &&FieldName.&CNT2 AND &&FldFormat.&CNT2 are set in QueryBuilder.fex.
+-*  Date: 01/24/2011
+-**************************************************************************************************************
+SET ASNAME = ON
+
+-*Get all fields which can be used in Percentage, Average and Total calculations. Otherwise if the user select a percentage field, it would fail
+-*as the field won't be find in the last query. The FIELD OF COMPUTED EQ 'C' OR 'D' ARE NOT 'T' FMT.
+
+-* get non-sort fields which are not 'P' format, and also not Computed or Defined fields which should be included in the last query only
+-SET &XDETAILS = 0;
+TABLE FILE ALLCOLUMNS
+PRINT COLUMN_NAME COLUMN_TYPE COLUMN_TITLE COLUMN_FMT 
+BY COLUMN_ORDER 
+WHERE COLUMN_TYPE EQ 'N' AND COLUMN_FMT NE 'P' AND NOT COMPUTED IN ('C','D') 
+ON TABLE SAVE AS SNONSORT
+END
+-RUN
+
+-SET &XDETAILS = &LINES;
+-SET &INDX = 1;
+-REPEAT RANKBY100 &XDETAILS TIMES 
+-*-READ SNONSORT NOCLOSE &CORDER.A11. &COLUMNNAME.A20. &COLUMNTYPE.A1. &COLUMNTITLE.A30. &COLUMNFMT.A1. &COMPUTED.A1.
+-READ SNONSORT NOCLOSE &CORDER.A11. &COLUMNNAME.A20. &COLUMNTYPE.A1. &COLUMNTITLE.A30. &COLUMNFMT.A1.
+-SET &XORDER.&INDX = &CORDER;
+-SET &XCOLUMN.&INDX = '&COLUMNNAME.EVAL';
+-SET &INDX = &INDX + 1;         
+-RANKBY100
+-CLOSE SNONSORT;
+
+-*these are all fields should be retrieved in order to calculate the percentage and get computed and defined fields
+TABLE FILE STANDARDREPORTFIELDS
+PRINT COLUMN_NAME COLUMN_TITLE COLUMN_FMT COMPUTED
+WHERE USE_PARM EQ '&&VIEW.EVAL' AND (COLUMN_FMT EQ 'T' 
+
+-SET &INDX = 1;
+-REPEAT AllDetails &XDETAILS TIMES
+-SET &Q1 = &XCOLUMN.&INDX;
+-SET &QUERYLINE = IF &INDX LT &XDETAILS THEN ' OR COLUMN_NAME EQ ' | '''&Q1.EVAL''' ELSE ' OR COLUMN_NAME EQ ' | '''&Q1.EVAL''' | ')';
+&QUERYLINE
+-SET &INDX = &INDX + 1;          
+-AllDetails
+ON TABLE SAVE AS ALLNTFLDS
+END
+-RUN
+
+-SET &XDTLINES2 = &LINES;
+
+-SET &INDX = 1;
+-REPEAT RANKBY110 &XDTLINES2 TIMES 
+-READ ALLNTFLDS NOCLOSE &COLUMNNAME.20. &COLUMNTITLE.30. &COLUMNFMT.1. &COMPUTED.1.
+-SET &XCOLUMN2.&INDX = '&COLUMNNAME.EVAL';
+-SET &INDX = &INDX + 1;         
+-RANKBY110
+-CLOSE ALLNTFLDS;
+
+
+-*Rank by top is selected. if only &&RANK_LIMIT is selected, run AdhocRankBy; if &&RANK_LIMIT2 NE 0, run AdhocRankBy2.
+-*codegen read RankByTop from rpt_flds database, and set to the variables: &&RANK_LIMIT and &&RANK_LIMIT2
+-SET &&RANK_LIMIT2 = IF '&RPTGROUP.EVAL' EQ 'CAR' AND &ADHOCRANKBYTOP EQ 2 THEN 999 ELSE &&RANK_LIMIT2;
+-IF &&RANK_LIMIT2 GT 0 THEN GOTO RANBYTOP2;
+
+-*-IF '&&UNAME.EVAL' EQ 'lusheng' THEN GOTO RANKBY_LS;
+-INCLUDE ADHOCRANKBY1
+-RUN
+-GOTO ENDRANKBYTOP;
+
+-RANKBY_LS
+-*-INCLUDE ADHOCRANKBY1_LS
+-RUN
+-GOTO ENDRANKBYTOP;
+
+
+
+-RANBYTOP2
+-INCLUDE ADHOCRANKBY2
+-RUN
+-ENDRANKBYTOP
+-RUN

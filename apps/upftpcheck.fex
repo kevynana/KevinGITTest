@@ -1,0 +1,88 @@
+-* File upftpcheck.fex
+-*
+-* This program will run within the Load process and will execute when Union Pacific
+-* data is loaded.  It will kick off the UP schedule that creates the files that are
+-* sent to the FTP server each week for UP to pick up.
+-*
+-* 06/16/2014 - REJ - Added the SAP extract job for UP to the job so that it will
+-*                    be executed when the UP data is updated.  Schedule ID - S18p4bma8i6j.
+-*-SET &ECHO=ALL;
+-*
+-DEFAULT &EDATE=00010101;
+-DEFAULT &LDATE=00010101;
+-DEFAULT &EDATE1=00010101;
+-*
+TABLE FILE ROLLUP
+PRINT END_DATE
+WHERE ROLLUP_CODE EQ 'UPTTL-R'
+ON TABLE SAVE AS HUPEDATE FORMAT ALPHA
+END
+-RUN
+-*
+-READ HUPEDATE &EDATE.8
+-*
+-SET &EDATE1=EDIT('&EDATE.EVAL','$$$$9999') | EDIT('&EDATE.EVAL','9999');
+-*
+DEFINE FILE PROCESSCONTROL
+LAST_DATE/A8YYMD=EDIT(PROCESS_START,'99999999');
+END
+TABLE FILE PROCESSCONTROL
+PRINT LAST_DATE
+WHERE PROGRAM EQ 'UPFTP';
+ON TABLE SAVE AS HLDPROCESS
+END
+-RUN
+-IF &RECORDS EQ 0 GOTO :CONTINUE;
+-READ HLDPROCESS &LDATE
+-*
+-IF &EDATE1 GT &LDATE GOTO :CONTINUE;
+-*
+-* If we get this far, do not run the schedule and exit.
+-GOTO :XXIT;
+-*
+-:CONTINUE
+-INCLUDE CLASSPATH
+-SET &&WPATH1=TEMPPATH(50,'A50');
+-SET &&JPATH=STRREP(50,'&&WPATH1.EVAL',1,'\',2,'\\',150,'A150');
+-*
+DEFINE FILE CONTROL
+PROGRAM/A40='UPFTP';
+PROCESS_START/A14='&EDATE1.EVAL';
+END
+TABLE FILE CONTROL
+PRINT PROGRAM
+      PROCESS_START
+BY USER_ID NOPRINT
+ON TABLE SET ASNAMES ON
+ON TABLE HOLD AS HCNTL001
+END
+MODIFY FILE PROCESSCONTROL
+FIXFORM FROM HCNTL001
+MATCH PROGRAM
+  ON MATCH UPDATE PROCESS_START
+  ON NOMATCH INCLUDE
+DATA ON HCNTL001
+END
+-RUN
+-*
+-* Run the schedule
+-*  S151kk632o36 is the schedule for the UP job in Production
+-*  S18p4bma8i6j is the schedule for the UP SAP job in Production
+DEFINE FILE BOTSCHED
+SID/A12=SCHEDULEID;
+END
+TABLE FILE BOTSCHED
+PRINT SID
+BY SCHEDULEID NOPRINT
+WHERE SCHEDULEID EQ 'S151kk632o36' OR 'S18p4bma8i6j'
+ON TABLE SET HOLDLIST PRINTONLY
+ON TABLE SAVE AS RCPARMS
+END
+-*
+-SET &IFILE='&&JPATH.EVAL' || 'rcparms.ftm';
+-RUN
+-*
+-DOS java -cp "&CP.EVAL" com.tandt.rcaster.schedule.RunSchedule "&IFILE.EVAL"
+-RUN
+-*
+-:XXIT

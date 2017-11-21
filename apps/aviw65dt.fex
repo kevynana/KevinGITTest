@@ -1,0 +1,281 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: AIRRPT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*6/2/98         JK                 INCLUDE AIRLEVM INSTEAD OF AIRLEVT
+-*7/31/00     IBISTL-KR             ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*2/05/01      TANDT-SS             ADD BASE_FARE, DEPT_MONTH
+-* 
+-*6/26/01      TANDT-JK             ADDED A DEFINE FOR AMILES FOR THE
+-*                                  COST PER MILE COMPUTE IN SETFILES
+
+-*10/10/01     TANDT-DB             ADDED NEW_SEG_COUNT
+-*10/17/01     TANDT-JK             CARRIED THROUGH UPCOSTC DEFINE
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-**************************************************************************
+SET ASNAMES=ON
+-RUN
+
+TABLEF FILE &&RPT_HOLD
+PRINT AGENT_NUM
+      AIR_KEY
+      AIRLINE
+      AIRLINE_NAME
+      DPT_TIME
+      EMB_CTY_NM
+      FARE_PAID    
+      LEVEL_DESC
+      MRK_TKT_CNT	
+      REFUSE_CODE
+      RTE_CTY_NM
+      SEG_NBR
+      TKT_NUM
+      TKT_SORT
+      TRN_DATE
+      XDPT_DT
+      XDPT_DATE
+      XPSNGR_NM
+      XTRAN_DT  
+ON TABLE HOLD AS HLD1
+END
+-RUN
+
+JOIN HLD1.AGENT_NUM IN HLD1 TO ALL AGENT.AGENT IN AGENT AS J1
+END
+-RUN
+
+
+TABLE FILE HLD1
+SUM FARE_PAID AS 'TFARE'
+    MRK_TKT_CNT AS 'TMKT'
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+ON TABLE HOLD AS AIRHOLD1
+END
+-RUN
+
+TABLE FILE HLD1
+PRINT AGENT_NAME
+      AGENT_NUM
+      AIR_KEY
+      AIRLINE
+      AIRLINE_NAME
+      DPT_TIME
+      EMB_CTY_NM
+      FARE_PAID    
+      LEVEL_DESC
+      MRK_TKT_CNT
+      REFUSE_CODE
+      RTE_CTY_NM
+      SEG_NBR
+      TKT_NUM
+      TKT_SORT
+      TRN_DATE
+      XDPT_DT
+      XDPT_DATE
+      XPSNGR_NM
+      XTRAN_DT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD AS XTWO
+END
+-RUN
+
+
+MATCH FILE XTWO
+PRINT AGENT_NAME
+      AGENT_NUM
+      AIR_KEY
+      AIRLINE
+      AIRLINE_NAME
+      DPT_TIME
+      EMB_CTY_NM
+      FARE_PAID    
+      LEVEL_DESC
+      MRK_TKT_CNT
+      REFUSE_CODE
+      RTE_CTY_NM
+      SEG_NBR
+      TKT_NUM
+      TKT_SORT
+      TRN_DATE
+      XDPT_DT
+      XDPT_DATE
+      XPSNGR_NM
+      XTRAN_DT      
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+BY SEG_NBR
+ON TABLE HOLD
+RUN
+FILE AIRHOLD1
+PRINT TFARE 
+      TMKT
+BY LEVEL_DESC
+BY XPSNGR_NM
+BY TKT_SORT
+BY TRN_DATE
+AFTER MATCH HOLD AS AIRHOLD2 OLD-OR-NEW
+END
+-RUN
+
+TABLE FILE AIRHOLD2
+PRINT AGENT_NAME
+      AGENT_NUM
+      AIR_KEY
+      AIRLINE
+      AIRLINE_NAME
+      DPT_TIME
+      EMB_CTY_NM
+      FARE_PAID    
+      LEVEL_DESC
+      MRK_TKT_CNT
+      REFUSE_CODE
+      RTE_CTY_NM
+      TFARE
+      TMKT
+      TKT_NUM
+      TKT_SORT
+      TRN_DATE
+      XDPT_DT
+      XDPT_DATE
+      XPSNGR_NM
+      XTRAN_DT   
+BY TKT_SORT
+BY SEG_NBR
+ON TABLE HOLD AS AIRHOLD3
+END
+-RUN
+ 
+DEFINE FILE AIRHOLD3
+AGT_INFO/A26 = AGENT_NUM||'-'||AGENT_NAME;
+MRK_CNT/D8CS = IF TKT_NUM NE LAST TKT_NUM THEN MRK_TKT_CNT ELSE 0;
+RREFUSE_CODE/A2 = IF TKT_SORT NE LAST TKT_SORT THEN REFUSE_CODE ELSE ' ';
+TICKET_NMBR/A10 = IF TKT_NUM NE LAST TKT_NUM THEN TKT_NUM ELSE ' ';	
+XT_DTE/A8 = EDIT(TRN_DATE);	
+XTKT_SRT/A10 = EDIT(TKT_SORT,'9999999999$');	
+XTRAN_DTE/MDYY = IF TKT_NUM NE LAST TKT_NUM THEN XTRAN_DT ELSE 0;	
+-******************************************************************
+TRAN_MONTH/MT = TRN_DATE;
+-* ****DEFINES ON PREVIOUS DEFINES****
+SRT_DT/A100 = TKT_SORT||XT_DTE||LEVEL_DESC||XPSNGR_NM;
+FARE_AMT/D12.2CS = IF SRT_DT NE LAST SRT_DT THEN TFARE ELSE 0;
+NOWTOD/A8 WITH TKT_SORT = HHMMSS (NOWTOD);
+XTS_FLAG/A1 = IF XTKT_SRT NE LAST XTKT_SRT THEN 'Y' ELSE 'N';
+
+END
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = 'AIRHOLD3';
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE AIRHOLD3
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+BY XTS_FLAG NOPRINT
+
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+ON TABLE COLUMN-TOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT 
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN

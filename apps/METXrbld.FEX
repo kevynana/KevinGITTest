@@ -1,0 +1,19 @@
+USE CLEAR *
+USE D:\TNT\TTRACKER\DATA\ALMETX.FOC
+END
+-*============================================================================
+-* AUTO REBUILD FILE ALMETX.FOC LOCATED ON WEBFOCUS01 MACHINE (DATA)
+-*============================================================================
+REBUILD
+REORG
+DUMP
+ALMETX
+NO
+CREATE FILE ALMETX
+-RUN
+REBUILD
+REORG
+LOAD
+ALMETX
+YES
+

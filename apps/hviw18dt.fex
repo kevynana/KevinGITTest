@@ -1,0 +1,363 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-*                     FOCEXEC: HVIEW1DT
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*04/29/04   DEB                ADDED CODE FOR ABCLCHTL TO REMOVE 
+-*                              SUMMED TOTAL_AMT EQ 0
+-*06/22/04   STEVE              ADDED RESV_STATUS to the BY statements - to
+-*                              separate out + and - amounts (not summarized) 
+-*9/24/04    DEB                ADDED CODE FOR CURRENCY ENABLED
+-*3/2/05    DEB      CREATED NEW VIEW FOR TRANS SUMM BY BOOKING AGENT
+-**************************************************************************
+SET ASNAMES=ON
+-RUN
+
+
+
+
+-IF &&SETF EQ 'ABCLCHTL' GOTO DEBSUM ELSE GOTO CHECK2;
+-DEBSUM;
+
+TABLE FILE HTLHLD
+SUM NNROOMS 
+    NBR_DAYS
+    NUM_ROOMS 
+    ROOM_RATE 
+    TOTAL_AMT
+BY LEVEL_DESC 
+BY RSNCDE 
+BY REFUSE_CD 
+BY XPSNGR_NM
+BY CHAIN_CODE
+BY PROP_NAME
+BY PROP_STATE
+BY PROP_CITY
+BY PROP_ADDRESS
+BY PROP_ZIP5
+BY HOTEL_PHONE
+BY PROP_CODE
+BY IN_DATE
+BY OUT_DATE
+BY RESV_STATUS
+ON TABLE HOLD AS CLCHOLD
+END
+-RUN
+
+
+TABLE FILE CLCHOLD
+PRINT NNROOMS
+      NBR_DAYS
+      NUM_ROOMS
+      ROOM_RATE
+      TOTAL_AMT
+BY LEVEL_DESC 
+BY RSNCDE 
+BY REFUSE_CD 
+BY XPSNGR_NM
+BY CHAIN_CODE
+BY PROP_NAME
+BY PROP_STATE
+BY PROP_CITY
+BY PROP_ADDRESS
+BY PROP_ZIP5
+BY HOTEL_PHONE
+BY PROP_CODE
+BY IN_DATE
+BY OUT_DATE
+BY RESV_STATUS
+WHERE (TOTAL_AMT NE 0) OR (NBR_DAYS NE 0)
+ON TABLE HOLD AS CLCHOLD1
+END
+-RUN
+
+
+-GOTO AROUND2
+
+-CHECK2;
+-IF &&SETF EQ 'ABHIHTL' OR 'ABHTLDTL' OR 'ABHTLTRN' OR 'ABHTLNOA' AND
+-&&CURRENCY NE 'USD' THEN GOTO HIHTL ELSE GOTO CHECK3;
+
+
+-HIHTL;
+
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = ' TOTAL,AMOUNT, (' | &&CURRENCY || ')';
+-SET &CAVG_CUR = 'AVG,DAILY,RATE, (' | &&CURRENCY || ')';
+-SET &&PRINT4 ='AMT_TOTL1/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+-SET &&PRINT5='COMPUTE CAVG/D16.2CS=IF (AMT_TOTL1 LT 0) AND';
+-SET &&PRINT6='(NNROOMS LT 0) THEN ((AMT_TOTL1/NNROOMS)*(-1)) ELSE';
+-SET &&PRINT7='IF ((NNROOMS LT 1) AND (NNROOMS GT (-1))) THEN 0 ELSE';
+-SET &&PRINT8='AMT_TOTL1/NNROOMS; AS ' | '''&CAVG_CUR.EVAL''';
+
+-GOTO AROUND;
+
+-CHECK3;
+-IF &&SETF EQ 'ABHRC' AND &&CURRENCY NE 'USD' THEN GOTO HRC  
+-ELSE GOTO AROUND;
+
+-HRC;
+-SET &&SUBHEAD = <NAMEC;
+-SET &TAMT_CUR = ' TOTAL,AMOUNT, (' | &&CURRENCY || ')';
+-SET &CROOM_CUR = 'ROOM,RATE, (' | &&CURRENCY || ')';
+-SET &&PRINT3 ='RATE_ROOM1/D16.2CS AS ' | '''&CROOM_CUR.EVAL''';
+-SET &&PRINT4 ='AMT_TOTL1/D16.2CS AS ' | '''&TAMT_CUR.EVAL''';
+
+
+
+-AROUND
+
+
+-JOIN
+JOIN AGENT_NUM IN HTLHLD TO AGENT IN AGENT AS J1
+-RUN
+
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = HTLHLD;
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+DEFINE FILE HTLHLD ADD
+NOWTOD/A8 WITH AIRPORT_CODE = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE HTLHLD
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+
+
+
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-GOTO XXIT
+
+
+
+
+-AROUND2
+
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_DRIL;
+-************************************************************
+-* INCLUDE PROGRAM TO GEN WHERE STATEMENTS
+-************************************************************
+-SET &&DRILLRPT = CLCHOLD1;
+-INCLUDE DRILWHRS
+-************************************************************
+-SKIP_DRIL
+
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERDT
+-**************************************************************************
+DEFINE FILE CLCHOLD1 ADD
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+END
+
+-SET &&PAHDR = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL' ELSE &&DTSTY;
+-RUN
+
+TABLE FILE CLCHOLD1
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-**********************************************************************
+-* Print statement with fields passed from the user profile database
+-**********************************************************************
+-*
+&&PRINT1
+&&PRINT2
+&&PRINT3
+&&PRINT4
+&&PRINT5
+&&PRINT6
+&&PRINT7
+&&PRINT8
+&&PRINT9
+&&PRINT10
+-*
+-**********************************************************************
+-* By statements (one per field)
+-**********************************************************************
+-*
+&&BY1
+&&BY2
+&&BY3
+&&BY4
+&&BY5
+&&BY6
+&&BY7
+&&BY8
+&&BY9
+&&BY10
+-*
+-*********************************************************************
+-*DATE           NAME               DESCRIPTION 
+-*8/18/00      IBISTL-KR            INCLUDE WHERE STATEMENTS WHEN
+-*                                  DRILLED_RUN EQ 'Y'.
+-*********************************************************************
+-*
+-**********************************************************************
+-* Where statements for Drilled Report
+-**********************************************************************
+-*
+-IF &&DRILLED_RUN EQ 'N' GOTO SKIP_WHR;
+-INCLUDE &&DRILLWHR
+-SKIP_WHR
+
+
+-*
+-**********************************************************************
+-* On Table statements for code appropriate to On Table commands
+-**********************************************************************
+-*
+&&ONTABLE1
+&&ONTABLE2
+&&ONTABLE3
+&&ONTABLE4
+&&ONTABLE5
+&&ONTABLE6
+&&ONTABLE7
+&&ONTABLE8
+&&ONTABLE9
+&&ONTABLE10
+-*
+-**********************************************************************
+-* Report specific footer(s)
+-**********************************************************************
+-*
+-INCLUDE FOOTERDT
+-*
+-*ON TABLE SET STYLE &&DTSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**************************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+
+-INCLUDE &&PASTYD
+ENDSTYLE
+-*
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT

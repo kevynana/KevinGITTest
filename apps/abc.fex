@@ -1,0 +1,169 @@
+-* File abc.fex
+-* Default Mode: ResourceLayout
+-*SET TEMPERASE = OFF
+GRAPH FILE CAR
+SUM SALES
+ACROSS CAR
+WHERE SALES GT 0
+ON GRAPH SET LOOKGRAPH VBAR
+ON GRAPH SET GRAPHEDIT SERVER
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D ON
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID ON
+ON GRAPH SET VAXIS 208
+ON GRAPH SET HAXIS 368
+ON GRAPH SET GRAPHSTYLE *
+setMarkerDisplay(true);
+setConnectLineMarkers(false);
+setConnectScatterMarkers(false);
+setO1LabelDisplay(true);
+setO1AxisSide(0);
+setO1MajorGridDisplay(true);
+setO1MajorGridStyle(0);
+setO1MinorGridDisplay(false);
+setAxisAssignment(0,0);
+setSeriesType(0,1);
+setY1LabelDisplay(true);
+setY1AxisSide(0);
+setY1MajorGridDisplay(true);
+setY1MajorGridStyle(0);
+setY1MinorGridDisplay(false);
+setTextFormatPreset(getY1Label(),-1);
+setTextFormatPattern(getY1Label(),"#.##");
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH SET STYLE *
+     PAGESIZE='Letter',
+     LEFTMARGIN=0.250000,
+     RIGHTMARGIN=0.250000,
+     TOPMARGIN=0.250000,
+     BOTTOMMARGIN=0.250000,
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+     BACKCOLOR='NONE',
+     STYLE=NORMAL,
+$
+ENDSTYLE
+-*ON GRAPH HOLD AS ITEM1 FORMAT HTMTABLE
+ON GRAPH HOLD AS ITEM1 FORMAT SVG
+END
+
+GRAPH FILE CAR
+SUM SALES
+ACROSS COUNTRY
+WHERE SALES GT 0
+ON GRAPH SET LOOKGRAPH PIERBAR
+ON GRAPH SET GRAPHEDIT SERVER
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID ON
+ON GRAPH SET VAXIS 208
+ON GRAPH SET HAXIS 338
+ON GRAPH SET GRAPHSTYLE *
+setMarkerDisplay(true);
+setConnectLineMarkers(false);
+setConnectScatterMarkers(false);
+setO1LabelDisplay(true);
+setO1AxisSide(0);
+setO1MajorGridDisplay(true);
+setO1MajorGridStyle(0);
+setO1MinorGridDisplay(false);
+setAxisAssignment(0,0);
+setSeriesType(0,0);
+setY1LabelDisplay(true);
+setY1AxisSide(0);
+setY1MajorGridDisplay(true);
+setY1MajorGridStyle(0);
+setY1MinorGridDisplay(false);
+setTextFormatPreset(getY1Label(),-1);
+setTextFormatPattern(getY1Label(),"#.##");
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(1);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH SET STYLE *
+     PAGESIZE='Letter',
+     LEFTMARGIN=0.250000,
+     RIGHTMARGIN=0.250000,
+     TOPMARGIN=0.250000,
+     BOTTOMMARGIN=0.250000,
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+$
+TYPE=REPORT,
+     GRID=OFF,
+     FONT='TIMES NEW ROMAN',
+     SIZE=10,
+     BACKCOLOR='NONE',
+     STYLE=NORMAL,
+$
+ENDSTYLE
+-*ON GRAPH HOLD AS ITEM2 FORMAT HTMTABLE
+ON GRAPH HOLD AS ITEM2 FORMAT SVG
+END
+
+
+
+TABLE FILE CAR
+-*SUM SALES AS ' '
+-*ACROSS   CAR AS ' '
+-*WHERE SALES GT 0;
+ON TABLE SET PAGE-NUM OFF 
+ON TABLE NOTOTAL
+ON TABLE SET ONLINE-FMT PDF
+ON TABLE SET STYLE *
+     UNITS=IN,
+     PAGESIZE='SCREEN',
+     LEFTMARGIN=0.000000,
+     RIGHTMARGIN=0.000000,
+     TOPMARGIN=0.000000,
+     BOTTOMMARGIN=0.000000,
+     SQUEEZE=ON,
+     ORIENTATION=PORTRAIT,
+$
+TYPE=REPORT,
+     FONT='ARIAL',
+     SIZE=9,
+     COLOR='BLACK',
+     BACKCOLOR='NONE',
+     STYLE=NORMAL,
+     RIGHTGAP=0.125000,
+     TOPGAP=0.013889,
+     BOTTOMGAP=0.027778,
+$
+TYPE=REPORT,IMAGE=ITEM1.SVG,
+    POSITION=(0.25 0.8), SIZE=(5.5 2.5),$
+TYPE=REPORT,IMAGE=ITEM2.SVG,
+   POSITION=(5.7  0.8), SIZE=(5.5 2.5), $
+ENDSTYLE
+
+END

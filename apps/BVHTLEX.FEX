@@ -1,0 +1,82 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-INCLUDE SETECHO
+-* File BVHTLEX.FEX
+-********************************************************************
+-* MODIFICAIONS:
+-********************************************************************
+-* 1/27/15 - DEB - S-06899 CREATED FOR BVACHFIL
+-*  09/20/2016  REJ  S-24432 ER5 Testing.  Changed the where on the dates
+-*                               to use &HTLDATES
+-*11/17/2016 - RSB - S-26926 Change reports to read employee ID from EMP_ID
+-*                            Changed LEVEL1 to EMP_ID
+-*  12/29/2016  REJ  S-28553 Move ER5 My Reports to production.
+
+-********************************************************************
+ 
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+ 
+-SET &HTLDATES = &&WEB_PATH || 'HTLDATES.fex';
+ 
+DEFINE FILE &&EXTRACT
+  LEVEL_DESC/A60  = &&LDESC;
+  NBR_DAYS/D12 =  NUM_DAYS;
+  NNROOMS/D12 = IF ((NBR_DAYS LT 0) AND (NUM_ROOMS LT 0)) THEN
+                ((NBR_DAYS*NUM_ROOMS) * (-1)) ELSE NBR_DAYS*NUM_ROOMS;
+  NEW_TOTAL_AMT/D14.2C = TOTAL_AMT;
+  XPSNGR_NM/A15        =
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+ 
+END
+-RUN
+ 
+TABLEF FILE &&EXTRACT
+PRINT CHKIN_DATE
+  INVOICE_DATE
+  LEVEL_DESC
+  EMP_ID
+  LEVEL2
+  LEVEL3
+  NNROOMS
+  PASSNGR_NAME
+  PNR_LOCATOR
+  PROP_NAME
+  NEW_TOTAL_AMT
+  TKT_NUM
+  XPSNGR_NM
+-INCLUDE &HTLDATES
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+ 
+ON TABLE HOLD AS HTL_HOLD
+END
+-RUN
+ 
+TABLE FILE HTL_HOLD
+SUM NEW_TOTAL_AMT
+    NNROOMS
+    PASSNGR_NAME
+BY LEVEL_DESC
+BY EMP_ID
+BY XPSNGR_NM
+BY PNR_LOCATOR
+BY TKT_NUM
+BY PROP_NAME
+ON TABLE HOLD AS BVHTL
+END
+-RUN
+ 
+ 
+ 

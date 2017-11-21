@@ -1,0 +1,741 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File TCEXMAI1.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-* 7/1/04        DEB                THIS PROGRAM EXTRACTS AIR DATA FOR USE
+-*                                  IN TOTAL COMPANY REPORTING TRAVEL SUMMARY
+-*2/22/05        JK                 ADDED TNT_COMPANY WHERE STATEMENT
+-**********************************************************************
+-* -SET &&TC_MAIN1 = &&WEB_PATH || 'TC_MAIN1.FOC';
+-* -RUN
+-* FILEDEF TC_MAIN1 DISK &&TC_MAIN1
+-* -RUN
+
+-* -INCLUDE SETECHO
+SET ASNAMES = ON
+
+
+
+
+
+DEFINE FILE SR_50
+ CM/A1 = IF TRN_DATE GE &&CMFMDT.EVAL AND 
+TRN_DATE LE &&CMTODT.EVAL THEN 'Y' ELSE 'N';
+ CY/A1 = IF TRN_DATE GE &&CYFMDT.EVAL AND 
+TRN_DATE LE &&CYTODT.EVAL THEN 'Y' ELSE 'N';
+ PM/A1 = IF TRN_DATE GE &&PMFMDT.EVAL AND 
+TRN_DATE LE &&PMTODT.EVAL THEN 'Y' ELSE 'N';
+ PY/A1 = IF TRN_DATE GE &&PYFMDT.EVAL AND 
+TRN_DATE LE &&PYTODT.EVAL THEN 'Y' ELSE 'N';
+
+
+-*DOMESTIC PERIOD
+-* CURRENT NET AMOUNT DOMESTIC CALCULATION
+      CDM1NET_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_AMT ELSE 0;
+
+-* CURRENT TAX AMOUNT DOMESTIC CALCULATION
+      CDM1TAX_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_TAX ELSE 0;
+
+-* CURRENT AIRLINE FEE AMOUNT DOMESTIC CALCULATION
+        CDM1AIR_FEE/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EMBARK EQ 'FP2' OR 'FP3'))       
+                      THEN SEG_AMT+SEG_TAX
+                      ELSE 0;
+
+-* CURRENT TICKETS ISSUED DOMESTIC CALCULATION
+        CDM1TKT_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D') 
+                      AND (CM EQ 'Y') AND (SEG_NBR EQ '01') 
+                    AND (SEG_AMT+SEG_TAX GE 0) AND (SEG_COUNT EQ 1))
+                      THEN 1 ELSE 0;
+
+-* CURRENT VOIDS ISSUED DOMESTIC CALCULATION
+        CDM1VOD_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE NE 0)
+                      AND (SEG_COUNT EQ 1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT EXCHANGES ISSUED DOMESTIC CALCULATION
+        CDM1EXG_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EX_FLAG EQ 'F') 
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT REFUNDS ISSUED DOMESTIC CALCULATION
+        CDM1REF_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (RF_FLAG EQ 'F')
+                      AND (DOC_TYPE NE '1')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT MILES DOMESTIC CALCULATION
+        CDM1_MILES/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                        AND (CM EQ 'Y') AND (VOID_DATE EQ 0))
+                        THEN SEG_MILES ELSE 0;
+
+-* CURRENT SAVINGS AMOUNT DOMESTIC CALCULATION
+        CDM1SAV_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_STANDARD - SEG_AMT
+                           - SEG_TAX ELSE 0;
+
+-* CURRENT LOST SAVINGS AMOUNT DOMESTIC CALCULATION
+        CDM1LOS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN ((SEG_AMT + SEG_TAX)
+                           - SEG_LOWEST)
+                      ELSE 0;
+
+-* CURRENT VALUE ADDED SAVINGS AMOUNT DOMESTIC CALCULATION
+        CDM1VAS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))
+                      THEN (SEG_DISCOUNT - SEG_AMT - SEG_TAX)
+                      ELSE 0;
+
+-*INTERNATIONAL
+-* CURRENT NET AMOUNT INTERNATIONAL CALCULATION
+        CIM1NET_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_AMT 
+                      ELSE 0;
+
+-* CURRENT TAX AMOUNT INTERNATIONAL CALCULATION
+        CIM1TAX_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_TAX 
+                      ELSE 0;
+
+-* CURRENT AIRLINE FEE AMOUNT INTERNATIONAL CALCULATION
+        CIM1AIR_FEE/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EMBARK EQ 'FP2' OR 'FP3'))
+                      THEN SEG_AMT+SEG_TAX 
+                      ELSE 0;
+
+-* CURRENT TICKETS ISSUED INTERNATIONAL CALCULATION
+        CIM1TKT_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I') 
+                      AND (CM EQ 'Y') AND (SEG_NBR EQ '01') 
+                    AND  (SEG_AMT+SEG_TAX GE 0) AND (SEG_COUNT EQ 1))
+                      THEN 1 ELSE 0;
+
+-* CURRENT VOIDS ISSUED INTERNATIONAL CALCULATION
+        CIM1VOD_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE NE 0)
+                      AND (SEG_COUNT EQ 1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT EXCHANGES ISSUED INTERNATIONAL CALCULATION
+        CIM1EXG_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (SEG_COUNT EQ -1)
+                      AND (EX_FLAG EQ 'F') 
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT REFUNDS ISSUED INTERNATIONAL CALCULATION
+        CIM1REF_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (RF_FLAG EQ 'F')
+                      AND (DOC_TYPE NE '1')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        CIM1SAV_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN (SEG_STANDARD - SEG_AMT
+                           - SEG_TAX)
+                      ELSE 0;
+
+-* CURRENT LOST SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        CIM1LOS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN ((SEG_AMT + SEG_TAX)
+                           - SEG_LOWEST)
+                      ELSE 0;
+
+-* CURRENT VALUE ADDED SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        CIM1VAS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CM EQ 'Y') AND (VOID_DATE EQ 0))
+                      THEN (SEG_DISCOUNT - SEG_AMT - SEG_TAX)
+                      ELSE 0;
+
+-*PRIOR PERIOD
+-* PRIOR NET AMOUNT DOMESTIC CALCULATION
+      PDM1NET_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_AMT
+                      ELSE 0;
+
+-* PRIOR TAX AMOUNT DOMESTIC CALCULATION
+      PDM1TAX_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_TAX
+                      ELSE 0;
+
+-* PRIOR AIRLINE FEE AMOUNT DOMESTIC CALCULATION
+        PDM1AIR_FEE/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0)       
+                      AND (EMBARK EQ 'FP2' OR 'FP3'))
+                      THEN SEG_AMT+SEG_TAX
+                      ELSE 0;
+
+-* PRIOR TICKETS ISSUED DOMESTIC CALCULATION
+        PDM1TKT_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D') 
+                      AND (PM EQ 'Y') AND (SEG_NBR EQ '01') 
+                    AND (SEG_AMT+SEG_TAX GE 0) AND (SEG_COUNT EQ 1))
+                      THEN 1 ELSE 0;
+
+-* PRIOR VOIDS ISSUED DOMESTIC CALCULATION
+        PDM1VOD_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE NE 0)
+                      AND (SEG_COUNT EQ 1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR EXCHANGES ISSUED DOMESTIC CALCULATION
+        PDM1EXG_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EX_FLAG EQ 'F')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR REFUNDS ISSUED DOMESTIC CALCULATION
+        PDM1REF_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (RF_FLAG EQ 'F')
+                      AND (DOC_TYPE NE '1')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR SAVINGS AMOUNT DOMESTIC CALCULATION
+        PDM1SAV_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN (SEG_STANDARD - SEG_AMT
+                           - SEG_TAX)
+                      ELSE 0;
+
+-* PRIOR LOST SAVINGS AMOUNT DOMESTIC CALCULATION
+        PDM1LOS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN ((SEG_AMT + SEG_TAX)
+                           - SEG_LOWEST)
+                      ELSE 0;
+
+-* PRIOR VALUE ADDED SAVINGS AMOUNT DOMESTIC CALCULATION
+        PDM1VAS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))
+                      THEN (SEG_DISCOUNT - SEG_AMT - SEG_TAX)
+                      ELSE 0;
+
+-*INTERNATIONAL
+-* PRIOR NET AMOUNT INTERNATIONAL CALCULATION
+        PIM1NET_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_AMT 
+                      ELSE 0;
+
+-* PRIOR TAX AMOUNT INTERNATIONAL CALCULATION
+        PIM1TAX_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_TAX 
+                      ELSE 0;
+
+-* PRIOR AIRLINE FEE AMOUNT INTERNATIONAL CALCULATION
+        PIM1AIR_FEE/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EMBARK EQ 'FP2' OR 'FP3'))       
+                      THEN SEG_AMT+SEG_TAX 
+                      ELSE 0;
+
+-* PRIOR TICKETS ISSUED INTERNATIONAL CALCULATION
+        PIM1TKT_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I') 
+                      AND (PM EQ 'Y') AND (SEG_NBR EQ '01') 
+                    AND  (SEG_AMT+SEG_TAX GE 0) AND (SEG_COUNT EQ 1))
+                      THEN 1 ELSE 0;
+
+-* PRIOR VOIDS ISSUED INTERNATIONAL CALCULATION
+        PIM1VOD_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE NE 0)
+                      AND (SEG_COUNT EQ 1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR EXCHANGES ISSUED INTERNATIONAL CALCULATION
+        PIM1EXG_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EX_FLAG EQ 'F')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR REFUNDS ISSUED INTERNATIONAL CALCULATION
+        PIM1REF_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (RF_FLAG EQ 'F')
+			    AND (DOC_TYPE NE '1')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        PIM1SAV_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN (SEG_STANDARD - SEG_AMT
+                                       - SEG_TAX)
+                      ELSE 0;
+
+-* PRIOR LOST SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        PIM1LOS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN ((SEG_AMT + SEG_TAX)
+                           - SEG_LOWEST)
+                      ELSE 0;
+
+-* PRIOR VALUE ADDED SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        PIM1VAS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PM EQ 'Y') AND (VOID_DATE EQ 0))
+                      THEN (SEG_DISCOUNT - SEG_AMT - SEG_TAX)
+                      ELSE 0;
+
+-*DOMESTIC YTD
+-* CURRENT NET AMOUNT DOMESTIC CALCULATION
+      CDY1NET_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_AMT
+                      ELSE 0;
+
+-* CURRENT TAX AMOUNT DOMESTIC CALCULATION
+      CDY1TAX_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_TAX
+                      ELSE 0;
+
+-* CURRENT AIRLINE FEE AMOUNT DOMESTIC CALCULATION
+        CDY1AIR_FEE/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EMBARK EQ 'FP2' OR 'FP3'))       
+                      THEN SEG_AMT+SEG_TAX
+                      ELSE 0;
+
+-* CURRENT TICKETS ISSUED DOMESTIC CALCULATION
+        CDY1TKT_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D') 
+                      AND (CY EQ 'Y') AND (SEG_NBR EQ '01') 
+                    AND  (SEG_AMT+SEG_TAX GE 0) AND (SEG_COUNT EQ 1))
+                      THEN 1 ELSE 0;
+
+-* CURRENT VOIDS ISSUED DOMESTIC CALCULATION
+        CDY1VOD_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE NE 0)
+                      AND (SEG_COUNT EQ 1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT EXCHANGES ISSUED DOMESTIC CALCULATION
+        CDY1EXG_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EX_FLAG EQ 'F')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT REFUNDS ISSUED DOMESTIC CALCULATION
+        CDY1REF_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (RF_FLAG EQ 'F')
+			    AND (DOC_TYPE NE '1')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT SAVINGS AMOUNT DOMESTIC CALCULATION
+        CDY1SAV_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN (SEG_STANDARD - SEG_AMT
+                           - SEG_TAX)
+                      ELSE 0;
+
+-* CURRENT LOST SAVINGS AMOUNT DOMESTIC CALCULATION
+        CDY1LOS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN ((SEG_AMT + SEG_TAX)
+                           - SEG_LOWEST)
+                      ELSE 0;
+
+-* CURRENT VALUE ADDED SAVINGS AMOUNT DOMESTIC CALCULATION
+        CDY1VAS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))
+                      THEN (SEG_DISCOUNT - SEG_AMT - SEG_TAX)
+                      ELSE 0;
+
+-*INTERNATIONAL
+-* CURRENT NET AMOUNT INTERNATIONAL CALCULATION
+        CIY1NET_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_AMT 
+                      ELSE 0;
+
+-* CURRENT TAX AMOUNT INTERNATIONAL CALCULATION
+        CIY1TAX_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_TAX 
+                      ELSE 0;
+
+-* CURRENT AIRLINE FEE AMOUNT INTERNATIONAL CALCULATION
+        CIY1AIR_FEE/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EMBARK EQ 'FP2' OR 'FP3'))       
+                      THEN SEG_AMT+SEG_TAX 
+                      ELSE 0;
+
+-* CURRENT TICKETS ISSUED INTERNATIONAL CALCULATION
+        CIY1TKT_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I') 
+                      AND (CY EQ 'Y') AND (SEG_NBR EQ '01') 
+                    AND  (SEG_AMT+SEG_TAX GE 0) AND (SEG_COUNT EQ 1))
+                      THEN 1 ELSE 0;
+
+-* CURRENT VOIDS ISSUED INTERNATIONAL CALCULATION
+        CIY1VOD_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE NE 0)
+                      AND (SEG_COUNT EQ 1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT EXCHANGES ISSUED INTERNATIONAL CALCULATION
+        CIY1EXG_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EX_FLAG EQ 'F')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT REFUNDS ISSUED INTERNATIONAL CALCULATION
+        CIY1REF_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (RF_FLAG EQ 'F')
+                      AND (DOC_TYPE NE '1')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* CURRENT SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        CIY1SAV_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN (SEG_STANDARD - SEG_AMT
+                           - SEG_TAX)
+                      ELSE 0;
+
+-* CURRENT LOST SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        CIY1LOS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN ((SEG_AMT + SEG_TAX)
+                           - SEG_LOWEST)
+                      ELSE 0;
+
+-* CURRENT VALUE ADDED SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        CIY1VAS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (CY EQ 'Y') AND (VOID_DATE EQ 0))
+                      THEN (SEG_DISCOUNT - SEG_AMT - SEG_TAX)
+                      ELSE 0;
+
+-*DOMESTIC PRIOR YTD
+-* PRIOR NET AMOUNT DOMESTIC CALCULATION
+      PDY1NET_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_AMT
+                      ELSE 0;
+
+-* PRIOR TAX AMOUNT DOMESTIC CALCULATION
+      PDY1TAX_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_TAX
+                      ELSE 0;
+
+-* PRIOR AIRLINE FEE AMOUNT INTERNATIONAL CALCULATION
+        PDY1AIR_FEE/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EMBARK EQ 'FP2' OR 'FP3'))       
+                      THEN SEG_AMT+SEG_TAX 
+                      ELSE 0;
+
+-* PRIOR TICKETS ISSUED DOMESTIC CALCULATION
+        PDY1TKT_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D') 
+                      AND (PY EQ 'Y') AND (SEG_NBR EQ '01') 
+                    AND  (SEG_AMT+SEG_TAX GE 0) AND (SEG_COUNT EQ 1))
+                      THEN 1 ELSE 0;
+
+-* PRIOR VOIDS ISSUED DOMESTIC CALCULATION
+        PDY1VOD_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE NE 0)
+                      AND (SEG_COUNT EQ 1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR EXCHANGES ISSUED DOMESTIC CALCULATION
+        PDY1EXG_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EX_FLAG EQ 'F')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR REFUNDS ISSUED DOMESTIC CALCULATION
+        PDY1REF_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (RF_FLAG EQ 'F')
+                      AND (DOC_TYPE NE '1')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR SAVINGS AMOUNT DOMESTIC CALCULATION
+        PDY1SAV_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN (SEG_STANDARD - SEG_AMT
+                           - SEG_TAX)
+                      ELSE 0;
+
+-* PRIOR LOST SAVINGS AMOUNT DOMESTIC CALCULATION
+        PDY1LOS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN ((SEG_AMT + SEG_TAX)
+                           - SEG_LOWEST)
+                      ELSE 0;
+
+-* PRIOR VALUE ADDED SAVINGS AMOUNT DOMESTIC CALCULATION
+        PDY1VAS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'D')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))
+                      THEN (SEG_DISCOUNT - SEG_AMT - SEG_TAX)
+                      ELSE 0;
+
+-*INTERNATIONAL
+-* PRIOR NET AMOUNT INTERNATIONAL CALCULATION
+        PIY1NET_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_AMT 
+                      ELSE 0;
+
+-* PRIOR TAX AMOUNT INTERNATIONAL CALCULATION
+        PIY1TAX_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN SEG_TAX 
+                      ELSE 0;
+
+-* PRIOR AIRLINE FEE AMOUNT DOMESTIC CALCULATION
+        PIY1AIR_FEE/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EMBARK EQ 'FP2' OR 'FP3'))       
+                      THEN SEG_AMT+SEG_TAX
+                      ELSE 0;
+
+
+-* PRIOR TICKETS ISSUED INTERNATIONAL CALCULATION
+        PIY1TKT_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I') 
+                      AND (PY EQ 'Y') AND (SEG_NBR EQ '01') 
+                    AND  (SEG_AMT+SEG_TAX GE 0) AND (SEG_COUNT EQ 1))
+                      THEN 1 ELSE 0;
+
+-* PRIOR VOIDS ISSUED INTERNATIONAL CALCULATION
+        PIY1VOD_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE NE 0)
+                      AND (SEG_COUNT EQ 1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR EXCHANGES ISSUED INTERNATIONAL CALCULATION
+        PIY1EXG_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (EX_FLAG EQ 'F')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR REFUNDS ISSUED INTERNATIONAL CALCULATION
+        PIY1REF_ISS/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0)
+                      AND (RF_FLAG EQ 'F')
+                      AND (DOC_TYPE NE '1')
+                      AND (SEG_COUNT EQ -1)
+                      AND (SEG_NBR EQ '01')) THEN 1
+                      ELSE 0;
+
+-* PRIOR SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        PIY1SAV_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN (SEG_STANDARD - SEG_AMT
+                           - SEG_TAX)
+                      ELSE 0;
+
+-* PRIOR LOST SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        PIY1LOS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))       
+                      THEN ((SEG_AMT + SEG_TAX)
+                           - SEG_LOWEST)
+                      ELSE 0;
+
+-* PRIOR VALUE ADDED SAVINGS AMOUNT INTERNATIONAL CALCULATION
+        PIY1VAS_AMT/D12.2 = IF ((AIR_MAIN.INTL_DOM IS 'I')
+                      AND (PY EQ 'Y') AND (VOID_DATE EQ 0))
+                      THEN (SEG_DISCOUNT - SEG_AMT - SEG_TAX)
+                      ELSE 0;
+MIR_SEQ1/A1 = EDIT(MIR_SEQ, '9$$$$$');
+RES_SYS/A1 = IF MIR_SEQ1 EQ 'X' THEN 'S' ELSE 'A';
+
+
+END
+-RUN
+
+TABLEF FILE SR_50
+-* Generated by Report Assist
+SUM
+CDM1NET_AMT/D15 CDM1TAX_AMT/D15 CDM1TKT_ISS/D15 CDM1VOD_ISS/D15 
+CDM1REF_ISS/D15 
+CDM1EXG_ISS/D15 CDM1SAV_AMT/D15 CDM1LOS_AMT/D15 CDM1VAS_AMT/D15
+CDM1AIR_FEE/D15 
+CIM1NET_AMT/D15 CIM1TAX_AMT/D15 CIM1TKT_ISS/D15 CIM1VOD_ISS/D15 
+CIM1REF_ISS/D15 
+CIM1EXG_ISS/D15 CIM1SAV_AMT/D15 CIM1LOS_AMT/D15 CIM1VAS_AMT/D15 
+CIM1AIR_FEE/D15 
+
+PDM1NET_AMT/D15 PDM1TAX_AMT/D15 PDM1TKT_ISS/D15 PDM1VOD_ISS/D15 
+PDM1REF_ISS/D15 
+PDM1EXG_ISS/D15 PDM1SAV_AMT/D15 PDM1LOS_AMT/D15 PDM1VAS_AMT/D15 
+PDM1AIR_FEE/D15 
+PIM1NET_AMT/D15 PIM1TAX_AMT/D15 PIM1TKT_ISS/D15 PIM1VOD_ISS/D15 
+PIM1REF_ISS/D15 
+PIM1EXG_ISS/D15 PIM1SAV_AMT/D15 PIM1LOS_AMT/D15 PIM1VAS_AMT/D15 
+PIM1AIR_FEE/D15
+
+CDY1NET_AMT/D15 CDY1TAX_AMT/D15 CDY1TKT_ISS/D15 CDY1VOD_ISS/D15 
+CDY1REF_ISS/D15 
+CDY1EXG_ISS/D15 CDY1SAV_AMT/D15 CDY1LOS_AMT/D15 CDY1VAS_AMT/D15 
+CDY1AIR_FEE/D15 
+CIY1NET_AMT/D15 CIY1TAX_AMT/D15 CIY1TKT_ISS/D15 CIY1VOD_ISS/D15 
+CIY1REF_ISS/D15 
+CIY1EXG_ISS/D15 CIY1SAV_AMT/D15 CIY1LOS_AMT/D15 CIY1VAS_AMT/D15 
+CIY1AIR_FEE/D15
+
+PDY1NET_AMT/D15 PDY1TAX_AMT/D15 PDY1TKT_ISS/D15 PDY1VOD_ISS/D15 
+PDY1REF_ISS/D15 
+PDY1EXG_ISS/D15 PDY1SAV_AMT/D15 PDY1LOS_AMT/D15 PDY1VAS_AMT/D15 
+PDY1AIR_FEE/D15 
+PIY1NET_AMT/D15 PIY1TAX_AMT/D15 PIY1TKT_ISS/D15 PIY1VOD_ISS/D15 
+PIY1REF_ISS/D15 
+PIY1EXG_ISS/D15 PIY1SAV_AMT/D15 PIY1LOS_AMT/D15 PIY1VAS_AMT/D15 
+PIY1AIR_FEE/D15
+
+-* WHERE (AIR_MAIN.TICKET_CODE EQ '1' );
+-* WHERE (AIR_MAIN.CONJ_REL EQ 1) ;
+WHERE (TRN_DATE GE &&PYFMDT.EVAL
+      AND TRN_DATE LE &&PYTODT.EVAL)
+   OR (TRN_DATE GE &&CYFMDT.EVAL
+      AND TRN_DATE LE &&CYTODT.EVAL)
+   OR (TRN_DATE GE &&CMFMDT.EVAL
+      AND TRN_DATE LE &&CMTODT.EVAL)
+   OR (TRN_DATE GE &&PMFMDT.EVAL
+      AND TRN_DATE LE &&PMTODT.EVAL);
+
+&&WHERE1
+&&WHERE2
+&&WHERE3
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TC_TRVL
+END
+-RUN
+
+
+-IF &LINES EQ 0 THEN GOTO NEXTONE;
+-*========================================================================
+-*                <---------------- STEP5 ---------------->
+-*========================================================================
+-*   PROCESS EXTRACT DATA FROM STEP4 - HOLD TO FOCUS DATABASE TC_TRVL       
+-*========================================================================
+
+DEFINE FILE TC_TRVL
+ROLLCD/A8 = '&&ROLL';
+END
+
+TABLE FILE TC_TRVL
+-* Generated by Report Assist
+PRINT
+CDM1NET_AMT CDM1TAX_AMT CDM1TKT_ISS CDM1VOD_ISS CDM1REF_ISS 
+CDM1EXG_ISS CDM1SAV_AMT CDM1LOS_AMT CDM1VAS_AMT CDM1AIR_FEE 
+CIM1NET_AMT CIM1TAX_AMT CIM1TKT_ISS CIM1VOD_ISS CIM1REF_ISS 
+CIM1EXG_ISS CIM1SAV_AMT CIM1LOS_AMT CIM1VAS_AMT CIM1AIR_FEE 
+
+PDM1NET_AMT PDM1TAX_AMT PDM1TKT_ISS PDM1VOD_ISS PDM1REF_ISS 
+PDM1EXG_ISS PDM1SAV_AMT PDM1LOS_AMT PDM1VAS_AMT PDM1AIR_FEE 
+PIM1NET_AMT PIM1TAX_AMT PIM1TKT_ISS PIM1VOD_ISS PIM1REF_ISS 
+PIM1EXG_ISS PIM1SAV_AMT PIM1LOS_AMT PIM1VAS_AMT PIM1AIR_FEE
+
+CDY1NET_AMT CDY1TAX_AMT CDY1TKT_ISS CDY1VOD_ISS CDY1REF_ISS  
+CDY1EXG_ISS CDY1SAV_AMT CDY1LOS_AMT CDY1VAS_AMT CDY1AIR_FEE 
+CIY1NET_AMT CIY1TAX_AMT CIY1TKT_ISS CIY1VOD_ISS CIY1REF_ISS 
+CIY1EXG_ISS CIY1SAV_AMT CIY1LOS_AMT CIY1VAS_AMT CIY1AIR_FEE
+
+PDY1NET_AMT PDY1TAX_AMT PDY1TKT_ISS PDY1VOD_ISS PDY1REF_ISS 
+PDY1EXG_ISS PDY1SAV_AMT PDY1LOS_AMT PDY1VAS_AMT PDY1AIR_FEE
+PIY1NET_AMT PIY1TAX_AMT PIY1TKT_ISS PIY1VOD_ISS PIY1REF_ISS 
+PIY1EXG_ISS PIY1SAV_AMT PIY1LOS_AMT PIY1VAS_AMT PIY1AIR_FEE
+BY ROLLCD
+ON TABLE HOLD AS HOLD2
+END
+-RUN
+
+DEFINE FILE HOLD2
+  NMB/I5 = NMB + 1;  
+END
+TABLE FILE HOLD2
+PRINT
+CDM1NET_AMT CDM1TAX_AMT CDM1TKT_ISS CDM1VOD_ISS CDM1REF_ISS 
+CDM1EXG_ISS CDM1SAV_AMT CDM1LOS_AMT CDM1VAS_AMT CDM1AIR_FEE 
+CIM1NET_AMT CIM1TAX_AMT CIM1TKT_ISS CIM1VOD_ISS CIM1REF_ISS 
+CIM1EXG_ISS CIM1SAV_AMT CIM1LOS_AMT CIM1VAS_AMT CIM1AIR_FEE 
+
+PDM1NET_AMT PDM1TAX_AMT PDM1TKT_ISS PDM1VOD_ISS PDM1REF_ISS 
+PDM1EXG_ISS PDM1SAV_AMT PDM1LOS_AMT PDM1VAS_AMT PDM1AIR_FEE 
+PIM1NET_AMT PIM1TAX_AMT PIM1TKT_ISS PIM1VOD_ISS PIM1REF_ISS 
+PIM1EXG_ISS PIM1SAV_AMT PIM1LOS_AMT PIM1VAS_AMT PIM1AIR_FEE
+
+CDY1NET_AMT CDY1TAX_AMT CDY1TKT_ISS CDY1VOD_ISS CDY1REF_ISS  
+CDY1EXG_ISS CDY1SAV_AMT CDY1LOS_AMT CDY1VAS_AMT CDY1AIR_FEE 
+CIY1NET_AMT CIY1TAX_AMT CIY1TKT_ISS CIY1VOD_ISS CIY1REF_ISS 
+CIY1EXG_ISS CIY1SAV_AMT CIY1LOS_AMT CIY1VAS_AMT CIY1AIR_FEE
+
+PDY1NET_AMT PDY1TAX_AMT PDY1TKT_ISS PDY1VOD_ISS PDY1REF_ISS 
+PDY1EXG_ISS PDY1SAV_AMT PDY1LOS_AMT PDY1VAS_AMT PDY1AIR_FEE
+PIY1NET_AMT PIY1TAX_AMT PIY1TKT_ISS PIY1VOD_ISS PIY1REF_ISS 
+PIY1EXG_ISS PIY1SAV_AMT PIY1LOS_AMT PIY1VAS_AMT PIY1AIR_FEE
+BY ROLLCD
+BY NMB
+ON TABLE HOLD AS TCEX
+END
+-RUN
+
+MODIFY FILE TC_TKTP2
+FIXFORM FROM TCEX
+MATCH ROLLCD NMB
+ON NOMATCH INCLUDE
+ON MATCH REJECT
+DATA ON TCEX
+END
+-RUN
+
+
+-NEXTONE
+
+

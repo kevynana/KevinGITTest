@@ -1,0 +1,54 @@
+-* File HP50OLD.FEX
+-*
+-*****   This routine walks through the HIERPROF database to tag the 
+-*****     HIERPROF records that are no longer a valid part of the hierarchy
+-*****     This routine checks for a blank in UPD_FLAG, meaning that it was
+-*****     not updated or added during the update process, such records are
+-*****     flagged as OLD in order to leave the old history entry intact.
+-*****   AUTHOR:  Dave Kuzanek
+-*****   PRODUCTION DATE: 
+-***********************************************************************
+-* DATE          NAME                DESCRIPTION
+-* 8/29/00     IBISTL-KR             MODIFIED CODE TO REFLECT FIXED
+-*                                   KEY LENGTH OF 50.
+-*                                   CHANGED HIER18 TO HIER50.
+-*                                   CHANGED TO MOVE 50 ZEROS INTO ROLL_KEY.
+-*********************************************************************** 
+
+MAINTAIN FILE Hier50
+  COMPUTE Cnt1/I3 = 1;
+
+  INFER Hier50.Roll_Lev INTO HStack
+
+-* This loop walks through the HIERPROF DB one record at a time
+
+  FOR ALL NEXT Roll_Lev INTO HStack 
+    WHERE (Upd_Flag EQ ' ') AND (Level_Boss GT ' ')
+
+  REPEAT WHILE Cnt1 LE HStack.FocCount
+    PERFORM Old_Prof
+    COMPUTE Cnt1 = Cnt1 + 1;
+  ENDREPEAT
+
+  FOR ALL UPDATE HIER50.Old_Key HIER50.Roll_Key HIER50.Upd_Flag 
+    FROM HStack
+  COMMIT
+  GOTO END
+
+  CASE Old_Prof
+    COMPUTE HStack(Cnt1).Roll_Key = 
+             '00000000000000000000000000000000000000000000000000';
+-* Flag O indicates an Old Hierarchy entry
+    COMPUTE HStack(Cnt1).Upd_Flag = 'O';
+  ENDCASE
+
+case Winform_Form1
+-*   Winform show Form1
+endcase
+
+END
+
+
+
+
+

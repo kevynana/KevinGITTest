@@ -1,0 +1,52 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+
+-* File AHRPT_3.FEX
+-***************** M O D I F I C A T I O N S *******************
+-**********************************************************************
+-* Continuation of REPORT following SMRYRPT, SMRYCAR, or SMRYHTL
+-*********************************************************************
+-*
+
+-SUMFLAG
+-IF &&SUMONLY EQ 'Y' THEN GOTO XXIT;
+
+-IF &&UNAME EQ 'sample' GOTO XXIT; 
+
+-IF &&SUMONLY EQ 'N' THEN GOTO DETAIL_RPT;
+-RUN
+-*
+-**********************************************************************
+-* Produce a detail report if the user has requested
+-**********************************************************************
+-*
+-DETAIL_RPT
+-*
+-IF &&REPTTYPE EQ 'AIR' THEN GOTO AIR;
+-IF &&REPTTYPE EQ 'CAR' THEN GOTO CAR;
+-IF &&REPTTYPE EQ 'HTL' THEN GOTO HTL;
+-IF &&REPTTYPE EQ 'CP'  THEN GOTO CP;
+-GOTO XXIT
+-*
+-AIR
+EX &&DTPARM
+-*-EXIT
+-GOTO XXIT
+-*
+-CAR
+EX CARRPT
+-*-EXIT
+-GOTO XXIT
+-*
+-HTL
+EX HTLRPT
+-*-EXIT
+-GOTO XXIT
+-*
+-CP
+EX CPRPT
+-*-EXIT
+-GOTO XXIT
+-*
+-XXIT
+-* REJ EX RESTART 
+-*-EXIT

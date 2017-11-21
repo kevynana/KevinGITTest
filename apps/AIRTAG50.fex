@@ -1,0 +1,122 @@
+-* File AIRTAG50.FEX
+-*
+-*****   This routine determines all new/updated air transactions that 
+-*****     require a HIERPROF key stamp.  This routine checks for a N in
+-*****     HIER_STATUS, meaning that it was updated or added during the 
+-*****     air transaction update process.  This routine operates on the
+-*****     50 character hierarchy key length.
+-*****   AUTHOR:  Dave Kuzanek
+-*****   PRODUCTION DATE: 
+-***********************************************************************
+-* DATE          NAME                DESCRIPTION
+-* 8/29/00     IBISTL-KR             MODIFIED CODE TO REFLECT FIXED
+-*                                   KEY LENGTH OF 50.
+-*                                   CHANGED AH_18 TO AH_50
+-*                                   CHANGED HIER18 TO HIER50
+-*********************************************************************** 
+
+MAINTAIN FILES AH_50 AND HIER50 AND TMPSEG
+
+  COMPUTE S1Stat/A8 = ;
+  COMPUTE S2Stat/A8 = ;
+  COMPUTE S3Stat/A8 = ;
+  COMPUTE S4Stat/A8 = ;
+  COMPUTE S5Stat/A8 = ;
+  COMPUTE S6Stat/A8 = ;
+  COMPUTE S7Stat/A8 = ;
+  COMPUTE S8Stat/A8 = ;
+  COMPUTE S9Stat/A8 = ;
+  COMPUTE S1A/I6 = ;
+  COMPUTE S1B/I6 = ;
+  COMPUTE S2A/I6 = ;
+  COMPUTE S2B/I6 = ;
+  COMPUTE S2C/I6 = ;
+  COMPUTE S2D/I6 = ;
+  COMPUTE S3A/I6 = ;
+  COMPUTE S3B/I6 = ;
+  COMPUTE S3C/I6 = ;
+  COMPUTE S3D/I6 = ;
+  COMPUTE S4A/I6 = ;
+  COMPUTE S4B/I6 = ;
+  COMPUTE S4C/I6 = ;
+  COMPUTE S4D/I6 = ;
+  COMPUTE S5A/I6 = ;
+  COMPUTE S5B/I6 = ;
+  COMPUTE S5C/I6 = ;
+  COMPUTE S5D/I6 = ;
+  COMPUTE S6A/I6 = ;
+  COMPUTE S6B/I6 = ;
+  COMPUTE S7A/I6 = ;
+  COMPUTE S7B/I6 = ;
+  COMPUTE S8A/I6 = ;
+  COMPUTE S8B/I6 = ;
+  COMPUTE S9A/I6 = ;
+  COMPUTE S9B/I6 = ;
+  COMPUTE S9C/I6 = ;
+  COMPUTE S9D/I6 = ;
+
+-***********************************************************************
+-* DATE          NAME                DESCRIPTION
+-* 8/29/00     IBISTL-KR             MODIFIED CODE TO REFLECT FIXED
+-*                                   KEY LENGTH OF 50.
+-*                                   CHANGED AH_18 TO AH_50
+-*                                   CHANGED HIER18 TO HIER50
+-*********************************************************************** 
+  INFER HIER50.ROLL_LEV INTO HStack
+  INFER HIER50.ROLL_LEV INTO TStack
+  INFER AH_50.AIR_KEY INTO AStack
+  INFER TMPSEG.AIR_KEY INTO MStack
+
+-* This loop walks through the Air Hierarchy table and determines all
+-*   new/updated air transactions
+
+  PERFORM Stat_Init
+-*  WINFORM SHOW_INACTIVE HIERSTAT
+  STACK CLEAR AStack HStack MStack
+  FOR ALL NEXT AH_50.AIR_KEY INTO AStack WHERE HIER_STATUS EQ 'N'
+  COMPUTE S6B = AStack.FocCount;
+  COMPUTE S6A = 0;
+-*  WINFORM REFRESH HIERSTAT
+  REPOSITION AH_50.AIR_KEY
+  REPOSITION HIER50.ROLL_LEV
+  FOR ALL NEXT HIER50.ROLL_LEV INTO TStack 
+  REPEAT ALL
+    STACK CLEAR AStack HStack MStack 
+    NEXT AH_50.AIR_KEY INTO AStack(1) WHERE HIER_STATUS EQ 'N'
+    IF AStack.FocCount EQ 0 THEN GOTO EXITREPEAT
+    COMPUTE S6A = S6A + 1;
+-*    WINFORM REFRESH HIERSTAT
+    REPOSITION TMPSEG.AIR_KEY
+    NEXT TMPSEG.AIR_KEY INTO MStack(1)
+      WHERE TMPSEG.AIR_KEY EQ ASTACK(1).AIR_KEY
+    IF MStack.FocCount EQ 0 THEN GOTO ENDREPEAT
+    REPOSITION HIER50.ROLL_LEV
+    STACK COPY FROM TStack INTO HStack
+      WHERE (HIER50.ROLL_LEV EQ AStack(1).ROLL_LEV) AND
+            (HIER50.EFF_DATE LE MStack(1).TRN_DATE)
+    IF HStack.FocCount EQ 0 THEN GOTO ENDREPEAT
+    STACK SORT HStack BY HIGHEST HIER50.EFF_DATE
+    COMPUTE AStack(1).ROLL_KEY = HStack(1).ROLL_KEY;
+    COMPUTE AStack(1).HIER_STATUS = ' ';
+    UPDATE AH_50.ROLL_KEY AH_50.HIER_STATUS FROM AStack(1)
+  ENDREPEAT
+  COMMIT
+-*  WINFORM CLOSE
+  GOTO END
+
+CASE Stat_Init
+  COMPUTE S1Stat = 'Completed';
+  COMPUTE S2Stat = 'Completed';
+  COMPUTE S3Stat = 'Completed';
+  COMPUTE S4Stat = 'Completed';
+  COMPUTE S5Stat = 'Completed';
+  COMPUTE S6Stat = 'Working';
+  COMPUTE S7Stat = 'Pending';
+  COMPUTE S8Stat = 'Pending';
+  COMPUTE S9Stat = 'Pending';
+endcase
+case Winform_HierStat
+-*   Winform show HierStat
+endcase
+
+END

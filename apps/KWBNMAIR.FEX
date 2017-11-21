@@ -1,0 +1,525 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+ 
+
+-* 10/28/2015 DLV S-12409 - Added new routine for KWBNMPX 
+-*                          created from CEBNMAIR
+-*S-25167-9/27/16-JEM-Updated from level2 to emp_id
+-******************************************************************************
+
+-INCLUDE SETECHO
+SET ASNAMES = ON
+SET EMPTYREPORT=ON
+-SET HOLDATTR = ON; 
+
+
+-SET &ADTDESC = IF &&DATETYPE EQ 'I' THEN 'TRN_DATE' ELSE 'FST_DPT_DATE';
+ 
+
+-RUN
+
+-DEFAULT &&AIRDATA = 'Y';
+
+DEFINE FILE SR_50
+  CARD/A8 = EDIT (CREDIT_CARD, '99999999$$$$$$$$$$');
+  CCARD2/A6 =EDIT(CREDIT_CARD, '$$999999$$$$$$$$$$');
+  CGADV/A8 = IF (ADV_PURCH LT 7) THEN '0-6' ELSE 
+             IF (ADV_PURCH GE 7) AND (ADV_PURCH LE 13) THEN '7-13' ELSE
+             IF (ADV_PURCH GE 14) AND (ADV_PURCH LE 20) THEN '14-20' ELSE
+                '21+';   
+  CRD_CRD/A2=EDIT(CREDIT_CARD, '99$$$$$$$$$$$$$$$'); 
+  LEVEL_DESC/A60 = &&LDESC;
+  FARE_PAID/D12 = SEG_AMT + SEG_TAX;
+  FLAG/A1 = 'A';
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  SAVINGS/D11.2CS     = SEG_STANDARD - FARE_PAID;
+  NEW_SEG_MILES/D9 = SEG_MILES;
+  TKT_AMOUNT/D12.2CS = TICKET_AMT + TAX_AMT;
+  TKT_PURCH/D8.2CS      = IF (TICKET_CODE EQ '1') AND
+                             (SEG_NBR EQ '01') AND
+                             (FARE_PAID GE 0) AND
+                             (SEG_COUNT EQ 1) AND 
+                             (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';                       
+PMILES/D9 = IF (RF_FLAG EQ ' ') AND (EX_FLAG EQ ' ') THEN
+                        NEW_SEG_MILES ELSE 0;
+MILES/D8CS = IF (CITYPAIR.EMBARK EQ 'FP2' OR 'EX1' OR 'RF1' OR 'EX5') THEN 0
+  ELSE IF (TKT_TYPE EQ 'P-RF' OR 'P-EX') THEN 0
+  ELSE IF (SEG_NBR EQ '00' OR ' ') THEN 0 ELSE NEW_SEG_MILES;
+-* ELSE IF (TKT_SORT NE LAST TKT_SORT) AND (FARE_PAID GT 0) THEN NEW_SEG_MILES
+-* ELSE IF (TKT_SORT NE LAST TKT_SORT) AND (FARE_PAID LT 0)
+-* THEN NEW_SEG_MILES ELSE 0;
+  
+PFARE/D12.2CS =  IF (RF_FLAG EQ ' ') AND (EX_FLAG EQ ' ') THEN
+                        SEG_AMT + SEG_TAX ELSE 0;
+EXMCOS/D9 = IF (EX_FLAG NE ' ') AND (DOC_TYPE EQ '1') THEN 1 ELSE 0;
+XPSNGR_NM/A15        = 
+    EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+TRAN_MY/MTYY = TRN_DATE;
+-* Defines on Previous Defines
+  DISSAVINGS/D12 = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                   FARE_PAID-SEG_LOWEST;
+  DECLINE_AMT/D12.2C   = IF EMBARK EQ 'DT1' THEN 0 ELSE
+                         TKT_AMOUNT - LOWEST_AMT;
+  VASAVINGS/D12 = SEG_DISCOUNT - FARE_PAID;
+
+END
+-RUN
+
+
+
+TABLEF FILE SR_50
+PRINT AROLL_DSC3
+  BR_CL_IDX
+  CARD
+  CATEGORY
+  CCARD2
+  CGADV
+  CITYPAIR.EMBARK      AS 'EMB_APT_CD'  
+  CITYPAIR.ROUTE       AS 'RTE_APT_CD' 
+  CRD_CRD
+  CREDIT_CARD  
+  DECLINE_AMT
+  DISSAVINGS
+  DOC_TYPE	
+  DOD_TYPE
+  DPT_DATE  
+  EMBARK	
+  EMP_ID
+  EX_FLAG	
+  EXCHG_SALE
+  AIR_MAIN.INTL_DOM AS 'INTDOM'
+  CITYPAIR.INTL_DOM AS 'ITDOM'
+  FARE_PAID
+  FLAG
+  LEVEL_DESC
+  LEVEL1
+  LEVEL2
+  MILES
+  NET_TKT_CNT
+  NEW_SEG_MILES
+  NONREF_FLAG
+  ONLINE_TRADITIONAL
+  PASSNGR_NAME
+  PMILES
+  PFARE
+  REFUSE_CODE
+  RF_FLAG
+  SAVINGS
+  SEG_AMT	
+  SEG_COM	
+  SEG_COUNT
+  SEG_NBR 	
+  SEG_TAX 
+  SEG_LOWEST
+  LOWEST_AMT
+  TRIP_PURPOSE
+  TKT_AMOUNT
+  TKT_NUM
+  TKT_PURCH
+  TKT_SORT
+  TRN_DATE
+  TRAN_MY
+  VASAVINGS
+  VOID_DATE 	
+  VOID_STATUS 
+  XPSNGR_NM
+
+WHERE (&ADTDESC GE &&FROMDT.EVAL) AND (&ADTDESC LE &&TODT.EVAL) 
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+-*&&WHERE5
+-*&&WHERE6
+-*&&WHERE7
+-*&&WHERE8
+-*&&WHERE9
+-*&&WHERE10
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+ 
+
+
+
+-NORECCHK;
+-IF &RECORDS EQ 0 THEN GOTO NOAIR ELSE GOTO Continuea;
+ 
+
+
+-Continuea;
+
+
+-SET &&AIRDATA = 'Y';
+-RUN    
+ 
+-SET &SORT1 = 'BY EMP_ID';
+-SET &SORT2 = 'BY PASSNGR_NAME';
+
+
+
+
+
+TABLE FILE &&RPT_HOLD
+PRINT BR_CL_IDX
+  CARD
+  CCARD2
+  CGADV
+  CRD_CRD
+  CREDIT_CARD
+  DECLINE_AMT
+  DISSAVINGS
+  DOC_TYPE	
+  DOD_TYPE	
+  EMBARK
+  EMB_APT_CD
+  EX_FLAG	
+  EXCHG_SALE	
+  FARE_PAID
+  FLAG
+  INTDOM
+  ITDOM
+  LEVEL_DESC
+  LEVEL1
+  NET_TKT_CNT
+  NEW_SEG_MILES
+  NONREF_FLAG
+  MILES
+  ONLINE_TRADITIONAL
+  PASSNGR_NAME
+  PFARE
+  PMILES
+  REFUSE_CODE
+  RF_FLAG
+  SAVINGS
+  SEG_AMT	
+  SEG_COM	
+  SEG_COUNT
+  SEG_NBR 	
+  SEG_TAX 
+  TKT_NUM
+  TKT_PURCH
+  TRN_DATE
+  TRIP_PURPOSE
+  VASAVINGS
+  VOID_DATE 	
+  VOID_STATUS 
+
+&SORT1
+&SORT2
+ON TABLE HOLD AS TRANONE 
+END
+-RUN
+
+
+DEFINE FILE TRANONE
+BD_CAVOL/D12.2CS = IF (REFUSE_CODE NE 'CX') THEN FARE_PAID ELSE 0;
+CAVOL/D12.2CS = FARE_PAID ;
+CDAVOL/D12.2CS = IF (INTDOM EQ 'D') THEN FARE_PAID ELSE 0;
+CIAVOL/D12.2CS = IF (INTDOM EQ 'I') THEN FARE_PAID ELSE 0;
+
+CMILES/D9 = NEW_SEG_MILES;
+CVSAV/D12.2CS = VASAVINGS ;
+CNTKT/D8CS = NET_TKT_CNT;
+CDNTKT/D8CS = IF (INTDOM EQ 'D') THEN NET_TKT_CNT ELSE 0;
+CINTKT/D8CS = IF (INTDOM EQ 'I') THEN NET_TKT_CNT ELSE 0;
+CNTP/D8CS = TKT_PURCH;
+CNTP1/D8CS = IF (RF_FLAG EQ ' ') AND (EX_FLAG EQ ' ') AND
+                (ITDOM EQ 'D') THEN NET_TKT_CNT ELSE 0;
+CLSAV/D12CS = DISSAVINGS;
+CLSTKT/D9CS = IF REFUSE_CODE EQ 'LE' THEN 0 ELSE
+            IF DISSAVINGS EQ 0 THEN 0 ELSE
+            IF DISSAVINGS GT 1 OR DISSAVINGS LT (-1) THEN CNTKT ELSE 0;
+CNVSA/D12.2CS= IF (CREDIT_CARD OMITS '4246' OR '473077' OR 'TP') AND
+                  (BR_CL_IDX NE 'RF892075' OR 'RF740019' OR 'RF891788' OR 
+                   'RF157073' OR 'RF739003' OR 'RF892018' OR 'RF892430' OR
+                   'RF892448') AND (RF_FLAG EQ ' ') AND (EX_FLAG EQ ' ')
+                   THEN FARE_PAID ELSE 0;
+CLS_BD/D12.2CS = IF (REFUSE_CODE NE 'CX') THEN DISSAVINGS ELSE 0;
+     
+CDLSAV/D12CS = IF (INTDOM EQ 'D') THEN DISSAVINGS ELSE 0;
+CILSAV/D12CS = IF (INTDOM EQ 'I') THEN DISSAVINGS ELSE 0;
+
+CDFARE/D12.2CS = IF (INTDOM EQ 'D') THEN FARE_PAID ELSE 0;
+CIFARE/D12.2CS = IF (INTDOM EQ 'I') THEN FARE_PAID ELSE 0;
+
+CDTKT/P8CS = IF (INTDOM EQ 'D') THEN NET_TKT_CNT ELSE 0;
+CDLS/D12.2CS = IF (INTDOM EQ 'D') THEN DISSAVINGS ELSE 0;
+CILS/D12.2CS = IF (INTDOM EQ 'I') THEN DISSAVINGS ELSE 0;
+
+CADVT/P8CS = IF (CGADV EQ '0-6') THEN NET_TKT_CNT ELSE 0;
+CADVTP/P8CS = IF (CGADV EQ '0-6') THEN TKT_PURCH ELSE 0;
+CADVT1/P8CS = IF (CGADV EQ '7-13') THEN NET_TKT_CNT ELSE 0;
+CADVT2/P8CS = IF (CGADV EQ '14-20') THEN NET_TKT_CNT ELSE 0;
+CADVT3/P8CS = IF (CGADV EQ '21+') THEN NET_TKT_CNT ELSE 0;
+CADVTPX/P8CS = IF (CGADV EQ '7-13') THEN TKT_PURCH ELSE 0;
+CLS1/D12.2CS = IF (REFUSE_CODE EQ 'CX') THEN DISSAVINGS ELSE 0;
+CLS2/D12.2CS = IF (REFUSE_CODE EQ 'TS') THEN DISSAVINGS ELSE 0;
+CLS3/D12.2CS = IF (REFUSE_CODE EQ 'AS') THEN DISSAVINGS ELSE 0;
+CLS4/D12.2CS = IF (REFUSE_CODE EQ 'NR') THEN DISSAVINGS ELSE 0;
+CLS5/D12.2CS = IF (REFUSE_CODE EQ 'SS') THEN DISSAVINGS ELSE 0;
+CLS6/D12.2CS = IF (REFUSE_CODE EQ 'UG') THEN DISSAVINGS ELSE 0;
+CLS_AO/D12.2CS = IF (REFUSE_CODE NE 'CX' OR 'TS' OR 'AS' OR 'NR' OR 'SS' OR 'UG') THEN DISSAVINGS ELSE 0;
+CSAV1/D12.2CS = IF (REFUSE_CODE EQ 'NF') THEN SAVINGS ELSE 0;
+CSAV/D12.2CS = SAVINGS;
+CLS200/D12.2CS = IF ((DECLINE_AMT GE 100) OR (DECLINE_AMT LE (-100))) THEN
+                    CLS1 ELSE 0;
+CLS2001/D12.2CS = IF ((DECLINE_AMT GE 100) OR (DECLINE_AMT LE (-100))) THEN
+                    CLSAV ELSE 0;
+CNONONL/P8CS = IF (ONLINE_TRADITIONAL EQ 'TRADITIONAL') THEN NET_TKT_CNT ELSE 0;
+CDNONONL/D8CS = IF (ONLINE_TRADITIONAL EQ 'TRADITIONAL') AND (INTDOM EQ 'D') THEN NET_TKT_CNT ELSE 0;
+CINONONL/D8CS = IF (ONLINE_TRADITIONAL EQ 'TRADITIONAL') AND (INTDOM EQ 'I') THEN NET_TKT_CNT ELSE 0;
+
+CDONL/D8CS =  IF (ONLINE_TRADITIONAL EQ 'ONLINE') AND (INTDOM EQ 'D') THEN NET_TKT_CNT ELSE 0;
+CONGONL/P8CS = IF (ONLINE_TRADITIONAL EQ 'ONLINE') AND
+                  (ITDOM EQ 'D') THEN NET_TKT_CNT ELSE 0;
+CNR/P8CS = IF (NONREF_FLAG EQ 'N') THEN NET_TKT_CNT ELSE 0;
+                
+END
+-RUN
+
+
+TABLE FILE TRANONE
+SUM BD_CAVOL
+    CAVOL
+    CDAVOL
+    CDLS
+    CDLSAV
+    CDONL
+    CDNTKT
+    CIAVOL
+    CIFARE
+    CILSAV
+    CINTKT
+    CILS
+    CINONONL
+    CLSAV
+    CLSTKT
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CLS6
+    CLS_AO
+    CLS_BD
+    CLSTKT
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    CLS200  
+    CLS2001
+    CADVT
+    CADVT1
+    CADVT2
+    CADVT3
+    CDNONONL
+    MILES
+    PFARE
+    PMILES
+    PASSNGR_NAME
+COMPUTE CTAVGT/D12.2CS = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0 ELSE
+                            (CAVOL/CNTKT);
+        CAVGT/D12.2CS = IF ((CDTKT LT 1) AND (CDTKT GT (-1))) THEN 0 ELSE
+                           (CDFARE/CDTKT);
+        CADVP1/P12.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT/CNTKT)*100);
+        CADVP2/P12.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT1/CNTKT)*100);
+        CADVP3/P12.2 = IF ((CNTP LT 1) AND (CNTP GT (-1))) THEN 0
+                          ELSE ((CADVT/CNTKT)*100);
+        CADVP4/P12.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT1/CNTKT)*100);
+        CADVP5/P12.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT2/CNTKT)*100);
+        CADVP6/P12.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                          ELSE ((CADVT3/CNTKT)*100);
+        CLSP/P12.2 = IF ((CLS2001 LT 1) AND (CLS2001 GT (-1))) THEN 0
+                         ELSE ((CLS200/CLS2001)*100);
+        CDNONONLP/P12.2 = IF ((CDNTKT LT 1) AND (CDNTKT GT (-1))) THEN 0 
+                         ELSE ((CDNONONL/CDNTKT)*100);                 
+        CNONONLP/P12.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0 
+                         ELSE ((CNONONL/CNTKT)*100);
+        CDONLP/P12.2CS = IF ((CDNTKT LT 1) AND (CDNTKT GT (-1))) THEN 0
+                         ELSE ((CDONL/CDNTKT)*100);
+        CONLP1/P12.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0 
+                         ELSE ((CONGONL/CNTKT)*100);
+        CNRP/P12.2 = IF ((CNTKT LT 1) AND (CNTKT GT (-1))) THEN 0
+                         ELSE ((CNR/CNTKT)*100);
+        CNFSV/P12.2 = IF ((CSAV LT 1) AND (CSAV GT (-1))) THEN 0
+                         ELSE ((CSAV1/CSAV)*100);
+        CTLS/P12.2 =  IF ((CAVOL LT 1) AND (CAVOL GT (-1))) THEN 0
+                         ELSE ((CLSAV/CAVOL)*100);
+        CDTLSV/P12.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0 ELSE
+                          ((CDLSAV/CLSAV)*100);                       
+        CCLS1/P12.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0 
+                         ELSE ((CLS1/CLSAV)*100);
+        CCLS2/P12.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0 
+                         ELSE ((CLS2/CLSAV)*100);
+        CCLS3/P12.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0 
+                         ELSE ((CLS3/CLSAV)*100);
+        CCLS4/P12.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0 
+                         ELSE ((CLS4/CLSAV)*100);
+        CCLS5/P12.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0 
+                         ELSE ((CLS5/CLSAV)*100);
+        CCLS6/P12.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0 
+                         ELSE ((CLS6/CLSAV)*100);  
+        CCLS_AO/P12.2 = IF ((CLSAV LT 1) AND (CLSAV GT (-1))) THEN 0 
+                         ELSE ((CLS_AO/CLSAV)*100);                                   
+        CPMILE/P12.2CS =IF ((CMILES LT 1) AND (CMILES GT (-1)))
+                         THEN 0 ELSE (CAVOL/CMILES);
+        PMILE/P12.2CS =IF ((PMILES LT 1) AND (PMILES GT (-1)))
+                         THEN 0 ELSE (PFARE/PMILES);                         
+        CTLSV/P12.2 = IF ((CDAVOL LT 1) AND (CDAVOL GT (-1))) THEN 0 ELSE
+                          ((CDLS/CDAVOL)*100);
+        CLS100P/P12.2 = IF ((CAVOL LT 1) AND (CAVOL GT (-1))) THEN 0 ELSE
+                           ((CLS2001/CAVOL)*100);
+        CDATKT/D12.2 = IF ((CDNTKT LT 1) AND (CDNTKT GT (-1))) THEN 0 ELSE
+                          (CDAVOL/CDNTKT);
+        CTILSV/P12.2 = IF ((CIAVOL LT 1) AND (CIAVOL GT (-1))) THEN 0 ELSE
+                          ((CILS/CIAVOL)*100);
+        CIATKT/D12.2 = IF ((CINTKT LT 1) AND (CINTKT GT (-1))) THEN 0 ELSE
+                          (CIAVOL/CINTKT);                          
+&SORT1  
+&SORT2
+ON TABLE HOLD AS TRANONEA
+END
+-RUN
+
+-SET &&IDXFIELD = EMP_ID;
+
+TABLE FILE TRANONEA
+SUM BD_CAVOL
+    CAVOL
+    CDAVOL
+    CDLS
+    CDLSAV
+    CDONL
+    CDONLP
+    CDNTKT
+    CLSAV
+    CLSTKT
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CLS6
+    CLS_AO
+    CLS_BD
+    CLSTKT
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    CLS200  
+    CLS2001
+    CADVT
+    CADVT1
+    CADVT2
+    CADVT3
+    CDNONONL
+    MILES
+    PFARE
+    PMILES
+    CTAVGT
+    CAVGT
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CDNONONLP               
+    CNONONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CDTLSV         
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CCLS6
+    CCLS_AO                               
+    CPMILE
+    PMILE                     
+    CTLSV
+    CLS100P
+    CDATKT
+    CIATKT
+    CILSAV
+    CTILSV 
+    CINONONL
+    PASSNGR_NAME
+&SORT1  
+&SORT2
+ON TABLE HOLD AS TRANTWO FORMAT FOCUS INDEX &&IDXFIELD 
+END
+-RUN
+
+
+-GOTO XXITA;
+
+
+
+ 
+-NOAIR
+-SET &&AIRDATA = 'N';
+-RUN
+
+
+-XXITA;
+
+ 
+
+
+ 
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

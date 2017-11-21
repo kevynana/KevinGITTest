@@ -1,0 +1,220 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* CHANGES
+-* STEVE 07/26/02 ADDED VTSAVINGS - BASED ON TICKET AMOUNTS RATHER
+-*                THAN SEGMENT AMOUNTS
+-* STEVE 07/26/02 CHANGED WHERE STATEMENT AT THE BOTTOM FOR 
+-*                VTSAVINGS GE 1 OR LE -1
+-* 7/26/02  CHANGED TO USE VALIDATING AIRLINE_NAME - jk
+-* ADDED TRANTYPE INCLUDE - JK 12/9/14 STORY ID S-06492
+-*12/07/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+
+-* File AVIW22EX.FEX
+-********************************************************************
+-* MODIFICATIONS:
+-********************************************************************
+-* -SET &ECHO=ON;
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+
+-SET &&IDLEVELBREAK = '';
+
+
+-SET &AIRDATES = &&WEB_PATH || 'AIRDATES.fex';
+
+-INCLUDE IDLEVROLLDEF
+-RUN
+
+DEFINE FILE &&EXTRACT
+  ADSTP/A1 = EDIT(TKT_MAIN.ADIR_STP, '$$$$$$$$$$$$$$$$$$$9');
+  BOOK_DT/MDYY = RESV_DATE;
+  FARE_PAID/D12.2CS   = (SEG_AMT + SEG_TAX);
+  TOT_FARE/D12.2CS   = (TICKET_AMT + TAX_AMT);
+  LEVEL_DESC1/A80      = &&LDESC;
+  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+  NEW_SEG_DISC/D12.2CS = SEG_DISCOUNT;
+  NEW_AIR_DISC/D12.2CS = DISCOUNT_FARE;
+  REF_EXCH_CNT/D8CS   = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 0 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN 1 ELSE 0;
+  TKT_PURCH/D8CS      = IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+  TKT_TYPE/A4          = IF (SEG_COUNT LE 0) AND
+                          (RF_FLAG EQ 'P') THEN 'P-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (RF_FLAG EQ 'F') THEN 'F-RF' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'P') THEN 'P-EX' ELSE
+                        IF (SEG_COUNT LE 0) AND 
+                          (EX_FLAG EQ 'F') THEN 'F-EX' ELSE ' ';
+  TRAN_MONTH/MT        = TRN_DATE;
+  VASAVINGS/D12.2CS   = (NEW_SEG_DISC - FARE_PAID);
+  VTSAVINGS/D12.2CS   = (NEW_AIR_DISC - TOT_FARE); 
+  XARR_DT/MDYY         = ARR_DATE;
+  XDPT_DT/MDYY         = DPT_DATE;
+  XPSNGR_NM/A15        = 
+  EDIT(PASSNGR_NAME,'999999999999999$$$$$$$$$$$$$$$$$$');
+  XTRAN_DT/MDYY        = TRN_DATE;
+
+-* ****DEFINES ON PREVIOUS DEFINES****
+  AIRLINE_FEE/D8.2CS   = IF EMBARK EQ 'FP2' OR 'FP3' THEN FARE_PAID ELSE 0;
+  
+  STOPOVER/A25 = IF ADSTP EQ ' ' THEN 'NON-MULTIPLE STOPOVER' ELSE 'MULTIPLE STOPOVER';
+-* ******* THE FOLLOWING FIELDS WERE ADDED FOR THE CONVERSION ******
+SAVING1/P12.2CS = (STD_FARE - (TICKET_AMT + TAX_AMT));
+LSTSAVE1/P12.2CS = ((TICKET_AMT + TAX_AMT) - LOWEST_AMT);
+VASAVE/P12.2CS = (DISCOUNT_FARE - (TICKET_AMT + TAX_AMT));
+-INCLUDE TRANTYPE  
+-INCLUDE IDLEVDEFINE 
+
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT 
+  AIR_KEY	
+  AIRLINE	
+  AIRLINE_FEE	
+  VAL_AIR.AIRLINE_NAME	
+  BOOK_DT	
+  CITYPAIR.EMBARK AS 'EMB_APT_CD'	
+  CITYPAIR.ROUTE AS 'RTE_APT_CD'	
+  CLASS	
+  DOC_TYPE	
+  DPT_TIME	
+  EMB_CTY.CITY_NAME AS 'EMB_CTY_NM'	
+  FARE_BAS	
+  FARE_PAID	
+  FLIGHT	
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3	
+  NET_TKT_CNT	
+  NEW_SEG_DISC	
+  REF_EXCH_CNT	
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  REFUSE_KEY        	
+  RTE_CTY.CITY_NAME AS 'RTE_CTY_NM'	
+  SEG_AMT	
+  SEG_COUNT	
+  SEG_DISCOUNT	
+  SEG_LOWEST	
+  SEG_NBR	
+  SEG_TAX	
+  STOPOVER
+  TKT_NUM	
+  TKT_PURCH	
+  TKT_SORT	
+  TKT_TYPE	
+  TRN_DATE	
+  VAL_AIRLINE	
+  VASAVINGS	
+  VTSAVINGS
+  XARR_DT	
+  XDPT_DT	
+  XPSNGR_NM	
+  XTRAN_DT	
+
+-INCLUDE &AIRDATES
+
+WHERE VOID_DATE EQ 0
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+&&WHERE1
+&&WHERE2
+&&WHERE3
+&&WHERE4
+&&WHERE5
+&&WHERE6
+&&WHERE7
+&&WHERE8
+&&WHERE9
+&&WHERE10
+
+
+-INCLUDE RPTPARMS
+
+
+ON TABLE HOLD AS &&RPT_HOLD
+END
+-RUN
+
+-GOTO XXIT
+
+TABLE FILE HOLD22
+PRINT AIR_KEY	
+  AIRLINE	
+  AIRLINE_FEE	
+  AIRLINE_NAME
+  BOOK_DT	
+  CLASS	
+  DOC_TYPE	
+  DPT_TIME	
+  EMB_APT_CD	
+  EMB_CTY_NM	
+  FARE_BAS	
+  FARE_PAID	
+  FLIGHT	
+  LEVEL_DESC	
+  LEVEL1	
+  LEVEL2	
+  LEVEL3	
+  NET_TKT_CNT	
+  NEW_SEG_DISC	
+  REF_EXCH_CNT	
+  REFUSAL_DESC	
+  REFUSE_CODE	
+  REFUSE_KEY        	
+  RTE_APT_CD	
+  RTE_CTY_NM	
+  SEG_AMT	
+  SEG_COUNT	
+  SEG_DISCOUNT	
+  SEG_LOWEST	
+  SEG_NBR	
+  SEG_TAX	
+  TKT_NUM	
+  TKT_PURCH	
+  TKT_SORT	
+  TKT_TYPE	
+  TRN_DATE	
+  VAL_AIRLINE	
+  VASAVINGS	
+  XARR_DT	
+  XDPT_DT	
+  XPSNGR_NM	
+  XTRAN_DT	
+-* WHERE VASAVINGS NE 0
+WHERE ((VTSAVINGS GE 1) OR (VTSAVINGS LE -1))
+ON TABLE HOLD AS &&RPT_HOLD
+END
+
+-*-EXIT
+
+-XXIT
+-* -QUIT
+
+        

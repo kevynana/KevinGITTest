@@ -1,0 +1,119 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-INCLUDE SETECHO
+SET ASNAMES=ON
+
+-SET &&RPTSUF = 'DTL';
+-SET &FMM=EDIT(&&FROMDT,'$$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$$99');
+-SET &FMY=EDIT(&&FROMDT,'$9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'$9999');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$$99');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$$99');
+-SET &FXMY=EDIT(&&FXDATE,'$9999');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$$99');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$$99');
+-SET &TXOY=EDIT(&&TXDATE,'$9999');
+
+-INCLUDE FDEFRPTS
+-RUN
+
+
+JOIN HOLDMX.LEVEL_DESC IN HOLDMX TO HOLDADV.LEVEL_DESC IN HOLDADV AS J1
+END
+JOIN HOLDMX.LEVEL_DESC IN HOLDMX TO HOLDBKG.LEVEL_DESC IN HOLDBKG AS J2
+END
+JOIN HOLDMX.LEVEL_DESC IN HOLDMX TO HOLDNREF.LEVEL_DESC IN HOLDNREF AS J3
+END
+-RUN
+
+
+DEFINE FILE HOLDMX
+NOWTOD/A8 WITH LEVEL_DESC = HHMMSS (NOWTOD);
+
+END
+-* -RUN
+TABLE FILE HOLDMX
+-INCLUDE HEADERDD
+"&&SUBHEAD"
+"</1"
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+    
+-*BY
+   &&S_TARG1
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+&&BREAKOPTION
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+-*ON TABLE SET STYLE &&SMSTY
+-**************************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET STYLE *
+-INCLUDE &&SMSTY
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+-INCLUDE &&DSTY
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3
+-*-*-EXIT
+
+
+
+
+

@@ -1,0 +1,734 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Created for the new quarterly review - JK 8/2/05
+-*5/23/14  - DEB - ADDED EX5 TO FULLR_FARE DEFINE
+-******************************************************************************
+-INCLUDE SETECHO
+SET ASNAMES = ON
+-SET HOLDATTR = ON;
+-RUN
+
+-SET &POS0=0;
+-SET &INC = 67;
+-SET &INC1 = 18;
+-SET &POS1T = &POS0 + 1 * &INC;
+-SET &POS1T1 = &POS0 + 1 * &INC1;
+
+-SET &POS1 = &POS1T + 0;
+-SET &POS2 = &POS1T + 6;
+-SET &POS3 = &POS1T + 12;
+-SET &POS4 = &POS1T + 18;
+-SET &POS5 = &POS1T + 24;
+-SET &POS6 = &POS1T + 30;
+-SET &POS7 = &POS1T + 36;
+-SET &POS8 = &POS1T + 42;
+
+-SET &POS1A = &POS1 - 1;
+-SET &POS2A = &POS2 - 1;
+-SET &POS3A = &POS3 - 1;
+-SET &POS4A = &POS4 - 1;
+-SET &POS5A = &POS5 - 1;
+-SET &POS6A = &POS6 - 1;
+-SET &POS7A = &POS7 - 1;
+-SET &POS8A = &POS8 - 1;
+
+-SET &POSA1 = &POS1T1 + 0;
+-SET &POSA2 = &POS1T1 + 9;
+-SET &POSA3 = &POS1T1 + 18;
+-SET &POSA4 = &POS1T1 + 27;
+
+-SET &POS1AA = &POSA1 - 2;
+-SET &POS2AA = &POSA2 - 2;
+-SET &POS3AA = &POSA3 - 2;
+-SET &POS4AA = &POSA4 - 2;
+
+-SET &TD1 = ' ';
+-SET &TD2 = ' ';
+-SET &TD3 = ' ';
+-SET &TD4 = ' ';
+-SET &TD5 = ' ';
+-SET &TD6 = ' ';
+-SET &TD7 = ' ';
+-SET &TD8 = ' ';
+
+
+-SET &NTY1 = ' ';
+-SET &NTY2 = ' ';
+-SET &TIY1 = ' ';
+-SET &TIY2 = ' ';
+-SET &FEY1 = ' ';
+-SET &FEY2 = ' ';
+-SET &VDY1 = ' ';
+-SET &VDY2 = ' ';
+-SET &FRY1 = ' ';
+-SET &FRY2 = ' ';
+-SET &VNET1 = ' ';
+-SET &VNET2 = ' ';
+-SET &VTI1 = ' ';
+-SET &VTI2 = ' ';
+-SET &VFE1 = ' ';
+-SET &VFE2 = ' ';
+-SET &VVD1 = ' ';
+-SET &VVD2 = ' ';
+-SET &VFR1 = ' ';
+-SET &VFR2 = ' ';
+-SET &TY1 = ' ';
+-SET &TY2 = ' ';
+
+DEFINE FILE &&EXTRACT
+FARE_PAID/D12 = IF VOID_DATE EQ 0 THEN (SEG_AMT + SEG_TAX) ELSE 0;
+-*FULL_EXCH/D8 = IF (VOID_DATE EQ 0) AND (EX_FLAG EQ 'F') 
+-*                 AND (SEG_COUNT EQ -1) AND (SEG_NBR EQ '01') THEN 1 ELSE 0;
+-*FULL_RFNDS/D8 = IF ((VOID_DATE EQ 0) AND (RF_FLAG EQ 'F') AND (DOC_TYPE NE '1') AND
+-*                   (SEG_NBR EQ '01') AND (SEG_COUNT LT 0)) THEN 1 ELSE 0;
+                   
+-*includes all exchanges, partial or full
+FULL_EXCH/D8 = IF (VOID_DATE EQ 0) AND (EX_FLAG NE ' ') 
+                 AND (SEG_COUNT EQ -1) AND (SEG_NBR EQ '01') THEN 1 ELSE 0;
+FULL_RFNDS/D8 = IF ((VOID_DATE EQ 0) AND (RF_FLAG NE ' ') AND (DOC_TYPE NE '1') AND
+                   (SEG_NBR EQ '01') AND (SEG_COUNT LT 0)) THEN 1 ELSE 0;
+
+
+
+NET_TKT_CNT/D8    =  IF (TICKET_CODE EQ '1') AND
+                         (SEG_NBR EQ '01') AND
+                         (FARE_PAID GE 0) AND
+                         (SEG_COUNT EQ 1) AND 
+                         (CONJ_REL EQ 1) AND
+                         (VOID_DATE EQ 0) THEN 1 ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND 
+                           (EX_FLAG EQ 'F') THEN (-1) ELSE 
+                        IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (RF_FLAG EQ 'F') THEN (-1) ELSE 0;
+
+TKT_PURCH/D8      =   IF (TICKET_CODE EQ '1') AND
+                           (SEG_NBR EQ '01') AND
+                           (FARE_PAID GE 0) AND
+                           (SEG_COUNT EQ 1) AND 
+                           (CONJ_REL EQ 1) THEN 1 ELSE 0;
+
+-INCLUDE QRFTRANA
+VOIDS/D8 = IF (VOID_DATE NE 0) AND (SEG_COUNT EQ 1) AND (SEG_NBR EQ '01') 
+           THEN 1 ELSE 0;
+
+-* DEFINES ON PREVIOUS
+-*FULLE_FARE/D12S = IF (VOID_DATE EQ 0) AND (EX_FLAG EQ 'F') 
+-*                 AND (SEG_COUNT EQ -1) AND (SEG_NBR EQ '01') THEN (FARE_PAID * (-1)) ELSE 0;
+-*FULLR_FARE/D12S = IF ((VOID_DATE EQ 0) AND (RF_FLAG EQ 'F') AND (DOC_TYPE NE '1') AND
+-*                     (TKT_NUM NE LAST TKT_NUM) AND (SEG_COUNT LT 0)) THEN (FARE_PAID * (-1)) ELSE 0;
+                     
+-*includes all exchanges, partial or full
+-* FULLE_FARE/D12S = IF (VOID_DATE EQ 0) AND (EX_FLAG NE ' ') 
+-*                  AND (SEG_COUNT EQ -1) AND (SEG_NBR EQ '01') THEN (FARE_PAID * (-1)) ELSE 0;
+
+
+
+FULLE_FARE/D12S = IF (DOC_TYPE EQ '1' AND EXCHG_SALE NE ' ') THEN 0 ELSE
+                  IF ((EX_FLAG EQ 'F' OR 'P') AND (SEG_COUNT LE 0) AND (EMBARK NE 'RF1' OR 'FP3')) THEN FARE_PAID ELSE
+                  IF ((SEG_COUNT GE 0) AND (EXCHG_SALE NE ' ') AND (EMBARK NE 'RF1')) THEN FARE_PAID ELSE 0;
+
+-* FULLR_FARE/D12S = IF ((VOID_DATE EQ 0) AND (RF_FLAG NE ' ') AND (DOC_TYPE NE '1') AND
+-*                      (TKT_NUM NE LAST TKT_NUM) AND (SEG_COUNT LT 0)) THEN (FARE_PAID * (-1)) ELSE 0;
+FULLR_FARE/D12S = IF ((RF_FLAG EQ 'F' OR 'P') AND (EMBARK NE 'EX1' OR 'FP2' OR 'EX5') AND 
+                     (DOC_TYPE NE '1') AND (SEG_COUNT LE 0)) OR (EMBARK EQ 'RF1') THEN (FARE_PAID * (-1)) ELSE 0;
+ 
+END
+-RUN
+
+TABLEF FILE &&EXTRACT
+PRINT FARE_PAID
+      FULLE_FARE
+      FULL_EXCH
+      FULLR_FARE
+      FULL_RFNDS
+      NET_TKT_CNT
+      SEG_COUNT
+      TKT_NUM
+      TKT_PURCH
+      TRAN
+      TRN_DATE
+      VOIDS
+      YEAR
+      CURRENT PRIOR PYTD CQ PQ
+WHERE (TRN_DATE GE '&&FROMDT.EVAL') AND (TRN_DATE LE '&&TODT.EVAL') OR
+      (TRN_DATE GE '&&FXDATE.EVAL') AND (TRN_DATE LE '&&TXDATE.EVAL')
+-********************************************************************
+-* Where statements to select data specified in user profile
+-********************************************************************
+-INCLUDE RPTPARMS
+ON TABLE HOLD AS TDHOLD1
+END
+-RUN
+
+TABLE FILE TDHOLD1
+PRINT FARE_PAID
+      FULL_EXCH
+      FULLE_FARE
+      FULL_RFNDS
+      FULLR_FARE
+      NET_TKT_CNT
+      TKT_PURCH
+      TRAN
+      TRN_DATE
+      VOIDS
+      YEAR
+      CURRENT PRIOR PYTD CQ PQ
+BY TKT_NUM
+BY SEG_COUNT
+ON TABLE HOLD AS TDHOLD2
+END
+-RUN
+
+TABLE FILE TDHOLD2
+SUM TKT_PURCH
+    FULL_EXCH
+    VOIDS 
+    FULL_RFNDS
+BY TRAN
+ON TABLE SAVE AS TDTI FORMAT ALPHA
+END
+-RUN
+
+-* Tickets Issued by Quarter
+-SET &CNT = 1;
+-REPEAT InQtrData 8 TIMES
+-SET &TD.&CNT = ' ';
+-SET &TI.&CNT = ' ';
+-SET &FE.&CNT = ' ';
+-SET &VD.&CNT = ' ';
+-SET &FR.&CNT = ' ';
+-SET &CNT = &CNT + 1;
+-InQtrData
+
+-SET &CNT = 0;
+-REPEAT TOEND &LINES TIMES
+-SET &CNT = &CNT + 1;
+-READ TDTI NOCLOSE &TD.7. &TI.8. &FE.8. &VD.8. &FR.8.
+-SET &TD.&CNT = '  '|'&TD.EVAL';
+EX FMTNUMBER VALUE=&TI,DOLLAR='N',LEN=8
+-RUN
+-SET &TI.&CNT = &&RETVAL;
+
+EX FMTNUMBER VALUE=&FE,DOLLAR='N',LEN=8
+-RUN
+-SET &FE.&CNT = &&RETVAL;
+
+-SET &VD.&CNT = &VD;
+-SET &FR.&CNT = &FR;
+-TOEND 
+-CLOSE TDTI
+
+DEFINE FILE TDHOLD2
+CTI/D12 = IF CURRENT EQ 'Y' THEN TKT_PURCH ELSE 0;
+PTI/D12 = IF PRIOR EQ 'Y' THEN TKT_PURCH ELSE 0;
+CFE/D12 = IF CURRENT EQ 'Y' THEN FULL_EXCH ELSE 0;
+PFE/D12 = IF PRIOR EQ 'Y' THEN FULL_EXCH ELSE 0;
+CVD/D12 = IF CURRENT EQ 'Y' THEN VOIDS ELSE 0;
+PVD/D12 = IF PRIOR EQ 'Y' THEN VOIDS ELSE 0;
+CFR/D12 = IF CURRENT EQ 'Y' THEN FULL_RFNDS ELSE 0;
+PFR/D12 = IF PRIOR EQ 'Y' THEN FULL_RFNDS ELSE 0;
+FLAG/A1 = 'A';
+CFARE/D12 = IF CURRENT EQ 'Y' THEN FARE_PAID ELSE 0;
+PFARE/D12 = IF PRIOR EQ 'Y' THEN FARE_PAID ELSE 0;
+CFEFARE/D12 = IF CURRENT EQ 'Y' THEN FULLE_FARE ELSE 0;
+CFRFARE/D12 = IF CURRENT EQ 'Y' THEN FULLR_FARE ELSE 0;
+PFEFARE/D12 = IF PRIOR EQ 'Y' THEN FULLE_FARE ELSE 0;
+PFRFARE/D12 = IF PRIOR EQ 'Y' THEN FULLR_FARE ELSE 0;
+
+END
+-RUN
+
+TABLE FILE TDHOLD2
+SUM FARE_PAID
+    TKT_PURCH
+    FULLE_FARE
+    VOIDS 
+    FULLR_FARE
+    CTI
+    PTI
+    CFE
+    PFE
+    CVD
+    PVD
+    CFR
+    PFR
+    CFARE
+    PFARE
+    CFEFARE
+    CFRFARE
+    PFEFARE
+    PFRFARE
+BY FLAG
+BY YEAR
+WHERE CURRENT EQ 'Y' OR PYTD EQ 'Y'
+ON TABLE HOLD AS TDHOLD3
+END
+-RUN
+
+
+TABLE FILE TDHOLD2
+SUM COMPUTE VNET/D4 = IF ((PFARE LT 1) AND (PFARE GT (-1))) THEN 0 ELSE
+                          (((CFARE - PFARE)/PFARE)*100); 
+    COMPUTE VTI/D4 = IF ((PTI LT 1) AND (PTI GT (-1))) THEN 0 ELSE
+                          (((CTI - PTI)/PTI)*100); 
+    COMPUTE VFE/D4 = IF ((PFEFARE LT 1) AND (PFEFARE GT (-1))) THEN 0 ELSE
+                          (((CFEFARE - PFEFARE)/PFEFARE)*100); 
+    COMPUTE VVD/D4 = IF ((PVD LT 1) AND (PVD GT (-1))) THEN 0 ELSE
+                          (((CVD - PVD)/PVD)*100); 
+    COMPUTE VFR/D4 = IF ((PFRFARE LT 1) AND (PFRFARE GT (-1))) THEN 0 ELSE
+                          (((CFRFARE - PFRFARE)/PFRFARE)*100); 
+   
+BY FLAG
+WHERE CURRENT EQ 'Y' OR PYTD EQ 'Y'
+ON TABLE HOLD AS TDHOLD4
+END
+-RUN
+
+MATCH FILE TDHOLD3
+PRINT 
+    FARE_PAID
+    TKT_PURCH
+    FULLE_FARE
+    VOIDS 
+    FULLR_FARE
+BY FLAG
+BY YEAR
+ON TABLE HOLD
+RUN
+FILE TDHOLD4
+SUM VNET
+    VTI
+    VFE
+    VVD
+    VFR
+BY FLAG
+AFTER MATCH HOLD AS TDHOLD4 OLD-AND-NEW
+END
+-RUN
+
+TABLE FILE TDHOLD4
+SUM FARE_PAID
+    TKT_PURCH
+    FULLE_FARE
+    VOIDS 
+    FULLR_FARE
+    VNET
+    VTI
+    VFE
+    VVD
+    VFR
+BY YEAR
+ON TABLE SAVE AS TDTIY FORMAT ALPHA
+END
+-RUN
+
+-* Tickets Issued by Year
+-SET &CNT = IF &LINES EQ 1 THEN 2 ELSE 1;
+-REPEAT TOEND1 &LINES TIMES
+-READ TDTIY NOCLOSE &TY.4. &NTY.12. &TIY.8. &FEY.12. &VDY.8. &FRY.12. &VNET.4. &VTI.4. &VFE.4. &VVD.4. &VFR.4.
+
+EX FMTNUMBER VALUE=&NTY,LEN=12
+-RUN
+-SET &NTY.&CNT = &&RETVAL;
+
+EX FMTNUMBER VALUE=&TIY,DOLLAR='N',LEN=12
+-RUN
+-SET &TIY.&CNT = &&RETVAL;
+
+EX FMTNUMBER VALUE=&FEY,LEN=12
+-RUN
+-SET &FEY.&CNT = &&RETVAL;
+
+EX FMTNUMBER VALUE=&VDY,DOLLAR='N',LEN=12
+-RUN
+-SET &VDY.&CNT = &&RETVAL;
+
+
+EX FMTNUMBER VALUE=&FRY,LEN=12
+-RUN
+-SET &FRY.&CNT = &&RETVAL;
+
+-SET &TY.&CNT = '&TY.EVAL';
+
+EX FMTNUMBER VALUE=&VNET,DOLLAR='N',LEN=6
+-RUN
+-SET &VNET.&CNT = '   ' | '&&RETVAL.EVAL' || '%';
+
+EX FMTNUMBER VALUE=&VTI,DOLLAR='N',LEN=6
+-RUN
+-SET &VTI.&CNT = '   ' | '&&RETVAL.EVAL' || '%';
+
+EX FMTNUMBER VALUE=&VFE,DOLLAR='N',LEN=6
+-RUN
+-SET &VFE.&CNT = '   ' | '&&RETVAL.EVAL' || '%';
+
+EX FMTNUMBER VALUE=&VVD,DOLLAR='N',LEN=6
+-RUN
+-SET &VVD.&CNT = '   ' | '&&RETVAL.EVAL' || '%';
+
+EX FMTNUMBER VALUE=&VFR,DOLLAR='N',LEN=6
+-RUN
+-SET &VFR.&CNT = '   ' | '&&RETVAL.EVAL' || '%';
+-SET &CNT = &CNT + 1;
+-TOEND1
+-CLOSE TDTIY
+
+-* -GOTO AROUNDG
+-SET &G_TDG3 = 'N';
+-IF '&&SKIPGRAPH.EVAL' EQ 'Y' THEN GOTO AROUNDG;
+
+-*  Tickes Issued, Full Exchanges, Voids, Full Refunds Graph
+GRAPH FILE TDHOLD2
+SUM TKT_PURCH AS 'Tickets Issued'
+    FULL_EXCH AS 'Exchanges'
+    VOIDS AS '             Voids'
+    FULL_RFND AS 'Refunds'
+ACROSS TRAN AS ' '
+ON GRAPH SET LOOKGRAPH VBAR2AX
+ON GRAPH SET BARNUMB OFF
+ON GRAPH SET 3D OFF
+ON GRAPH SET VZERO ON
+ON GRAPH SET GRID OFF
+ON GRAPH SET GRAPHSTYLE *
+setSeriesFillColor(0, new Color, 0 64 128));
+setSeriesFillColor(1, new Color, 145 207 255));
+setSeriesFillColor(2, new Color, 125 0 0));
+setSeriesFillColor(3, new Color, 160 0 181));
+setMarkerDisplay(true);
+setUseSeriesShapes(true);
+setConnectLineMarkers(true);
+setSeriesType(1,2);
+setSeriesType(2,2);
+setSeriesType(3,2);
+setO1MajorGridDisplay(false);
+setO1MinorGridDisplay(false);
+setY1MajorGridDisplay(false);
+setY1MinorGridDisplay(false);
+setY2MajorGridDisplay(false);
+setY2MinorGridDisplay(false);
+setO1LabelRotate(0);
+setPieFeelerTextDisplay(1);
+setPieLabelDisplay(0);
+setTextFormatPreset(getPieSliceLabel(),1);
+setRiserBorderMode(2);
+setSeriesDefaultTransparentBorderColor(true);
+setUseSeriesBorderDefaults(true);
+setLegendDisplay(true);
+setLegendPosition(1);
+setLegendTextAutofix(true);
+setLegendMarkersPerRow(2);
+setTitleString("Tickets Issued");
+setY1LabelDisplay(true);
+setY1LabelFormat(1);
+setY2LabelDisplay(true);
+setY2LabelFormat(1);
+setY1AxisSide(0);
+setY2AxisSide(1);
+setFontSizeAbsolute(getTitle(),false); 
+setAutofit(getTitle(),true);
+
+setTextJustHoriz(getTitle(),1);
+setFontSizeAbsolute(getTitle(),true); 
+setFontStyle(getTitle(),0);
+setFontSize(getTitle(),12);
+
+setFontSizeAbsolute(getLegendText(),true);
+setFontSizeAbsolute(getY1Title(),true);
+setFontSizeAbsolute(getY1Label(),true);
+setFontSizeAbsolute(getY2Title(),true);
+setFontSizeAbsolute(getY2Label(),true);
+setFontSizeAbsolute(getO1Title(),true);
+setPlace(true);
+ENDSTYLE
+ON GRAPH HOLD AS TDG3 FORMAT SVG
+END
+-RUN
+
+-SET &G_TDG3=IF &LINES GT 0 THEN 'Y' ELSE 'N';
+-AROUNDG
+
+-******************************************************************************
+-* Comment lines - YTD comparison
+-******************************************************************************
+-* Year to Year Comparison
+-SET &CLINEY1 = ' ';
+-SET &CLINEY2 = ' ';
+-SET &CLINEY3 = ' ';
+-SET &CLINEY4 = ' ';
+-SET &CLINEQ1 = ' ';
+-SET &CLINEQ2 = ' ';
+-SET &CLINEQ3 = ' ';
+-SET &CLINEQ4 = ' ';
+
+-*check if there are sufficient Prior YTD data
+TABLE FILE TDHOLD2
+BY TRAN
+WHERE PRIOR EQ 'Y'
+ON TABLE SAVE
+END
+-RUN
+-SET &PYTD = IF &LINES LT 4 THEN 'N' ELSE 'Y';
+-IF &LINES LT 4 THEN GOTO QTRCOMP1;
+
+DEFINE FILE TDHOLD2
+CTI/D12 = IF CURRENT EQ 'Y' THEN TKT_PURCH ELSE 0;
+PTI/D12 = IF PRIOR EQ 'Y' THEN TKT_PURCH ELSE 0;
+CFE/D12 = IF CURRENT EQ 'Y' THEN FULL_EXCH ELSE 0;
+PFE/D12 = IF PRIOR EQ 'Y' THEN FULL_EXCH ELSE 0;
+CVD/D12 = IF CURRENT EQ 'Y' THEN VOIDS ELSE 0;
+PVD/D12 = IF PRIOR EQ 'Y' THEN VOIDS ELSE 0;
+CFR/D12 = IF CURRENT EQ 'Y' THEN FULL_RFNDS ELSE 0;
+PFR/D12 = IF PRIOR EQ 'Y' THEN FULL_RFNDS ELSE 0;
+END
+-RUN
+
+TABLE FILE TDHOLD2
+SUM CTI PTI CFE PFE CVD PVD CFR PFR
+BY YEAR
+BY TRAN
+WHERE CURRENT EQ 'Y' OR PYTD EQ 'Y'
+ON TABLE HOLD AS COMHOLD1
+END
+-RUN
+
+TABLE FILE COMHOLD1
+SUM CTI 
+    PTI
+    CFE
+    PFE
+    CVD
+    PVD
+    CFR
+    PFR
+COMPUTE FLAGPT/A1 = IF PTI EQ 0 THEN 'Y' ELSE 'N';
+COMPUTE FLAGPE/A1 = IF PFE EQ 0 THEN 'Y' ELSE 'N';
+COMPUTE FLAGPV/A1 = IF PVD EQ 0 THEN 'Y' ELSE 'N';
+COMPUTE FLAGPR/A1 = IF PFR EQ 0 THEN 'Y' ELSE 'N';
+COMPUTE TPPY/D4 = IF FLAGPT EQ 'N' THEN (CTI-PTI)/PTI * 100 ELSE 0;
+COMPUTE FEPY/D4 = IF FLAGPE EQ 'N' THEN (CFE-PFE)/PFE * 100 ELSE 0;
+COMPUTE VDPY/D4 = IF FLAGPV EQ 'N' THEN (CVD-PVD)/PVD * 100 ELSE 0;
+COMPUTE FRPY/D4 = IF FLAGPR EQ 'N' THEN (CFR-PFR)/PFR * 100 ELSE 0;
+COMPUTE ABSTPPY/D3 = ABS(TPPY);
+COMPUTE ABSFEPY/D3 = ABS(FEPY);
+COMPUTE ABSVDPY/D3 = ABS(VDPY);
+COMPUTE ABSFRPY/D3 = ABS(FRPY);
+COMPUTE TICY/A12 = IF TPPY GT 0 THEN 'increased' ELSE IF TPPY LT 0 THEN 'decreased' ELSE 'remains same';
+COMPUTE FECY/A12 = IF FEPY GT 0 THEN 'increased' ELSE IF FEPY LT 0 THEN 'decreased' ELSE 'remains same';
+COMPUTE VDCY/A12 = IF VDPY GT 0 THEN 'increased' ELSE IF VDPY LT 0 THEN 'decreased' ELSE 'remains same';
+COMPUTE FRCY/A12 = IF FRPY GT 0 THEN 'increased' ELSE IF FRPY LT 0 THEN 'decreased' ELSE 'remains same';
+ON TABLE SAVE AS TD2YCOMMENT 
+END
+-RUN
+
+-READ TD2YCOMMENT &X.96. &FLAGPT.1. &FLAGPE.1. &FLAGVD.1. &FLAGPR.1. &X.16. &ABSTPPY.3. &ABSFEPY.3. &ABSVDPY.3. &ABSFRPY.3. &TICY.12. &FECY.12. &VDCY.12. &FRCY.12.
+
+EX FMTNUMBER VALUE=&ABSTPPY,DOLLAR='N',ALIGNED='N'
+-RUN
+-SET &ABSTPPY = &&RETVAL;
+
+EX FMTNUMBER VALUE=&ABSFEPY,DOLLAR='N',ALIGNED='N'
+-RUN
+-SET &ABSFEPY = &&RETVAL;
+
+EX FMTNUMBER VALUE=&ABSVDPY,DOLLAR='N',ALIGNED='N'
+-RUN
+-SET &ABSVDPY = &&RETVAL;
+
+EX FMTNUMBER VALUE=&ABSFRPY,DOLLAR='N',ALIGNED='N'
+-RUN
+-SET &ABSFRPY = &&RETVAL;
+
+-SET &CLINEY1 =  IF &FLAGPT EQ 'N' AND &ABSTPPY NE 0 THEN 'Tickets Issued ' | '&TICY.EVAL' || ' &ABSTPPY.EVAL'|| '%  year to date.' 
+- ELSE IF &FLAGPT EQ 'N' AND &ABSTPPY EQ 0 THEN 'Tickets Issued ' | '&TICY.EVAL' || ' year to date.' ELSE ' ';
+-SET &CLINEY2 =  IF &FLAGPE EQ 'N' AND &ABSFEPY NE 0 THEN 'Exchanges ' | '&FECY.EVAL' || ' &ABSFEPY.EVAL'|| '%  year to date.' 
+- ELSE IF &FLAGPE EQ 'N' AND &ABSFEPY EQ 0 THEN 'Exchanges ' | '&FECY.EVAL' || ' year to date.' ELSE ' ';
+
+-SET &CLINEY3 =  IF &FLAGVD EQ 'N' AND &ABSVDPY NE 0 THEN 'Voids ' |  '&VDCY.EVAL' || ' &ABSVDPY.EVAL'|| '%  year to date.' 
+- ELSE IF &FLAGVD EQ 'N' AND &ABSVDPY EQ 0 THEN 'Voids ' |  '&VDCY.EVAL' || ' year to date.' ELSE ' ';
+
+-SET &CLINEY4 =  IF &FLAGPR EQ 'N' AND &ABSFRPY NE 0 THEN 'Refunds ' | '&FRCY.EVAL' || ' &ABSFRPY.EVAL'|| '%  year to date.' 
+- ELSE IF &FLAGPR EQ 'N' AND &ABSFRPY EQ 0 THEN 'Refunds ' | '&FRCY.EVAL' || ' year to date.' ELSE ' ';
+
+-* Quarter to Quarter Comparison
+-QTRCOMP1
+
+
+TABLE FILE TDHOLD2
+SUM TKT_PURCH FULL_EXCH VOIDS FULL_RFNDS CURRENT PRIOR 
+BY YEAR
+BY TRAN
+WHERE CQ EQ 'Y' OR PQ EQ 'Y'
+ON TABLE HOLD AS COMQ1
+END
+-RUN
+-IF &LINES NE 2 THEN GOTO ENDOFCOMMENT;
+
+TABLE FILE COMQ1
+SUM LST.TKT_PURCH LST.FULL_EXCH LST.VOIDS LST.FULL_RFNDS LST.CURRENT LST.PRIOR LST.TRAN
+BY YEAR
+ON TABLE HOLD AS COMQHLD
+END
+-RUN
+
+DEFINE FILE COMQHLD
+CTI/D12 = IF CURRENT EQ 'Y' THEN TKT_PURCH ELSE 0;
+PTI/D12 = IF PRIOR EQ 'Y' THEN TKT_PURCH ELSE 0;
+CFE/D12 = IF CURRENT EQ 'Y' THEN FULL_EXCH ELSE 0;
+PFE/D12 = IF PRIOR EQ 'Y' THEN FULL_EXCH ELSE 0;
+CVD/D12 = IF CURRENT EQ 'Y' THEN VOIDS ELSE 0;
+PVD/D12 = IF PRIOR EQ 'Y' THEN VOIDS ELSE 0;
+CFR/D12 = IF CURRENT EQ 'Y' THEN FULL_RFNDS ELSE 0;
+PFR/D12 = IF PRIOR EQ 'Y' THEN FULL_RFNDS ELSE 0;
+END
+-RUN
+
+TABLE FILE COMQHLD
+SUM CTI PTI CFE PFE CVD PVD CFR PFR FST.TRAN LST.TRAN 
+COMPUTE FLAGPT/A1 = IF PTI EQ 0 THEN 'Y' ELSE 'N';
+COMPUTE FLAGPE/A1 = IF PFE EQ 0 THEN 'Y' ELSE 'N';
+COMPUTE FLAGPV/A1 = IF PVD EQ 0 THEN 'Y' ELSE 'N';
+COMPUTE FLAGPR/A1 = IF PFR EQ 0 THEN 'Y' ELSE 'N';
+COMPUTE TPPQ/D5 = IF FLAGPT EQ 'N' THEN (CTI-PTI)/PTI * 100 ELSE 0;
+COMPUTE FEPQ/D5 = IF FLAGPE EQ 'N' THEN (CFE-PFE)/PFE * 100 ELSE 0;
+COMPUTE VDPQ/D5 = IF FLAGPV EQ 'N' THEN (CVD-PVD)/PVD * 100 ELSE 0;
+COMPUTE FRPQ/D5 = IF FLAGPR EQ 'N' THEN (CFR-PFR)/PFR * 100 ELSE 0;
+COMPUTE ABSTPPQ/D5 = ABS(TPPQ);
+COMPUTE ABSFEPQ/D5 = ABS(FEPQ);
+COMPUTE ABSVDPQ/D5 = ABS(VDPQ);
+COMPUTE ABSFRPQ/D5 = ABS(FRPQ);
+COMPUTE TICQ/A12 = IF TPPQ GT 0 THEN ' increased' ELSE IF TPPQ LT 0 THEN ' decreased' ELSE 'remains same';
+COMPUTE FECQ/A12 = IF FEPQ GT 0 THEN ' increased' ELSE IF FEPQ LT 0 THEN ' decreased' ELSE 'remains same';
+COMPUTE VDCQ/A12 = IF VDPQ GT 0 THEN ' increased' ELSE IF VDPQ LT 0 THEN ' decreased' ELSE 'remains same';
+COMPUTE FRCQ/A12 = IF FRPQ GT 0 THEN ' increased' ELSE IF FRPQ LT 0 THEN ' decreased' ELSE 'remains same';
+ON TABLE SAVE AS TD2QCOMMENT
+END
+-RUN
+
+-READ TD2QCOMMENT &X.96. &PTRAN.7. &CTRAN.7. &FLAGPT.1. &FLAGPE.1. &FLAGPV.1. &FLAGPR.1. &X.20. &ABSTPPQ.5. &ABSFEPQ.5. &ABSVDPQ.5. &ABSFRPQ.5. &TICQ.12. &FECQ.12. &VDCQ.12. &FRCQ.12.
+
+EX FMTNUMBER VALUE=&ABSTPPQ,DOLLAR='N',ALIGNED='N'
+-RUN
+-SET &ABSTPPQ = &&RETVAL;
+
+EX FMTNUMBER VALUE=&ABSFEPQ,DOLLAR='N',ALIGNED='N'
+-RUN
+-SET &ABSFEPQ = &&RETVAL;
+
+EX FMTNUMBER VALUE=&ABSVDPQ,DOLLAR='N',ALIGNED='N'
+-RUN
+-SET &ABSVDPQ = &&RETVAL;
+
+EX FMTNUMBER VALUE=&ABSFRPQ,DOLLAR='N',ALIGNED='N'
+-RUN
+-SET &ABSFRPQ = &&RETVAL;
+
+-*-SET &CLINEQ1 =  IF &FLAGPT EQ 'N' THEN '( &TICQ.EVAL' || '&ABSTPPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|')' ELSE ' ';
+-*-SET &CLINEQ2 =  IF &FLAGPE EQ 'N' THEN '( &FECQ.EVAL' || '&ABSFEPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|')' ELSE ' ';
+-*-SET &CLINEQ3 =  IF &FLAGPV EQ 'N' THEN '( &VDCQ.EVAL' || '&ABSVDPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|')' ELSE ' ';
+-*-SET &CLINEQ4 =  IF &FLAGPR EQ 'N' THEN '( &FRCQ.EVAL' || '&ABSFRPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|')' ELSE ' ';
+
+-SET &CLINEQ1 = IF &PYTD EQ 'N' AND &FLAGPT EQ 'N' THEN 'Tickets issued &TICQ.EVAL' || '&ABSTPPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL' |'.'
+- ELSE IF &FLAGPT EQ 'N' THEN '( &TICQ.EVAL' || '&ABSTPPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|')' ELSE ' ';
+-SET &CLINEQ2 =  IF &PYTD EQ 'N' AND &FLAGPE EQ 'N' THEN 'Exchanges &FECQ.EVAL' || '&ABSFEPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|'.'
+- ELSE IF &FLAGPE EQ 'N' THEN '( &FECQ.EVAL' || '&ABSFEPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|')' ELSE ' ';
+-SET &CLINEQ3 =  IF &PYTD EQ 'N' AND &FLAGPV EQ 'N' THEN 'Voids &VDCQ.EVAL' || '&ABSVDPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|'.'
+- ELSE IF &FLAGPV EQ 'N' THEN '( &VDCQ.EVAL' || '&ABSVDPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|')' ELSE ' ';
+-SET &CLINEQ4 =  IF &PYTD EQ 'N' AND &FLAGPR EQ 'N' THEN 'Refunds &FRCQ.EVAL' || '&ABSFRPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|'.'
+- ELSE IF &FLAGPR EQ 'N' THEN '( &FRCQ.EVAL' || '&ABSFRPQ.EVAL' || '% &CTRAN.EVAL over &PTRAN.EVAL'|')' ELSE ' ';
+
+-ENDOFCOMMENT
+-******************************************************************************
+-* The end of comment lines
+-******************************************************************************
+-*if no pytd data,set these variables to blank
+-SET &NTY1  = IF &PYTD EQ 'N' THEN ' ' ELSE &NTY1;
+-SET &TIY1  = IF &PYTD EQ 'N' THEN ' ' ELSE &TIY1;
+-SET &FEY1  = IF &PYTD EQ 'N' THEN ' ' ELSE &FEY1;
+-SET &VDY1  = IF &PYTD EQ 'N' THEN ' ' ELSE &VDY1;
+-SET &FRY1  = IF &PYTD EQ 'N' THEN ' ' ELSE &FRY1;
+
+-SET &VNET1 = IF &PYTD EQ 'N' THEN ' ' ELSE &VNET1;
+-SET &VTI1  = IF &PYTD EQ 'N' THEN ' ' ELSE &VTI1;
+-SET &VFE1  = IF &PYTD EQ 'N' THEN ' ' ELSE &VFE1;
+-SET &VVD1  = IF &PYTD EQ 'N' THEN ' ' ELSE &VVD1;
+-SET &VFR1  = IF &PYTD EQ 'N' THEN ' ' ELSE &VFR1;
+
+-*if no pytd data,set &year1 lable in the column heading
+-SET &TEMP = EDIT('&TY2.EVAL','$$99');
+-SET &TEMP = &TEMP -1;
+-SET &TEMP = IF &TEMP LE 9 THEN '0' | '&TEMP.EVAL' ELSE '&TEMP.EVAL';
+-SET &TEMP = 'YTD' | EDIT('&TY2.EVAL','99') | '&TEMP.EVAL';
+-SET &TY1 = IF '&TY1.EVAL' NE ' ' THEN 'YTD&TY1.EVAL' ELSE '&TEMP.EVAL'; 
+
+-SET &TY2 = 'YTD&TY2.EVAL';
+
+TABLE FILE BRPTINST
+BY INST_KEY NOPRINT
+ON TABLE SET PAGE-NUM OFF
+&&OUTLINE1
+&&OUTLINE2
+FOOTING
+"</2"
+"&CLINEY1"
+"&CLINEQ1"
+"</4"
+"&CLINEY2"
+"&CLINEQ2"
+"</4"
+"&CLINEY3"
+"&CLINEQ3"
+"</4"
+"&CLINEY4" 
+"&CLINEQ4"
+"</5"
+"<54 ________________________________________________________________________________________________"
+"<54 |               <&POS1A | <&POS1&TD1  <&POS2A |<&POS2&TD2   <&POS3A | <&POS3&TD3 <&POS4A | <&POS4&TD4 <&POS5A | <&POS5 &TD5 <&POS6A | <&POS6 &TD6 <&POS7A | <&POS7 &TD7 <&POS8A | <&POS8 &TD8 <115 | "
+"<54 |_______________________________________________________________________________________________<115 | "
+"<54 |Tickets Issued <&POS1A | <&POS1 &TI1 <&POS2A | <&POS2 &TI2 <&POS3A | <&POS3 &TI3 <&POS4A | <&POS4 &TI4 <&POS5A | <&POS5 &TI5 <&POS6A | <&POS6 &TI6 <&POS7A | <&POS7 &TI7 <&POS8A | <&POS8 &TI8 <115 | "
+"<54 |_______________________________________________________________________________________________<115 |"
+"<54 |Exchanges <&POS1A | <&POS1 &FE1 <&POS2A | <&POS2 &FE2 <&POS3A | <&POS3 &FE3 <&POS4A | <&POS4 &FE4 <&POS5A | <&POS5 &FE5 <&POS6A | <&POS6 &FE6 <&POS7A | <&POS7 &FE7 <&POS8A | <&POS8 &FE8 <115 | "
+"<54 |_______________________________________________________________________________________________<115 |"
+"<54 |Voids          <&POS1A | <&POS1 &VD1 <&POS2A | <&POS2 &VD2 <&POS3A | <&POS3 &VD3 <&POS4A | <&POS4 &VD4 <&POS5A | <&POS5 &VD5 <&POS6A | <&POS6 &VD6 <&POS7A | <&POS7 &VD7 <&POS8A | <&POS8 &VD8 <115 |"
+"<54 |_______________________________________________________________________________________________<115 |"
+"<54 |Refunds   <&POS1A | <&POS1 &FR1 <&POS2A | <&POS2 &FR2 <&POS3A | <&POS3 &FR3 <&POS4A | <&POS4 &FR4 <&POS5A | <&POS5 &FR5 <&POS6A | <&POS6 &FR6 <&POS7A | <&POS7 &FR7 <&POS8A | <&POS8 &FR8 <115 |"
+"<54 |_______________________________________________________________________________________________<115 |"
+"</5"
+"<0 __________________________________________________________________"
+"<0 |                      <&POS1AA |    &TY2 <&POS2AA  |    &TY1    <&POS3AA  | <&POSA3 Variance <&POS4AA |"
+"<0 |_________________________________________________________________<&POS4AA | "
+"<0 |Air Volume            <&POS1AA | &NTY2   <&POS2AA  | &NTY1 <&POS3AA  | &VNET1  <&POS4AA |"
+"<0 |_________________________________________________________________<&POS4AA | "
+"<0 |Tickets Issued        <&POS1AA | &TIY2   <&POS2AA  | &TIY1 <&POS3AA  | &VTI1   <&POS4AA |"
+"<0 |_________________________________________________________________<&POS4AA | "
+"<0 |Exchanges Amount <&POS1AA | &FEY2        <&POS2AA  | &FEY1 <&POS3AA  | &VFE1   <&POS4AA |"
+"<0 |_________________________________________________________________<&POS4AA | "
+"<0 |Voids                 <&POS1AA | &VDY2   <&POS2AA  | &VDY1 <&POS3AA  | &VVD1  <&POS4AA |"
+"<0 |_________________________________________________________________<&POS4AA | "
+"<0 |Refunds Amount   <&POS1AA | &FRY2        <&POS2AA  | &FRY1 <&POS3AA  | &VFR1  <&POS4AA |"
+"<0 |_________________________________________________________________<&POS4AA | "
+"</1 Note:  Full and partial Exchanges and Refunds included." 
+
+ON TABLE SET STYLE *
+UNITS=IN, PAGESIZE='Letter', LEFTMARGIN=0.250000, RIGHTMARGIN=0.150000, 
+    TOPMARGIN=0.500000, BOTTOMMARGIN=0.250000, SQUEEZE=ON, 
+    ORIENTATION=LANDSCAPE, $
+TYPE=REPORT, FONT=TIMES NEW ROMAN, SIZE=7, BACKCOLOR=NONE, STYLE=NORMAL, $
+TYPE=FOOTING,FONT=COURIER NEW,$
+TYPE=FOOTING, SIZE=15, LINE=4, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=5, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=11, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=12, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=18, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=19, OBJECT=TEXT, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=25, OBJECT=TEXT, ITEM=1, FONT=TIMES NEW ROMAN, $
+TYPE=FOOTING, SIZE=15, LINE=26, OBJECT=TEXT, ITEM=1, FONT=TIMES NEW ROMAN, $
+TYPE=REPORT, IMAGE=TrendingData.GIF,POSITION=(0.1 0.1), SIZE=(10.75 .75), $
+-IF '&&SKIPGRAPH.EVAL' EQ 'Y' OR &G_TDG3 EQ 'N' THEN GOTO SKIP_DGAT3;
+TYPE=REPORT,
+IMAGE=TDG3.SVG,
+    POSITION=(5.0  1.5), SIZE=(6.0 3.0), $
+-SKIP_DGAT3
+ENDSTYLE
+END
+-RUN

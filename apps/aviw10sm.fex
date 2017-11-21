@@ -1,0 +1,256 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* File AVIW10SM.FEX
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-*07/03/02   STEVE              CHANGED TO eTTek Review and Copyright
+-*02/05/04   STEVE              COMMENTED OUT -INCLUDE &&DSTY - was not
+-*                              writing this in DRILLRPT, thus errors
+-*10/27/04   DEB                ADDED CODE FOR GLOBAL CURRENCY
+-*1/4/06     DEB                COMMENTED -INCLUDE &&DSTY - BACK IN FOR
+-*                              SVCM REQUEST - THOROUGHLY TESTED AND ALL
+-*                              WORKS CORRECTLY 
+-*3/8/07     DEB                ADDED CODE TO SKIP DRILLDOWN FOR ISUUPAYS REPORT
+-*12/07/15 - JEM - S-13286 Updated to allow reports to sort/subtotal by id-levels
+
+-**********************************************************************
+
+SET ASNAMES = ON
+-RUN
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION
+-*7/31/00      IBISTL-KR            ADDED DEFINE FOR NOWTOD WHICH IS 
+-*                                  USED IN FOOTERSM
+-**********************************************************************
+-INCLUDE SETECHO
+
+-IF '&&SETF.EVAL' NE 'ABEXCH2' THEN GOTO Skipit;
+DEFINE FILE EXAIRHLD
+AC_AMT/D12.2 = IF TKT_SORT NE LAST TKT_SORT THEN ADDCOLLECT ELSE 0;
+AP_DAYS/D9 = IF TKT_NUM NE LAST TKT_NUM THEN NEW_ADV_PURCH ELSE 0;
+FARE/D12.2CS = (FARE_PAID * (-1));
+PNLTY_AMT/D12.2CS = 0;
+END
+TABLE FILE EXAIRHLD
+SUM 
+  TKT_DATE
+  TRN_DATE
+  C_ITIN  
+  AP_DAYS
+  TKT_NUM 
+  DOC_NUMBER 
+  EX_FLAG
+  VAL_AIRLINE
+  PNLTY_AMT
+  AC_AMT
+  FST_DPT_DATE
+  FARE 
+WHERE EX_FLAG NE ' '
+BY PASSNGR_NAME
+BY TRN_DATE NOPRINT
+BY TKT_DATE NOPRINT
+BY TKT_NUM   
+ON TABLE HOLD AS EXHOLD FORMAT FOCUS
+END
+-RUN
+
+
+
+
+TABLE FILE EXHOLD
+PRINT TKT_NUM
+BY TKT_NUM NOPRINT
+ON TABLE SAVE AS EXCHG
+END
+-RUN
+
+
+DEFINE FILE EXAIRHLD
+PNLTY_AMT/D12.2 = IF TKT_SORT NE LAST TKT_SORT THEN AIRLINE_FEE ELSE 0;
+
+AP_DAYS/D9 = IF TKT_NUM NE LAST TKT_NUM THEN NEW_ADV_PURCH ELSE 0;
+FARE/D12.2CS = IF TKT_NUM NE LAST TKT_NUM THEN FARE_PAID2 ELSE 0;
+FARE2/D12.2CS = IF TKT_SORT NE LAST TKT_SORT THEN EXCH_AC ELSE 0;
+AC_AMT/D12.2 = FARE2 - PNLTY_AMT;
+
+END
+TABLE FILE EXAIRHLD
+SUM 
+  TKT_DATE 
+  TRN_DATE
+  C_ITIN  
+  AP_DAYS
+  TKT_NUM 
+  DOC_NUMBER 
+  EX_FLAG
+  VAL_AIRLINE 
+  PNLTY_AMT
+  AC_AMT
+  FST_DPT_DATE
+  FARE 
+BY PASSNGR_NAME
+BY TRN_DATE NOPRINT
+BY TKT_DATE NOPRINT
+BY TKT_NUM   
+WHERE DOC_NUMBER IN FILE EXCHG
+WHERE EX_FLAG EQ ' '
+ON TABLE HOLD AS EXHOLD2 FORMAT FOCUS
+END
+-RUN
+
+
+
+
+
+
+
+-SET &HLDPATH=TEMPPATH(50,'A50');
+-SET &HNKA=&HLDPATH || 'EXHOLD.FOC';
+-SET &HNKB=&HLDPATH || 'EXHOLD2.FOC';
+-RUN
+
+
+-SET &FILENAME = 'EXHOLD'; 
+-RUN
+
+-DOS STATE &HNKA
+-SET &HOLDFILEA = IF &RETCODE.EVAL EQ 0 THEN &HNKA | ' AS ' | &FILENAME ELSE ' ';
+
+-DOS STATE &HNKB
+-SET &HOLDFILEB = IF &RETCODE.EVAL EQ 0 THEN &HNKB | ' AS ' | &FILENAME ELSE ' ';
+
+ 
+
+USE ADD 
+&HOLDFILEA
+&HOLDFILEB
+END
+-RUN
+
+
+TABLE FILE EXHOLD
+PRINT
+  TKT_NUM
+  PASSNGR_NAME
+  TKT_DATE 
+  FST_DPT_DATE
+  EX_FLAG
+  TRN_DATE
+  AP_DAYS
+  FARE
+  C_ITIN  
+  AC_AMT
+  PNLTY_AMT
+  VAL_AIRLINE 
+BY PASSNGR_NAME NOPRINT
+BY TKT_NUM NOPRINT
+BY DOC_NUMBER  
+BY TKT_DATE NOPRINT
+BY TRN_DATE NOPRINT
+ON TABLE HOLD AS EXAIRHLD
+END
+-RUN
+ 
+
+
+
+DEFINE FILE EXAIRHLD ADD
+TRN_DT/MDYY = IF EX_FLAG NE ' ' THEN TRN_DATE ELSE ' ';
+ADD_COLL/D12.2CS = IF EX_FLAG EQ ' ' THEN AC_AMT ELSE 0;
+NOWTOD/A8 WITH TKT_NUM = HHMMSS (NOWTOD);
+END
+-GOTO Finishrpt; 
+
+
+-Skipit;
+DEFINE FILE EXAIRHLD ADD
+ NOWTOD/A8 WITH AIR_KEY = HHMMSS (NOWTOD);
+END
+
+-Finishrpt;
+
+TABLE FILE EXAIRHLD
+-INCLUDE HEADER
+"&&SUBHEAD"
+"</2"
+-* SUM 
+    &&S_SUBJ1
+    &&S_SUBJ2
+    &&S_SUBJ3
+    &&S_SUBJ4
+    &&S_SUBJ5
+    &&S_SUBJ6
+    &&S_SUBJ7
+    &&S_SUBJ8
+    &&S_SUBJ9
+    &&S_SUBJ10
+-*BY
+   &&S_TARG1 
+   &&S_TARG2
+   &&S_TARG3
+   &&S_TARG4
+   &&S_TARG5
+   &&S_TARG6
+   &&S_TARG7
+   &&S_TARG8
+   &&S_TARG9
+   &&S_TARG10
+-*ON
+&&BREAKOPTION
+   &&SUMM_ON1
+   &&SUMM_ON2
+   &&SUMM_ON3
+   &&SUMM_ON4
+   &&SUMM_ON5
+   &&SUMM_ON6
+   &&SUMM_ON7
+   &&SUMM_ON8
+   &&SUMM_ON9
+   &&SUMM_ON10
+ON TABLE COLUMN-TOTAL
+-INCLUDE FOOTERSM
+ON TABLE COLUMN-TOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/11/00      IBISTL-SB            CHANGED THE SET STYLE STATEMENT 
+-*                                  WITH AN INCLUDE
+-**********************************************************************
+ON TABLE SET STYLE *
+-INCLUDE &&SMSTY 
+
+-**********************************************************************
+-*DATE           NAME               DESCRIPTION OF CHANGE
+-*----           ----               ---------------------
+-*8/18/00      IBISTL-KR            INCLUDE STYLESHEET PARAMS FOR 
+-*                                  DRILLABLE REPORTS.
+-**********************************************************************
+-IF &&DRILLABLE EQ 'N' GOTO SKIP_DRILL;
+
+-IF &&SETF EQ 'ISUUPAYS' OR 'ABEXCH2' THEN GOTO SKIP_DRILL;
+
+-INCLUDE &&DSTY
+
+
+
+-SKIP_DRILL
+
+ENDSTYLE
+&&OUTLINE1
+&&SUMMDEST
+&&OUTLINE2
+END
+-RUN
+
+-IF &&DRILLABLE EQ 'Y' GOTO SKIP_R3;
+
+EX REPORT_3
+
+-SKIP_R3

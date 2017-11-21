@@ -1,0 +1,458 @@
+-*****************THIS HEADER REPRESENTS THE 80 CHARACTER MAXIUM FOR PROGRAMS**
+-* Removed Conagra Special from here so that they could have the standard
+-* report as well as their specialized version JK 10/16/03
+-* Added Current Total Average Ticket Price per Patti JK 2/24/04
+-* 09/29/16 - DLV - S-25275 - Corrected set commands for date range so it would display correctly
+-* 02/24/2017 - DLV - S-22486 CHANGED ettek Review to Post-trip Reporting
+-* 07/07/2017 - RSB - S-36531 Reports that do not use a view to be updated with standard footer (part 2)
+-* 08/28/2017 - RSB - S-39056 Footer changes to be backed out of story S-36531
+-*  
+-SET &&PAHDR  = IF '&&OUTFMT.EVAL' EQ 'PDF' OR 'PPT' OR 'COM' THEN 'HEADAIR' ELSE 'HDREXLS'; 
+-SET &&PASTYD = IF '&&OUTFMT.EVAL' NE 'PDF' OR 'PPT' OR 'COM' THEN 'DTEXL'   ELSE &&DTSTY;
+-*     
+-INCLUDE SETECHO 
+SET ASNAMES=ON
+
+-SET &&RPTSUF = 'BENCHMARK'; 
+-SET &FMM=EDIT(&&FROMDT,'$$$$$99');
+-SET &FMD=EDIT(&&FROMDT,'$$$$$$$$99'); 
+-SET &FMY=EDIT(&&FROMDT,'9999');
+-SET &TOM=EDIT(&&TODT,'$$$$$99');
+-SET &TOD=EDIT(&&TODT,'$$$$$$$$99');
+-SET &TOY=EDIT(&&TODT,'9999');
+-* PRIOR DATES
+-SET &FXMM=EDIT(&&FXDATE,'$$$$$99');
+-SET &FXMD=EDIT(&&FXDATE,'$$$$$$$$99');
+-SET &FXMY=EDIT(&&FXDATE,'9999');
+-SET &TXOM=EDIT(&&TXDATE,'$$$$$99');
+-SET &TXOD=EDIT(&&TXDATE,'$$$$$$$$99');
+-SET &TXOY=EDIT(&&TXDATE,'9999');
+-SET &&SP = '|';
+-SET &&SP1A = IF &&ROLLNME EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP1 = IF &&ROLLCS EQ ' ' THEN ' ' ELSE &&SP1A;
+-SET &&SP3 = IF &&ROLLCNCT EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&SP4 = IF &&ROLLPHN EQ ' ' THEN ' ' ELSE &&SP;
+-SET &&RCNCT = &&ROLLCNCT.LENGTH;
+-SET &&CSL = &&ROLLCS.LENGTH;
+-SET &&CSLPA = IF &&RCNCT.EVAL GE 10 OR &&CSL.EVAL GE 10 THEN 60 ELSE 68;
+-SET &&CSLP = IF '&&ROLLUP.EVAL' EQ 'BOOZ-R' THEN 78 ELSE &&CSLPA;
+-SET &&ROLLCS11 = TRUNCATE(&&ROLLCS);
+-SET &&RCNCT1 = TRUNCATE(&&ROLLCNCT);
+-SET &&BLANK = ' ';
+
+
+-INCLUDE FDEFRPTS
+-RUN
+
+-IF &&SETF EQ 'CGBNMR' THEN GOTO RETAIL;
+-RUN
+
+MATCH FILE TRANTWO
+PRINT CAVOL
+    CDAVOL
+    CDLS
+    CLSAV
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    PAVOL  
+    CLS200  
+    CLS2001
+    CAVAR
+    CAVAR1  
+    CTAVGT
+    CAVGT
+    PAVGT
+    AAVGV
+    AAVGV1
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CPMILE
+    CTLSV
+    CLS100P
+BY LEVEL_DESC
+BY LEVEL2
+BY RCODE
+ON TABLE HOLD
+RUN
+FILE HTLHLD3
+SUM CHTTLA
+    AVGRATE
+BY LEVEL_DESC
+BY LEVEL2
+BY RCODE
+AFTER MATCH HOLD AS AHTRAN OLD-OR-NEW
+END
+-RUN
+
+MATCH FILE AHTRAN
+PRINT AVGRATE
+    CAVOL
+    CDAVOL
+    CDLS
+    CHTTLA
+    CLSAV
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    PAVOL  
+    CLS200  
+    CLS2001
+    CAVAR
+    CAVAR1  
+    CTAVGT
+    CAVGT
+    PAVGT
+    AAVGV
+    AAVGV1
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CPMILE
+    CTLSV
+    CLS100P
+BY LEVEL_DESC
+BY LEVEL2
+BY RCODE
+ON TABLE HOLD
+RUN
+FILE CARTHREE
+SUM CRENTAL
+    CNOMID_DAYS
+    PCTNOMID
+    AVGMID
+BY LEVEL_DESC
+BY LEVEL2
+BY RCODE
+AFTER MATCH HOLD AS AHCTRAN OLD-OR-NEW
+END
+-RUN
+
+ 
+
+
+DEFINE FILE AHCTRAN
+NOWTOD/A8 WITH CAVOL = HHMMSS (NOWTOD);
+BLANK/A1 = ' ';
+END
+-RUN
+
+
+TABLE FILE AHCTRAN
+SUM CAVOL AS 'Total,Volume' 
+CAVAR1 AS 'Volume,Variance %' 
+CVSAV AS 'Contract Savings'
+CNTKT AS 'Net,Tickets' 
+CLSAV AS 'TOTAL $,Lost Savings' 
+CLS100P AS '%,of Lost Savings,Greater than $100,to Total Spend'
+CNVSA AS 'Total $, Amount,On,Nonvisa'
+CTAVGT AS 'Total, Average, Ticket, Price' 
+CAVGT AS 'Average,Domestic,Ticket,Price'
+AAVGV1 AS 'Domestic,Average,Ticket Price,Variance %' 
+CADVP3 AS '% of,Net Tickets Purchased,0-6 Days' 
+CADVP4 AS '% of,Net Tickets Purchased,7-13 Days' 
+CONLP1 AS '%, Domestic of Online Bookings' 
+CNRP AS '%,of NonRefundable Tickets' 
+CRENTAL AS 'Total,Car,Rental,Days' 
+PCTNOMID AS '%,of Cars Larger,Than Mid-size' 
+AVGRATE AS 'Average,Hotel,Cost Per,Night' 
+BY LEVEL_DESC AS 'Hierarchy'
+BY LEVEL2 AS 'Department'
+BY RCODE AS 'Responsibility,Center'
+
+ 
+HEADING
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-INCLUDE FOOTERDT
+-*
+ON TABLE SET PAGE-NUM OFF
+ON TABLE NOTOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+-*
+END
+-RUN
+-GOTO XXIT
+
+-RETAIL
+
+MATCH FILE TRANTWO
+PRINT CAVOL
+    CDAVOL
+    CDLS
+    CLSAV
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    PAVOL  
+    CLS200  
+    CLS2001
+    CAVAR
+    CAVAR1  
+    CTAVGT
+    CAVGT
+    PAVGT
+    AAVGV
+    AAVGV1
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CPMILE
+    CTLSV
+    CLS100P
+BY LEVEL_DESC
+BY RETAIL_DSC
+ON TABLE HOLD
+RUN
+FILE HTLHLD3
+SUM CHTTLA
+    AVGRATE
+BY LEVEL_DESC
+BY RETAIL_DSC
+AFTER MATCH HOLD AS AHTRAN OLD-OR-NEW
+END
+-RUN
+
+MATCH FILE AHTRAN
+PRINT AVGRATE
+    CAVOL
+    CDAVOL
+    CDLS
+    CHTTLA
+    CLSAV
+    CLS1
+    CLS2
+    CLS3
+    CLS4
+    CLS5
+    CMILES
+    CSAV
+    CSAV1
+    CNTKT
+    CNVSA
+    CVSAV
+    PAVOL  
+    CLS200  
+    CLS2001
+    CAVAR
+    CAVAR1  
+    CTAVGT
+    CAVGT
+    PAVGT
+    AAVGV
+    AAVGV1
+    CADVP1
+    CADVP2
+    CADVP3
+    CADVP4
+    CADVP5
+    CADVP6
+    CLSP
+    CONLP
+    CONLP1
+    CNRP
+    CNFSV
+    CTLS
+    CCLS1
+    CCLS2
+    CCLS3
+    CCLS4
+    CCLS5
+    CPMILE
+    CTLSV
+    CLS100P
+BY LEVEL_DESC
+BY RETAIL_DSC
+ON TABLE HOLD
+RUN
+FILE CARTHREE
+SUM CRENTAL
+    CNOMID_DAYS
+    PCTNOMID
+    AVGMID
+BY LEVEL_DESC
+BY RETAIL_DSC
+AFTER MATCH HOLD AS AHCTRAN OLD-OR-NEW
+END
+-RUN
+
+-IF &RECORDS EQ 0 THEN GOTO NOREC; 
+
+DEFINE FILE AHCTRAN
+NOWTOD/A8 WITH CAVOL = HHMMSS (NOWTOD);
+BLANK/A1 = ' ';
+END
+-RUN
+
+
+TABLE FILE AHCTRAN
+SUM CAVOL AS 'Total,Volume' 
+CAVAR1 AS 'Volume,Variance %' 
+CVSAV AS 'Contract Savings'
+CNTKT AS 'Net,Tickets' 
+CLSAV AS 'TOTAL $,Lost Savings' 
+CLS100P AS '%,of Lost Savings,Greater than $100,to Total Spend'
+CNVSA AS 'Total $, Amount,On,Nonvisa'
+CTAVGT AS 'Total, Average, Ticket, Price' 
+CAVGT AS 'Average,Domestic,Ticket,Price'
+AAVGV1 AS 'Domestic,Average,Ticket Price,Variance %' 
+CADVP3 AS '% of,Net Tickets Purchased,0-6 Days' 
+CADVP4 AS '% of,Net Tickets Purchased,7-13 Days' 
+CONLP1 AS '%, Domestic of Online Bookings' 
+CNRP AS '%,of NonRefundable Tickets' 
+CRENTAL AS 'Total,Car,Rental,Days' 
+PCTNOMID AS '%,of Cars Larger,Than Mid-size' 
+AVGRATE AS 'Average,Hotel,Cost Per,Night' 
+BY RETAIL_DSC AS ' ' 
+-*
+HEADING
+-INCLUDE &&PAHDR
+"&&SUBHEAD"
+-IF &&PAHDR EQ 'HDREXLS' GOTO NOSPC;
+"</2"
+-NOSPC;
+-*
+-INCLUDE FOOTERDT
+-*
+ON TABLE SET PAGE-NUM OFF
+ON TABLE NOTOTAL
+ON TABLE PAGE-BREAK AND SUBFOOT
+-INCLUDE SBFOOT
+
+ON TABLE SET STYLE *
+-INCLUDE &&PASTYD
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+-*
+END
+-RUN
+-GOTO XXIT
+
+-NOREC
+ 
+ 
+-SET &&RPTSUF = 'MSG';
+-* -INCLUDE FDEFRPTS
+-RUN
+JOIN SET_KEY IN BRPTINST TO SET_KEY IN BRPT_SET AS J1
+ 
+DEFINE FILE BRPTINST
+EMPTY/A35 = 'NO RECORDS FOUND FOR THIS SELECTION';
+NOWTOD/A8 WITH INST_KEY = HHMMSS (NOWTOD);
+END
+TABLE FILE BRPTINST
+HEADING
+"&&ROLLNME &&SP1 &&ROLLCS11 &&SP3 &&RCNCT1 &&SP4 &&ROLLPHN"
+"&&DTDESC  Period1: &FMM/&FMD/&FMY - &TOM/&TOD/&TOY  Period2: &FXMM/&FXMD/&FXMY - &TXOM/&TXOD/&TXOY"
+"&&RPT_TTL1"
+"&&RPT_TTL2"
+" "
+FOOTING BOTTOM
+PRINT EMPTY AS 'REPORT,MESSAGE'
+BY ROLLUP_CODE AS 'ROLLUP,CODE'
+BY RPT_NAME AS 'REPORT,NAME'
+BY SELECT_LEV AS 'BREAK,LEVEL'
+IF INST_KEY EQ &&IKEY
+IF RECORDLIMIT EQ 1
+-INCLUDE FOOTERDT
+ON TABLE SUBFOOT
+-INCLUDE SBFOOT
+ON TABLE SET PAGE-NUM OFF
+ON TABLE SET STYLE *
+-INCLUDE &&DTSTY
+ENDSTYLE
+&&OUTLINE1
+&&OUTPUTDEST
+&&OUTLINE2
+END
+-RUN
+
+-XXIT
+
+
+
+
+
+
+
