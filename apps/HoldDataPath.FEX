@@ -1,8 +1,0 @@
--* HoldDataPath.fex  - set holddata path to the edatemp folder
--SET &LEN=ARGLEN(50, '&&WEB_PATH.EVAL', 'I2');
--SET &LEN = &LEN -1;
--SET &&HLDDATAPATH =  SUBSTR(50, '&&WEB_PATH.EVAL', 1, &LEN, &LEN, 'A&LEN.EVAL');
--TYPE &&HLDDATAPATH
-
-APP MAP USERHOLD &&HLDDATAPATH
-APP HOLDDATA  USERHOLD

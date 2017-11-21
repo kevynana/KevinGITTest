@@ -1,5 +1,0 @@
--*-INCLUDE SETECHO
--* SETCOPYRIGHT.FEX
--SET &DT = TODAY('A10MDYY');
--SET &YR = SUBSTR(10, &DT, 7, 10, 4, 'A4');
--SET &&CRIGHT = '© &YR.EVAL Travel and Transport, Inc.  Personal and Confidential';

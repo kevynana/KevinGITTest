@@ -1,6 +1,0 @@
--* file name: wrunburst.fex 
--INCLUDE SETECHO
-SET TEMPERASE=ON
--SET &&BURST = 'Y';
--INCLUDE WRUNINDV
--RUN

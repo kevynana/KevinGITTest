@@ -1,9 +1,0 @@
- 
-  NET_TKT_CNT/D8CS    = IF (TICKET_CODE EQ '1') AND
-                           (FARE_PAID GE 0) AND
-                           (SEG_COUNT EQ 1) AND 
-                           (CONJ_REL EQ 1) THEN 1 ELSE 
-                        IF (TICKET_CODE EQ '1') AND
-                           (EX_FLAG NE ' ') THEN (-1) ELSE 
-                        IF (TICKET_CODE EQ '1') AND
-                           (RF_FLAG NE ' ') THEN (-1) ELSE 0;

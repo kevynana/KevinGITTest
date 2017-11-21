@@ -1,9 +1,0 @@
--*defined fields to be included
--* Same definition as in trantype
--INCLUDE TRANTYPE
-
-SERV_FLAG/A1 = IF SALES_FLAG EQ 'S' THEN 'S'
-  ELSE IF SALES_FLAG EQ 'V' THEN 'V' 
-  ELSE IF EX_RF_FLAG EQ 'E' THEN 'E'
-  ELSE IF EX_RF_FLAG EQ 'R' THEN 'R'
-  ELSE '';

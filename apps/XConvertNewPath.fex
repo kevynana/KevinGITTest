@@ -1,5 +1,0 @@
--* ConvertNewPath.fex
--* the path for new master and apps
-APP MAP ttapps  "\\omawebfocus03\d\tnt\ttracker\system\apps"
-APP MAP master  "\\omawebfocus03\d\ibi\apps\review_50\apps\master"
-APP PATH master ttapps

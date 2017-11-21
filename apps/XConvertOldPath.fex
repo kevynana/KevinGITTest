@@ -1,6 +1,0 @@
--* ConvertOldPath.fex
--* the path for sudata and apps
-APP MAP ttsudata  "\\omawebfocus03\d\tnt\ttracker\sudata"
-APP MAP ttapps  "\\omawebfocus03\d\tnt\ttracker\system\apps"
-APP MAP sysdata  "\\omawebfocus03\d\tnt\ttracker\system\data"
-APP PATH ttsudata ttapps sysdata
